@@ -1,0 +1,10 @@
+[Unit]
+Description=Data Lake worker — the clock (one pass): what is due becomes a writer job (pulls, transforms, checks, the nightly maintenance and retention); upload-session expiry, the catalog's search catch-up, freshness, usage roll-ups, grant and request expiry, the outbox, dispatches, export expiry, key-usage pruning. It never touches the lake's files.
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory={{APP_DIR}}
+ExecStart=/usr/bin/php {{APP_DIR}}/bin/worker.php

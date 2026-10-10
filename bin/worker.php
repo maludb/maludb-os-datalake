@@ -1,0 +1,110 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * The Data Lake worker — one pass a minute from datalake-worker.timer (design §14). It never touches the lake itself: the WRITER
+ * (services/lake/, one process, the lake_jobs queue) is the only thing that writes Parquet or the ducklake schema, and the QUERY SERVICE
+ * (services/query/) the only thing that reads them. The worker is the clock: it turns what is due into writer jobs (source pulls,
+ * scheduled transforms and checks, the nightly maintenance and retention), and keeps the application's own tables — abandoned upload
+ * sessions, the catalog's search index catch-up, freshness, usage roll-ups, grant and request expiry, the outbox, dispatches to agents,
+ * export files past their time, key-usage pruning. Idempotent; advisory-locked so two runs never overlap; each pass its own try (one
+ * failing never stops the next); the report is printed as one JSON line, logged once as `worker.pass` (counts and sentences, never a
+ * row value, SQL, a token or a key) and kept as a worker_passes row when the table exists (db/006+).
+ *   php bin/worker.php [--passes=a,b] [--limit=200]
+ * With --passes the named passes run whether or not they are due; without it every pass runs. DL_WORKER_NOW (ISO 8601) replaces the clock
+ * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
+ *
+ * PHASE 0: every pass but `key_usage_prune` is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in
+ * (design §10): `search_catch_up` slice 1's; `upload_sessions` slice 2's; `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
+ * `freshness` slice 5's; `schedules` slices 5–7's (checks, source pulls, transforms); `retention`, `maintenance` slice 8's;
+ * `outbox`, `dispatches`, `engine_health` slice 10's. REAL from the kit: `key_usage_prune` (dl_prune_key_usage, db/005).
+ */
+if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
+require_once dirname(__DIR__) . '/app/bootstrap.php';
+
+/** The passes, in the order they run. A new pass is a name here and a function worker_pass_<name>(PDO, int $limit, DateTimeImmutable $now): array. */
+const WORKER_PASSES = ['upload_sessions', 'search_catch_up', 'schedules', 'freshness', 'expiry', 'usage_rollup', 'retention', 'maintenance', 'exports',
+    'outbox', 'dispatches', 'engine_health', 'key_usage_prune'];
+
+$only = [];
+$limit = 200;
+foreach (array_slice($argv, 1) as $a) {
+    if (str_starts_with($a, '--passes=')) {
+        $only = array_values(array_filter(explode(',', substr($a, 9))));
+        if (array_diff($only, WORKER_PASSES) !== []) {
+            fwrite(STDERR, 'Unknown pass: ' . implode(', ', array_diff($only, WORKER_PASSES)) . '. Passes: ' . implode(', ', WORKER_PASSES) . ".\n");
+            exit(2);
+        }
+    } elseif (str_starts_with($a, '--limit=')) {
+        $limit = max(1, min(1000, (int) substr($a, 8)));
+    } else {
+        fwrite(STDERR, "Usage: php bin/worker.php [--passes=a,b] [--limit=N]\n");
+        exit(2);
+    }
+}
+$now = new DateTimeImmutable();
+if (($fake = getenv('DL_WORKER_NOW')) !== false && $fake !== '' && app_is_prod() === false) {
+    $now = new DateTimeImmutable($fake);
+}
+$pdo = db();
+if (!(bool) $pdo->query("SELECT pg_try_advisory_lock(hashtext('datalake_worker'))")->fetchColumn()) {
+    echo json_encode(['skipped' => 'another pass holds the lock']) . "\n";
+    exit(0);
+}
+$GLOBALS['__public_door'] = 'cron';                 // every row a pass writes is source cron, actor none
+$started = microtime(true);
+$report = ['at' => $now->format(DATE_ATOM), 'ran' => [], 'errors' => []];
+foreach ($only === [] ? WORKER_PASSES : $only as $pass) {
+    try {
+        $report['ran'][$pass] = ('worker_pass_' . $pass)($pdo, $limit, $now);
+    } catch (Throwable $e) {
+        error_log('worker ' . $pass . ': ' . $e->getMessage());
+        $report['errors'][] = $pass . ': ' . mb_substr($e->getMessage(), 0, 200);
+    }
+}
+$report['seconds'] = round(microtime(true) - $started, 2);
+log_activity($pdo, 'worker.pass', null, null, ['source' => 'cron', 'actor_member_id' => null, 'after' => $report]);
+try {
+    if ($pdo->query("SELECT to_regclass('public.worker_passes') IS NOT NULL")->fetchColumn()) {
+        $pdo->prepare('INSERT INTO worker_passes (started_at, finished_at, steps, error) VALUES (:s, now(), :steps, :err)')
+            ->execute(['s' => date(DATE_ATOM, (int) $started), 'steps' => json_encode($report['ran'], JSON_UNESCAPED_SLASHES),
+                       'err' => $report['errors'] === [] ? null : implode('; ', $report['errors'])]);
+    }
+} catch (Throwable $e) {
+    error_log('worker_passes: ' . $e->getMessage());
+}
+echo json_encode($report, JSON_UNESCAPED_SLASHES) . "\n";
+$pdo->query("SELECT pg_advisory_unlock(hashtext('datalake_worker'))");
+exit($report['errors'] === [] ? 0 : 1);
+
+// ---- the passes (stubs until their slice) ------------------------------------------------------------------------------------------
+
+/** SLICE 2 — upload sessions past upload_session_hours: their parts deleted, the session expired (a finished upload's blob is the writer's). */
+function worker_pass_upload_sessions(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expired' => 0, 'stub' => true]; }
+/** SLICE 1 — dl_search_catch_up(): every dataset, column, term, saved query and metric whose index row is older than its change. */
+function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['indexed' => 0, 'stub' => true]; }
+/** SLICES 5–7 — what is due becomes a writer job (lake_jobs): a source's next pull (slice 6), a transform's schedule or its inputs' new snapshots (slice 7), a check's `hourly`/`daily` run (slice 5). Never runs the work itself. */
+function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'stub' => true]; }
+/** SLICE 5 — dl_freshness_due(): a dataset past freshness_warn_after / _error_after opens or escalates its freshness incident; a fresh one resolves it. */
+function worker_pass_freshness(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['warned' => 0, 'failed' => 0, 'resolved' => 0, 'stub' => true]; }
+/** SLICE 4 — grants and access requests past their expiry closed, logged grant.expire / access.expire, the holder notified. */
+function worker_pass_expiry(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['grants' => 0, 'requests' => 0, 'stub' => true]; }
+/** SLICE 3 — nightly: query_runs rolled into dataset_usage_daily and dataset_joins; a dataset unused for unused_after_days marked Tier "unused". */
+function worker_pass_usage_rollup(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['days' => 0, 'stub' => true]; }
+/** SLICE 8 — nightly: the writer's retention job queued per policy; query_runs.sql nulled after query_text_days; audit, check results and profiles past their windows deleted. */
+function worker_pass_retention(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'nulled' => 0, 'deleted' => 0, 'stub' => true]; }
+/** SLICE 8 — at maintenance_hour:maintenance_minute the writer's maintenance job queued once a day (flush, merge, rewrite, expire, clean up). */
+function worker_pass_maintenance(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'stub' => true]; }
+/** SLICE 3 — export files past their expiry removed by the writer (it owns exports/), the row marked expired. */
+function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expired' => 0, 'stub' => true]; }
+/** SLICE 10 — the outbox: email through MaluMail (malumail_send), texts to members through the kernel (kernel_send_text), retries with backoff. */
+function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['sent' => 0, 'skipped' => 0, 'retried' => 0, 'failed' => 0, 'stub' => true]; }
+/** SLICE 10 — agent dispatches: a blocking check failed on a dataset → the Steward's chat turn to triage; at most three attempts. */
+function worker_pass_dispatches(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['dispatched' => 0, 'retried' => 0, 'stub' => true]; }
+/** SLICE 10 — the engine's state for the admin's Engine page: the writer's oldest queued job, failed jobs, the query workers answering. */
+function worker_pass_engine_health(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['checked' => 0, 'stub' => true]; }
+/** dl_prune_key_usage() (db/005): minute buckets older than a day, day buckets older than 35 days. Real from the kit. */
+function worker_pass_key_usage_prune(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    return ['pruned' => (int) one_value($pdo, 'SELECT dl_prune_key_usage()')];
+}

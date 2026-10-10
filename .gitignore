@@ -1,0 +1,21 @@
+# secrets and local config — never committed (this repository is PUBLIC)
+config/.env
+config/local.php
+config/*.pw
+# python
+mcp/venv/
+mcp/__pycache__/
+services/.venv/
+services/.duckdb_extensions/
+__pycache__/
+*.pyc
+# runtime and scratch output
+var/
+logs/
+storage/
+tests/**/out/
+tests/engine/scratch/
+*.duckdb
+*.duckdb.wal
+.DS_Store
+*.swp

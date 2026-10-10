@@ -1,0 +1,17 @@
+{
+  "schema": "maludb-os.registry/1",
+  "app_key": "datalake",
+  "name": "Data Lake",
+  "note": "The installer (bin/app_install.php, step 'registry') writes mcp/registries/datalake.json in the kernel from this file's `resolve` block plus mcp/action_registry.json (Phase 1). Each resolve tool answers a plain LIST of rows carrying id_field and label_field when given `q` alone (docs/datalake-mcp-tool-surface.md, the resolution table — Phase 1 fills the params each entity resolves and adds the rest). A dataset resolves by its key (<zone>.<name>) or its title; a column, a load, a query run, an export, a proposal, a dispatch, a notification and a token are ids only, never resolved by name. Phase 0: the resolvers' names only.",
+  "resolve": {
+    "dataset":     {"tool": "find_datasets",      "query_param": "q", "id_field": "dataset_id",     "label_field": "key",          "params": ["dataset"]},
+    "source":      {"tool": "find_sources",       "query_param": "q", "id_field": "source_id",      "label_field": "name",         "params": ["source"]},
+    "check":       {"tool": "find_checks",        "query_param": "q", "id_field": "check_id",       "label_field": "label",        "params": ["check"]},
+    "incident":    {"tool": "find_incidents",     "query_param": "q", "id_field": "incident_id",    "label_field": "title",        "params": ["incident"]},
+    "saved_query": {"tool": "find_saved_queries", "query_param": "q", "id_field": "saved_query_id", "label_field": "title",        "params": ["saved_query", "query"]},
+    "metric":      {"tool": "find_metrics",       "query_param": "q", "id_field": "metric_id",      "label_field": "name",         "params": ["metric"]},
+    "transform":   {"tool": "find_transforms",    "query_param": "q", "id_field": "transform_id",   "label_field": "name",         "params": ["transform"]},
+    "member":      {"tool": "find_members",       "query_param": "q", "id_field": "member_id",      "label_field": "display_name", "params": ["member", "owner", "steward", "assignee", "agent"]},
+    "department":  {"tool": "find_departments",   "query_param": "q", "id_field": "department_id",  "label_field": "name",         "params": ["department"]}
+  }
+}

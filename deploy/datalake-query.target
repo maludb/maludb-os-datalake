@@ -1,0 +1,10 @@
+# The query service's pool (design §6.5): three workers by default (dl_settings.query_workers). Listed in maludb-os.json services[] — the
+# installer enables and starts this target, which starts the instances of datalake-query@.service (installed by deploy/ROOT_STEPS.sh
+# step 6b, because the installer cannot enable a template). A pool of another size: edit Wants= here and in ROOT_STEPS, then apply again.
+[Unit]
+Description=Data Lake query service pool (the one door to the lake's rows)
+Wants=datalake-query@1.service datalake-query@2.service datalake-query@3.service
+After=network.target postgresql.service
+
+[Install]
+WantedBy=multi-user.target

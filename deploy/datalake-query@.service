@@ -1,0 +1,56 @@
+# One QUERY SERVICE worker (design §6.5) — the ONE door to the lake's rows. A template: instances datalake-query@1 … @N (N =
+# dl_settings.query_workers, 3 by default), pulled in by datalake-query.target. Each request is a fresh in-memory DuckDB: the sqlglot
+# allow-list, the caller's views from dl_query_policy(), the lake attached READ_ONLY as datalake_query, the configuration locked, a
+# watchdog's interrupt() at the time limit. systemd is the last layer: a capped, read-only, network-less process. The entry point
+# services/query/server.py is the engine worker's; it listens on the Unix socket DL_QUERY_SOCKET (/run/datalake/…), %i its instance.
+#
+# NOT IN maludb-os.json services[]: the kernel's installer runs `systemctl enable --now` on every listed unit, which a template refuses
+# (no instance). deploy/ROOT_STEPS.sh step 6b renders and installs this file; datalake-query.target (in services[]) starts the instances.
+#
+# IPAddressDeny=any with IPAddressAllow=localhost: nothing leaves the host (no exfiltration off the box); loopback stays open because
+# DL_QUERY_DB_DSN reaches PostgreSQL on 127.0.0.1. To close loopback too, point the DSN at PostgreSQL's Unix socket with a pg_hba peer
+# map for datalake-query → datalake_query and drop the IPAddressAllow line (ROOT_STEPS step 6b's note).
+[Unit]
+Description=Data Lake query service, worker %i — the one door to the lake's rows (sandboxed)
+After=network.target postgresql.service
+PartOf=datalake-query.target
+
+[Service]
+Type=simple
+User=datalake-query
+Group=datalake
+# its own group reads the installation's masking salt (DL_MASK_SALT_FILE, root:datalake-query 0440) — the writer never can
+SupplementaryGroups=datalake-query
+WorkingDirectory={{APP_DIR}}
+EnvironmentFile={{APP_DIR}}/config/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart={{APP_DIR}}/services/.venv/bin/python {{APP_DIR}}/services/query/server.py --worker %i
+Restart=always
+RestartSec=2
+# the sandbox (design §6.5 step 4): memory, CPU, tasks; read-only everywhere; the lake read-only; no network off the host
+MemoryMax=2560M
+CPUQuota=200%
+TasksMax=64
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+ReadOnlyPaths={{DL_STORAGE_DIR}}/lake
+ReadWritePaths={{DL_STORAGE_DIR}}/tmp
+InaccessiblePaths=-{{DL_STORAGE_DIR}}/landing -{{DL_STORAGE_DIR}}/exports -{{DL_STORAGE_DIR}}/backup
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# the socket's directory, shared by the instances (kept while any runs)
+RuntimeDirectory=datalake
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=datalake-query.target
