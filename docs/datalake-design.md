@@ -918,12 +918,27 @@ approval per feed.
 
 ## 15. The owner's answers
 
-**2026-10-10 — answered so far** (D1–D16 await the walk-through of §13):
+**2026-10-10 — every recommendation of §13 taken** (the label and the repository's visibility answered first, then the four open
+questions, then D1–D16 "as recommended"):
 
 | # | Decision | Where it lives |
 |---|---|---|
-| D1 (part) | **DNS label `datalake`** (`datalake.<domain>`) | `maludb-os.json`; §14 |
-| D16 (part) | **The repository public** (`github.com/maludb/maludb-os-datalake`) | the org; §14 |
+| D1 | **"Data Lake", key `datalake`, DNS label `datalake`**, database `<tenant>_datalake` (the application's tables + the lake's catalog in schema `ducklake`), roles `datalake_rw` / `_records_ro` / `_activity_ro` + the engine's `datalake_lake` and `datalake_query`, prefix `dl_`, Technology & Infrastructure, category `database` | `maludb-os.json`; §14; K36 |
+| D2 | **DuckLake 1.0 on a PostgreSQL catalog in our own database + Parquet on local disk + DuckDB 1.5.6 pinned inside two services of our own (the writer, the query service)**; extensions vendored; no Polars; no object storage; no memory database of the lake's own | §0.3; §6.1; `services/` |
+| D3 | **Zones landing → raw → curated → product, plus sandbox and quarantine** | §6.1 |
+| D4 | **The amendment by name** — a lake extract is dated, read-only, provenance-carrying, never a copy of a table; the provider stays the system of record; erasure reaches the lake; v1 over the siblings' paged K7 shares; **K37 dataset feeds** for bulk; never a sibling's or the kernel's database | §0.5; §12; the plugin's `shared-schema.md` |
+| D5 | **Four roles: Member (`user`), Analyst, Data engineer, Lake admin**; owner and steward rows on a dataset; an external member discovers only what names them | §3; `dl_roles`; `app_roles` |
+| D6 | **Data deny-by-default; the catalog open by classification (stubs for confidential and restricted); levels discover / read (masked) / read_unmasked / write / own; grants on a dataset, a zone or a tag with row filters and expiries; masks by classification and personal kind; ONE query service; the web application blind to the files and the catalog's keys; DuckLake per-file encryption on; the admin's rows by logged break-glass** | §3; `docs/build-specs/access-and-policies.md` |
+| D7 | **Four layers of query safety; 30 / 60 / 300 s; 1,000 rows shown, 100,000 downloaded; 3 workers × 1.5 GB; 2 concurrent per person; 30 a minute per agent** — settings | §6.5; `docs/build-specs/query-service.md` |
+| D8 | **An agent in a person's chat turn reads the intersection with that person (K38); a duty reads as the agent; no `read_unmasked` by default; fail closed until K38** | §3 rule 8; §8 |
+| D9 | **Checks in ODCS's vocabulary on every load and on schedule; blocking checks quarantine; incidents with the downstream; freshness; certification computed, set by an engineer, lost by itself; verified queries unverified on edit; contracts exported as ODCS v3.2.0** | §6.4 |
+| D10 | **Deterministic classifiers propose a personal kind a person confirms; masked from the first load; no personal or confidential sample ever reaches a model; Presidio Extended** | §6.3; §6.5 |
+| D11 | **Landing 30 days after a good load; snapshots 30 days; query text 90 days, the audit 2 years; erasure that reports, pauses, rewrites, expires and proves; backups catalog-first under a lock, 14 days, a restore drill** | §6.7 |
+| D12 | **`upload`, `http_file`, `sftp_file`, `k7`, `postgres` (an outside database only) in v1; `rescue` by default; inference proposes, a person confirms** | §6.3 |
+| D13 | **The SQL editor, saved and verified queries, metrics, save-as-dataset, exports within limits; the expert answers catalog → metric → verified query → SQL and shows its work** | §6.5; §5 |
+| D14 | **A key acts as its person (60/min, 2,000/day; ad-hoc SQL with `sql.editor` and the key's switch); three shares `datasets_index`, `product_rows`, `metric_value`** | §4; §8 |
+| D15 | **Expert and Data Steward hired on install; the pause list of §5; the Steward weekdays 06:40** | §5; `agents[]` |
+| D16 | **On request, not a default; the repository public; ports 8193 / 8847 / 8848, scratch 9001–9007; the Spaces division** — the planning model builds K36, Phase 0 (the engine proof first), Phases 1–2, slice 1 and the exemplars (slices 2, 3, 5, with 4 between); Sonnet 5.5 builds slices 6–10 and Phase 4 | §14; `CLAUDE.md` |
 | (a) | **The data directory on a dedicated volume.** This host's volume group has no free extent (`ubuntu-vg` 529.99 GB, VFree 0 — the root volume was grown over a second 500 GB disk on 2026-10-05), so the owner adds **a new virtual disk in Proxmox**, makes it its own volume group (`lake-vg`) and filesystem, and mounts it at **`/srv/lake`** (`noatime`) = `DL_STORAGE_DIR`; DuckDB's spill (`tmp/`) and the backups' local copy live there too. `deploy/ROOT_STEPS.sh` **refuses** the storage step when `DL_STORAGE_DIR` is on the same filesystem as PostgreSQL's data directory (`--allow-shared-volume` for a scratch proof only) | §14; `deploy/ROOT_STEPS.sh` |
 | (b) | **The VM's CPU type switched to `host` (or `x86-64-v3`)** in Proxmox — a VM restart, the owner's; Phase 0's `tests/engine/cpu.sh` reruns afterwards and records the flags it found. The design does not depend on it: the pinned set runs on x86-64-v2 too, and Polars stays out of v1 either way | §0.3; §12 |
 | (c) | **The first sibling data** (`reads[]` in v1): the GL's `account_balances`, `ar_aging_summary`, `ap_due_summary`; Inventory's `sales_closed` (paged); Sales CRM's `deals_won` (paged, `since`) — money and sales first. The other shares of §8 are later `reads[]`, one line each | §8; `maludb-os.json` |
@@ -931,8 +946,9 @@ approval per feed.
 
 ## 16. State
 
-**2026-10-10, later — the open questions answered** (§15: (a) a dedicated volume at `/srv/lake` on a new Proxmox disk — the volume group has no free space; (b) the CPU type to `host`; (c) the GL's three summaries, Inventory's `sales_closed`, Sales CRM's `deals_won` first; (d) K37 people feeds pseudonymised by default). D1–D16 still await the owner.
+**2026-10-10, later — APPROVED: D1–D16 taken as recommended** (§15). **Next:** K36 (kernel db/179) → Phase 0 — the engine proof first (`services/`, `tests/engine/`), the kit, the schema and its proof, `maludb-os.json`, the agents, the skills, `deploy/`.
 
+**2026-10-10, later — the open questions answered** (§15: (a) a dedicated volume at `/srv/lake` on a new Proxmox disk — the volume group has no free space; (b) the CPU type to `host`; (c) the GL's three summaries, Inventory's `sales_closed`, Sales CRM's `deals_won` first; (d) K37 people feeds pseudonymised by default). 
 **2026-10-10 — planned; awaiting the owner's decisions (§13).** The research of §0 done in four tracks (the requirements R1–R71 and how
 lakes fail; the front ends of eighteen products screen by screen; the formats, engines and this server, with DuckDB, PyArrow and
 Polars tested on its CPU; the estate's K7 shares, reusable tables and free numbers), reported in `docs/research/`. Repository

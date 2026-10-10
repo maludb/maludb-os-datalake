@@ -12,10 +12,10 @@ An application of the kernel [`maludb-os-core`](https://github.com/maludb/maludb
 [`maludb-os-integration`](https://github.com/maludb/maludb-os-integration). Installed by the kernel's installer at
 `/srv/apps/datalake`, served as `datalake.<domain>`, signed in by the kernel, reached by its agents through MCP.
 
-- The plan: `docs/datalake-design.md` (planned 2026-10-10; awaiting the owner's decisions). The research behind it:
+- The plan: `docs/datalake-design.md` (planned and approved 2026-10-10). The research behind it:
   `docs/research/`.
 - The rules for working here: `CLAUDE.md`.
 - Catalog key `datalake`; ports 8193 (Apache, internal), 8847 (records MCP), 8848 (activity MCP).
 - On request, not a default install.
 
-**State (2026-10-10):** planned — `docs/datalake-design.md`, awaiting the owner's decisions (§13). Nothing is built yet.
+**State (2026-10-10):** planned and APPROVED (D1–D16 and four open questions, every recommendation — `docs/datalake-design.md` §15); Phase 0 in progress.

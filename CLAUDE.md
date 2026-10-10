@@ -76,5 +76,5 @@ the API, K7 shares). The owner's brief (2026-10-10): our own data lake, **no exi
 
 ## State
 2026-10-10 — planned; the four open questions answered as recommended (§15: `/srv/lake` on a dedicated volume, the CPU type `host`,
-the GL / Inventory / CRM reads first, people feeds pseudonymised); D1–D16 await the owner. Nothing built. Ports 8193 / 8847 /
+the GL / Inventory / CRM reads first, people feeds pseudonymised); **D1–D16 APPROVED as recommended** the same day. Phase 0 in progress. Ports 8193 / 8847 /
 8848 and scratch 9001–9007 reserved; K36 (the kernel's catalog row) follows the owner's go.
