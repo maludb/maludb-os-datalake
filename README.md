@@ -18,4 +18,4 @@ An application of the kernel [`maludb-os-core`](https://github.com/maludb/maludb
 - Catalog key `datalake`; ports 8193 (Apache, internal), 8847 (records MCP), 8848 (activity MCP).
 - On request, not a default install.
 
-**State (2026-10-10):** planned and APPROVED (D1–D16 and four open questions, every recommendation — `docs/datalake-design.md` §15); PHASE 0 COMPLETE — the kit (83 checks), the schema (158), the engine on DuckLake + DuckDB with its sandboxed query service (157; 50 million rows timed on this host); Phase 1 WRITTEN (80 screens, 105 actions, 75 tools, 14 specs — `docs/phase1-consistency.md`), awaiting the owner's approval.
+**State (2026-10-10):** planned and APPROVED (D1–D16 and four open questions, every recommendation — `docs/datalake-design.md` §15); PHASE 0 COMPLETE — the kit (83 checks), the schema (158), the engine on DuckLake + DuckDB with its sandboxed query service (157; 50 million rows timed on this host); Phase 1 WRITTEN (80 screens, 105 actions, 75 tools, 14 specs — `docs/phase1-consistency.md`), APPROVED by the owner; Phase 2 in progress.
