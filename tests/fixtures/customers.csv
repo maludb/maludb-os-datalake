@@ -1,0 +1,9 @@
+customer_id,name,email,phone,card_number,city,signed_up,balance
+00042,Ada Example,ada.example@example.invalid,+1-555-0101,4111111111111111,"Portland, OR",2026-01-15,120.50
+00043,Bo Sample,bo.sample@example.invalid,+1-555-0102,5555555555554444,"Austin, TX",2026-02-01,0
+00044,Cy Testcase,cy.testcase@example.invalid,+1-555-0103,378282246310005,Denver,2026-02-11,75.25
+00099,Bad Row,bad@example.invalid,+1-555-0199,4111111111111111,Nowhere,2026-01-01,1,EXTRA
+00045,Di Fixture,di.fixture@example.invalid,+1-555-0104,6011111111111117,"Boston, MA",2026-03-09,15
+00046,Ed Mock,ed.mock@example.invalid,+1-555-0105,4012888888881881,"Chicago, IL",2026-03-30,9.99
+00047,Fay Dummy,fay.dummy@example.invalid,+1-555-0106,4111111111111111,"Seattle, WA",not-a-date,abc
+00042,Ada Example,ada.new@example.invalid,+1-555-0101,4111111111111111,"Portland, OR",2026-01-15,130.00

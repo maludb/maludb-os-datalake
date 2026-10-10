@@ -76,5 +76,5 @@ the API, K7 shares). The owner's brief (2026-10-10): our own data lake, **no exi
 
 ## State
 2026-10-10 — planned; the four open questions answered as recommended (§15: `/srv/lake` on a dedicated volume, the CPU type `host`,
-the GL / Inventory / CRM reads first, people feeds pseudonymised); **D1–D16 APPROVED as recommended** the same day. Phase 0 in progress. Ports 8193 / 8847 /
+the GL / Inventory / CRM reads first, people feeds pseudonymised); **D1–D16 APPROVED as recommended** the same day. **PHASE 0 COMPLETE** the same day: K36 (kernel db/179); the kit (83 checks); the schema db/001–017 (158 checks, `tests/phase0/schema.sh`); the engine (`services/`, 157 checks, `tests/engine/run.sh`; the 50-million-row timings; `tests/engine/FINDINGS.md`, design §6.9); `maludb-os.json`, the two agents, nine skills, `deploy/`; the installer's plan clean. Next: the owner's go → Phase 1. Ports 8193 / 8847 /
 8848 and scratch 9001–9007 reserved; K36 (the kernel's catalog row) follows the owner's go.

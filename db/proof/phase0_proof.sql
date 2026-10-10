@@ -463,18 +463,26 @@ SELECT pg_temp.check((dl_retention_of(pg_temp.ds('curated.sales_orders'))).keep_
 SELECT pg_temp.refused($$INSERT INTO erasure_requests (identifiers, reason, requested_by) VALUES ('[{"kind": "shoe_size", "value": "44"}]', 'test', 1)$$, 'personal kind', 'an identifier is a personal kind');
 INSERT INTO erasure_requests (identifiers, reason, requested_by) VALUES ('[{"kind": "email", "value": "buyer7@example.invalid"}]', 'GDPR Art. 17 request #12', 1);
 SELECT pg_temp.keep('er', (SELECT id FROM erasure_requests));
+RESET ROLE; SET ROLE datalake_lake;
+INSERT INTO datasets (key, zone, name, title, owner_member_id, status) VALUES ('curated.order_lines', 'curated', 'order_lines', 'Order lines', 28, 'active');
+INSERT INTO dataset_columns (dataset_id, name, ordinal, physical_type, references_dataset_id, references_column)
+VALUES (pg_temp.ds('curated.order_lines'), 'order_ref', 0, 'VARCHAR', pg_temp.ds('curated.sales_orders'), 'order_id');
+RESET ROLE; SET ROLE datalake_rw; SELECT pg_temp.as_member(1);
 SELECT pg_temp.check((SELECT count(*) FROM dl_erasure_targets(pg_temp.i('er')) WHERE via = 'column') = 2
-                     AND (SELECT string_agg(key || '.' || column_name, ',' ORDER BY key) FROM dl_erasure_targets(pg_temp.i('er'))) = 'curated.sales_orders.customer_email,raw.crm_deals.buyer_email',
+                     AND (SELECT string_agg(key || '.' || column_name, ',' ORDER BY key) FROM dl_erasure_targets(pg_temp.i('er')) WHERE via = 'column') = 'curated.sales_orders.customer_email,raw.crm_deals.buyer_email',
                      'the scan looks in every email column, in every zone');
-SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s)', pg_temp.i('er')), 'after its scan reports', 'an erasure is approved only after its scan reports');
+SELECT pg_temp.check((SELECT key || '.' || column_name || ' → ' || references_column FROM dl_erasure_targets(pg_temp.i('er')) WHERE via = 'reference')
+                     = 'curated.order_lines.order_ref → order_id', 'the scan follows a declared reference: the subject''s order lines, keyed by order id (FINDINGS §7)');
+SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s, true)', pg_temp.i('er')), 'after its scan reports', 'an erasure is approved only after its scan reports');
 RESET ROLE; UPDATE erasure_requests SET status = 'awaiting_approval', found = '{"curated.sales_orders": {"rows": 1}, "raw.crm_deals": {"rows": 1}}' WHERE id = pg_temp.i('er');
 SET ROLE datalake_rw; SELECT pg_temp.as_member(1);
-SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s)', pg_temp.i('er')), 'other than its requester', 'nobody approves their own erasure');
+SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s, true)', pg_temp.i('er')), 'other than its requester', 'nobody approves their own erasure');
 SELECT pg_temp.as_member(28);
-SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s)', pg_temp.i('er')), 'Lake admin', 'an engineer cannot approve an erasure');
+SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s, true)', pg_temp.i('er')), 'Lake admin', 'an engineer cannot approve an erasure');
 SELECT pg_temp.as_member(2);
-SELECT dl_erasure_approve(pg_temp.i('er'));
-SELECT pg_temp.check((SELECT status = 'erasing' AND approved_by = 2 FROM erasure_requests WHERE id = pg_temp.i('er'))
+SELECT pg_temp.refused(format('SELECT dl_erasure_approve(%s, false)', pg_temp.i('er')), 'time travel', 'an approval acknowledges that time travel ends lake-wide (FINDINGS §7)');
+SELECT dl_erasure_approve(pg_temp.i('er'), true);
+SELECT pg_temp.check((SELECT status = 'erasing' AND approved_by = 2 AND time_travel_acknowledged FROM erasure_requests WHERE id = pg_temp.i('er'))
                      AND (SELECT count(*) FROM lake_jobs WHERE kind = 'erasure' AND ref_id = pg_temp.i('er')) = 1, 'approval queues the erasure for the writer');
 RESET ROLE;
 SET ROLE datalake_records_ro; SELECT pg_temp.as_member(1);
@@ -506,7 +514,8 @@ SELECT pg_temp.check((SELECT string_agg(column_name, ',' ORDER BY ordinal_positi
                      = 'id,sha256,byte_size,storage_path,ref_count,created_at,deleted_at', 'blobs: DocCloud''s canonical columns, in order');
 
 SET ROLE datalake_rw;
-SELECT pg_temp.check((SELECT count(*) FROM members) = 10 AND (SELECT count(*) FROM datasets) >= 8, 'the fixtures are there until the rollback');
+SELECT pg_temp.check((SELECT count(*) FROM members) = 10 AND (SELECT count(*) FROM datasets) >= 9, 'the fixtures are there until the rollback');
+SELECT pg_temp.check((SELECT inline_flush_minutes FROM dl_settings) = 60, 'small loads are flushed out of the catalog hourly (FINDINGS §4)');
 RESET ROLE;
 
 \o

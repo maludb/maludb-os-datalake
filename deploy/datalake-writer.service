@@ -20,8 +20,9 @@ Restart=on-failure
 RestartSec=5
 # files it makes: group-readable (the query service reads lake/ by group datalake; PHP serves exports/ by group www-data, setgid there)
 UMask=0027
-# memory: dl_settings.writer_memory_mb (3 GB) is DuckDB's limit; this is the hard ceiling over it
-MemoryMax=3584M
+# memory: dl_settings.writer_memory_mb (3 GB) is DuckDB's limit, which does NOT bound the whole process — the engine proof peaked at
+# 3,569 MB under a 3 GB limit (tests/engine/FINDINGS.md §10); this is the hard ceiling over it
+MemoryMax=4096M
 TasksMax=128
 NoNewPrivileges=yes
 PrivateTmp=yes
@@ -29,6 +30,10 @@ ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths={{DL_STORAGE_DIR}}
 ReadOnlyPaths={{APP_DIR}}
+# the writer loads httpfs (DuckLake's ENCRYPTED writes need its crypto module — FINDINGS §2) and httpfs can reach URLs: nothing leaves
+# the host; loopback stays open for PostgreSQL. Pulls from the outside are the worker's (Inventory's client), never the writer's.
+IPAddressDeny=any
+IPAddressAllow=localhost
 
 [Install]
 WantedBy=multi-user.target

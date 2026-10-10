@@ -60,19 +60,27 @@ for r in datalake_lake datalake_query; do
 done
 HOST=$(envval DB_HOST); HOST=${HOST:-127.0.0.1}
 PORT=$(envval DB_PORT); PORT=${PORT:-5432}
-for pair in "DL_LAKE_DB_DSN:datalake_lake" "DL_QUERY_DB_DSN:datalake_query"; do
-    key=${pair%%:*}; role=${pair##*:}
-    dsn=$(envval "$key")
-    pw=$(printf '%s' "$dsn" | sed -nE "s#^postgresql://$role:([^@]+)@.*#\\1#p")
-    # the roles are the CLUSTER's: a scratch run (DL_ENV_FILE elsewhere) on a host where the lake is installed keeps the installed password
-    if [ -z "$pw" ] && [ "$ENVF" != "$APP_DIR/config/.env" ] && [ -r "$APP_DIR/config/.env" ]; then
-        pw=$(sed -n "s/^$key=//p" "$APP_DIR/config/.env" | tail -1 | sed -nE "s#^postgresql://$role:([^@]+)@.*#\\1#p")
-    fi
+# The two connection strings carry a libpq PASSFILE, never a password (tests/engine/FINDINGS.md §2: duckdb_databases() prints an
+# attached catalog's conninfo verbatim; the engine refuses a DSN with `password=`). One passfile per service user, 0600, owned by it:
+# /etc/datalake/lake.pgpass (datalake-writer), /etc/datalake/query.pgpass (datalake-query); a scratch run (not root) keeps them under
+# var/pass/. An existing passfile's password is kept; a new one is generated; the password reaches psql on its standard input.
+if [ "$(id -u)" = 0 ]; then PASSDIR=${DL_PASS_DIR:-/etc/datalake}; else PASSDIR=${DL_PASS_DIR:-$APP_DIR/var/pass}; fi
+install -d -m 0755 "$PASSDIR"
+for spec in "DL_LAKE_DB_DSN:datalake_lake:lake:datalake-writer" "DL_QUERY_DB_DSN:datalake_query:query:datalake-query"; do
+    IFS=: read -r key role short svc <<EOS
+$spec
+EOS
+    pf="$PASSDIR/$short.pgpass"
+    pw=""
+    if [ -r "$pf" ]; then pw=$(head -1 "$pf" | cut -d: -f5-); fi
     if [ -z "$pw" ]; then pw=$(openssl rand -hex 24); fi
-    # the password reaches psql on its standard input, never its command line
     printf "ALTER ROLE %s LOGIN PASSWORD '%s';\n" "$role" "$pw" | $AS_PG psql -v ON_ERROR_STOP=1 -q -d "$DB_NAME" >/dev/null
-    want="postgresql://$role:$pw@$HOST:$PORT/$DB_NAME"
-    if [ "$dsn" != "$want" ]; then envset "$key" "$want"; echo "   $key written to $(basename "$ENVF") (the password is not shown)"; else echo "   $key kept"; fi
+    ( umask 077; printf '%s:%s:%s:%s:%s\n' "$HOST" "$PORT" "$DB_NAME" "$role" "$pw" > "$pf.new" && mv "$pf.new" "$pf" )
+    if [ "$(id -u)" = 0 ] && id -u "$svc" >/dev/null 2>&1; then chown "$svc" "$pf"; fi
+    chmod 0600 "$pf"
+    want="host=$HOST port=$PORT dbname=$DB_NAME user=$role passfile=$pf"
+    dsn=$(envval "$key")
+    if [ "$dsn" != "$want" ]; then envset "$key" "$want"; echo "   $key written to $(basename "$ENVF") (a passfile — no password in the file)"; else echo "   $key kept"; fi
 done
 $PSQL <<SQL
 CREATE SCHEMA IF NOT EXISTS ducklake AUTHORIZATION datalake_lake;
@@ -81,6 +89,10 @@ REVOKE ALL ON SCHEMA ducklake FROM $RW, $REC, $ACT;
 GRANT USAGE ON SCHEMA ducklake TO datalake_query;
 GRANT SELECT ON ALL TABLES IN SCHEMA ducklake TO datalake_query;
 ALTER DEFAULT PRIVILEGES FOR ROLE datalake_lake IN SCHEMA ducklake GRANT SELECT ON TABLES TO datalake_query;
+-- tests/engine/FINDINGS.md §2: DuckLake updates catalog rows through a temporary table; a DuckLake connection can sit idle in transaction
+GRANT TEMPORARY ON DATABASE $DB_NAME TO datalake_lake;
+ALTER ROLE datalake_lake SET idle_in_transaction_session_timeout = '10min';
+ALTER ROLE datalake_query SET idle_in_transaction_session_timeout = '2min';
 SQL
 echo "   ducklake owned by datalake_lake; datalake_query reads it; $RW, $REC and $ACT hold nothing on it"
 

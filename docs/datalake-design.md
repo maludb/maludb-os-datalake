@@ -627,6 +627,26 @@ timeout`, `saved_query.save|share|verify|unverify|delete`, `metric.create|update
 edit|dismiss`, `agent.dispatch|reply|fail`, `settings.save`, `share.read`, `key.mint|rotate|revoke|rate_limited`,
 `token.mint|revoke`, `member.sign_on`, `directory.sync`, `screen.view`.
 
+### 6.9 What the engine proof changed (Phase 0, 2026-10-10 — `tests/engine/FINDINGS.md`)
+
+The engine proof (`tests/engine/run.sh`: CPU 9, engine 75, query service 73 — **157 checks**; `timing.sh`: 50 million rows over 200
+datasets) confirmed D2 on this host and changed the design in these places — each is now built into the schema, `deploy/` or `services/`:
+
+| Finding | Where it lives now |
+|---|---|
+| DuckLake's ENCRYPTED writes need the `httpfs` extension (DuckDB's built-in crypto only decrypts); `httpfs` can reach URLs | the writer loads `httpfs`, the query service never does; four vendored extensions; the writer's unit `IPAddressDeny=any` + `IPAddressAllow=localhost` |
+| The writer's role needs `TEMPORARY`; the query role needs SELECT on catalog tables created later; a DuckLake connection can sit idle in transaction | `deploy/os-provision.sh`: `GRANT TEMPORARY`, default privileges, `idle_in_transaction_session_timeout` on both engine roles |
+| `duckdb_databases()` prints an attached catalog's connection string verbatim | the engine's DSNs carry a libpq **passfile** (`/etc/datalake/{lake,query}.pgpass`, 0600, one per service user), never a password |
+| SELECT on the catalog + read access to `lake/` = every row (per-file keys in `ducklake_data_file`); inlined rows are plain; column statistics hold real values | the web application's and read servers' roles hold nothing on schema `ducklake`; `db/engine/001_lake_views.sql` exposes sizes, counts, names, types and commits only, behind the dataset wall |
+| Small loads (≤ 10 rows) stay as plain PostgreSQL rows until flushed — in WAL and backups too | the worker flushes inlined data every `inline_flush_minutes` (60), not only at night (db/017) |
+| An erasure missed a subject's rows keyed by a reference (orders by `customer_id`) | `dataset_columns.references_dataset_id/_column`; `dl_erasure_targets()` follows references; `verify()` stays independent of the scan (db/017) |
+| Expiring snapshots is lake-wide: an erasure ends time travel before *now* for every dataset | an approval must acknowledge it (`dl_erasure_approve(id, true)`); the screen says it before the button (db/017) |
+| After the lock the attached lake is still reachable by name; `ducklake_list_files()` returns the keys | the allow-list is load-bearing: a random alias per request, the `catalog_reference` refusal, every table function refused (the list computed from the engine at start); the `dl_` prefix reserved |
+| A transform reads through its owner's views | a product made from masked inputs is masked for good; `incremental_merge` only for row-wise SQL (an aggregate or a window must be `replace`) |
+| DuckDB's `memory_limit` does not bound the process (peak 3,569 MB under 3 GB) | the writer's `MemoryMax` 4 GB; each query worker's 2.5 GB |
+| Promotion has a fixed cost of ~5 s per small dataset at 400 tables (catalog-wide metadata lookups per call) | slice 5's spec: no catalog-wide lookups per call |
+| Timings on this host | load 50 M rows 286 s · promote 1,042 s · a filtered query over 25 M rows 3.8 s, an aggregate 4.7 s, a join 3.7 s, a masked scan 6.7 s · maintenance over 400 tables 128 s · erasure scan 98 s, erase 135 s, verify 335 s · 3.3 GB encrypted for 50 M raw + 50 M curated rows |
+
 ## 7. The question inventory — what the Data Lake exists to answer
 
 Kind R = record (the records MCP), A = activity (the activity MCP). Who = the lowest role that may ask (every answer is filtered by
@@ -845,6 +865,7 @@ expected metrics.
 | **K36** | **Catalog entry `datalake`** (kind `ours`, Technology & Infrastructure, category `database` — already admitted by db/172 and db/175 —, `feather-database`); on request, not a default (D16) | owed: kernel `db/179`, after the owner's go |
 | **K37** | **Dataset feeds** — a provider declares `feeds[]` in `maludb-os.json` (`name`, `description`, `columns[{name, type, classification, personal_kind}]`, `key`, `watermark`, `people`), the installer records them, **a super-admin approves each feed for a consumer** (`bin/app_connection.php` gains `--feed`), the consumer asks `POST /api/v1/apps/feed.php {provider, feed, cursor}` → the kernel checks the connection, mints a 60-second single-use feed token and answers the provider's loopback URL; the provider answers a page (≤ 10,000 rows, ≤ 16 MB, NDJSON or Arrow IPC) and the next cursor, the bytes never through the kernel's PHP; every page logged `application.feed` (counts, never rows); a `people: true` feed only with the owner's explicit approval and **pseudonymised member ids by default** (the owner's (d), 2026-10-10) — and the plugin's rule amended (D4) | owed: kernel spec + db/180; the plugin 0.10.0 (`sms-and-reads.md` → `feeds`; `shared-schema.md`'s exception) |
 | **K38** | **Run facts carry who asked** — `POST /api/v1/runs/facts.php` answers `requested_by_member_id` (from `agent_runs.requested_by`) and whether that person holds this application, for a `chat` run (and a dispatched run that names a person); the application intersects the agent's and the person's access. Until then the lake fails closed (§8) | owed: kernel, a few lines in `html/api/v1/runs/facts.php` + the plugin's `agents.md` |
+| **K39** | **The installer and two runtimes, and template units** — `bin/app_install.php` builds one venv (`runtime.python`) and enables only `.service`/`.timer` units: the lake's engine venv (`services/.venv`) is built by `deploy/ROOT_STEPS.sh` and its query pool (`datalake-query@.service` + `datalake-query.target`) installed and started there. Owed: `runtime.python` as a list, a `.target` enabled, an `@`-template rendered and skipped by `enable` | owed: kernel installer; worked around in ROOT_STEPS |
 | K26 | K7 tells a provider who asks; `timeout_seconds` | **built** (db/173) — `product_rows`, `metric_value` declare 30 |
 | K16 | K8 (wake an agent from an application) — owed to every sibling | the chat-turn dispatch until then |
 | K6 | texts to a member | **built** — an incident's text |
@@ -905,7 +926,7 @@ approval per feed.
 - `maludb-os.json`: `catalog_key datalake`, `name "Data Lake"`, `business_area "Technology & Infrastructure"`, `category database`,
   `icon feather-database`, `criticality medium`, `vhost.label datalake`, no `scopes`, `sso`, `directory {reads: true, writes: false}`,
   `assistant {command_bar: true, agent: expert}`, `agents [expert, steward]` each `hired_on_install: true`, `approvals` (§5),
-  endpoints, services, `runtime.python {dir: services, venv: services/.venv, requirements: services/requirements.txt}`,
+  endpoints, services (the query pool as `datalake-query.target`), no `runtime.python` (the installer builds `mcp/venv` for the MCP servers; the engine's `services/.venv` is `deploy/ROOT_STEPS.sh`'s — K39),
   `database.provision deploy/os-provision.sh`, `shares` (three; 30 s), `reads` (five — the owner's (c), §8).
 - Env: the contract's required keys plus `DL_STORAGE_DIR`, `DL_BACKUP_DIR`, `DL_QUERY_SOCKET`, `DL_QUERY_WORKERS` (3),
   `DL_WRITER_MEMORY`, `DL_QUERY_MEMORY`, `DL_EXTENSION_DIR`, `DL_LAKE_DB_DSN` / `DL_QUERY_DB_DSN` (the engine roles' connections, read
@@ -945,6 +966,15 @@ questions, then D1–D16 "as recommended"):
 | (d) | **K37 feeds that name people carry pseudonymised member ids by default** (a keyed hash per installation, stable so joins work, the same salt discipline as the masks); real names only with the owner's explicit approval per feed, recorded on the connection | §12 (K37) |
 
 ## 16. State
+
+**2026-10-10, later — PHASE 0 COMPLETE.** K36 built (kernel db/179). The kit (`tests/phase0/run.sh`, 83 checks); the schema db/001–017
+(`db/proof/phase0_proof.sql` via `tests/phase0/schema.sh`, **158 checks** over ten callers — found and fixed: NULL-unsafe ownership
+checks that let a non-owner decide where a dataset had no steward; the query service's role held table grants it does not need); the
+engine (`services/lake/`, `services/query/`, `services/bin/`; `tests/engine/run.sh` **157 checks**; `timing.sh` the 50-million-row set;
+`tests/engine/FINDINGS.md` — §6.9 records what it changed); `db/engine/001_lake_views.sql`; `maludb-os.json`, `os/{expert,steward}.md`,
+nine skills, `deploy/` (passfiles, the engine roles' grants, the hardened writer and query units, ROOT_STEPS refusing a data directory on
+PostgreSQL's filesystem); the installer's `plan` clean (36 steps). **Next: the owner's go → Phase 1** (the tool surface, the action
+manifest, the three build specs and the slice specs, for approval before any PHP).
 
 **2026-10-10, later — APPROVED: D1–D16 taken as recommended** (§15). **Next:** K36 (kernel db/179) → Phase 0 — the engine proof first (`services/`, `tests/engine/`), the kit, the schema and its proof, `maludb-os.json`, the agents, the skills, `deploy/`.
 

@@ -1,0 +1,13 @@
+# The Data Lake engine — pinned exactly (design §6.1, D2). This VM's CPU is x86-64-v2 (no AVX): every wheel
+# here was smoke-tested on it (tests/engine/cpu.sh) before it was pinned. Change a pin only behind that test.
+duckdb==1.5.6
+pyarrow==26.0.0
+sqlglot==30.22.0
+psycopg[binary]==3.3.6
+psycopg-binary==3.3.6
+python-calamine==0.8.3
+openpyxl==3.1.5
+et_xmlfile==2.0.0
+xlrd==2.0.2
+typing_extensions==4.16.0
+pytz==2026.5           # DuckDB needs it to hand TIMESTAMPTZ values to Python
