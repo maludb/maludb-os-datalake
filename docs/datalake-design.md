@@ -733,13 +733,13 @@ Plus the contract's: `app_roles`, one guarded `search` on each server (the recor
   | `datasets_index` | any sibling, Knowledge, Spaces | `os.datalake-datasets/1` | the products granted to the consumer: key, title, description, columns, as-of, certification |
   | `product_rows` | the GL, Spaces' databases, Projects' reports | `os.datalake-rows/1` | a granted product's rows, **paged ≤ 500 and ≤ 256 kB**, `since` by the product's ordering column; `timeout_seconds` 30 |
   | `metric_value` | any sibling's home or report | `os.datalake-metric/1` | a certified metric granted to the consumer by grain and dimension over a period; `timeout_seconds` 30 |
-- **K7 — the lake as a consumer** (`reads[]`, the v1 inbound from the siblings — open question (c) picks the first set): the period
-  summaries and indexes the siblings share today — GL `account_balances`, `ar_aging_summary`, `ap_due_summary`; Inventory
-  `sales_closed` (paged), `purchases_received`, `stock_valuation`; ProcessCore `shipments_by_period`, `inventory_valuation`; Consultant
-  Tracking `invoices_issued`, `credit_notes_issued`, `expenses_by_category`, `unbilled_summary`, `engagement_list`; Sales CRM
-  `accounts_index`, `deals_won` (paged, `since`); Shareholder Intelligence `ownership_summary`, `events_index`; Reservations
-  `covers_by_service` (per site); DocCloud `documents_index` (metadata only). **Never** a `people: true` share (HR's alone), never
-  Spaces' pages (they answer as the consumer's expert — Extended).
+- **K7 — the lake as a consumer** (`reads[]`). **Version 1 — the owner's (c), 2026-10-10:** the GL's `account_balances`,
+  `ar_aging_summary`, `ap_due_summary`; Inventory's `sales_closed` (paged); Sales CRM's `deals_won` (paged, `since`). **Later, one line
+  each** — the other period summaries and indexes the siblings share today: Inventory `purchases_received`, `stock_valuation`;
+  ProcessCore `shipments_by_period`, `inventory_valuation`; Consultant Tracking `invoices_issued`, `credit_notes_issued`,
+  `expenses_by_category`, `unbilled_summary`, `engagement_list`; Sales CRM `accounts_index`; Shareholder Intelligence
+  `ownership_summary`, `events_index`; Reservations `covers_by_service` (per site); DocCloud `documents_index` (metadata only).
+  **Never** a `people: true` share (HR's alone), never Spaces' pages (they answer as the consumer's expert — Extended).
 - **Public doors** (allow-listed in the vhost): `/api/v1/*` (key-checked), `/mcp/records`, `/mcp/activity`. No `auth_kind: none`
   door at all.
 - **Live-ness without a socket**: an upload reports per part; the mapping screen polls its sniff; the load page polls every 5 s while
@@ -843,14 +843,14 @@ expected metrics.
 | # | Item | State |
 |---|---|---|
 | **K36** | **Catalog entry `datalake`** (kind `ours`, Technology & Infrastructure, category `database` — already admitted by db/172 and db/175 —, `feather-database`); on request, not a default (D16) | owed: kernel `db/179`, after the owner's go |
-| **K37** | **Dataset feeds** — a provider declares `feeds[]` in `maludb-os.json` (`name`, `description`, `columns[{name, type, classification, personal_kind}]`, `key`, `watermark`, `people`), the installer records them, **a super-admin approves each feed for a consumer** (`bin/app_connection.php` gains `--feed`), the consumer asks `POST /api/v1/apps/feed.php {provider, feed, cursor}` → the kernel checks the connection, mints a 60-second single-use feed token and answers the provider's loopback URL; the provider answers a page (≤ 10,000 rows, ≤ 16 MB, NDJSON or Arrow IPC) and the next cursor, the bytes never through the kernel's PHP; every page logged `application.feed` (counts, never rows); a `people: true` feed only with the owner's explicit approval and **pseudonymised member ids by default** (open question d) — and the plugin's rule amended (D4) | owed: kernel spec + db/180; the plugin 0.10.0 (`sms-and-reads.md` → `feeds`; `shared-schema.md`'s exception) |
+| **K37** | **Dataset feeds** — a provider declares `feeds[]` in `maludb-os.json` (`name`, `description`, `columns[{name, type, classification, personal_kind}]`, `key`, `watermark`, `people`), the installer records them, **a super-admin approves each feed for a consumer** (`bin/app_connection.php` gains `--feed`), the consumer asks `POST /api/v1/apps/feed.php {provider, feed, cursor}` → the kernel checks the connection, mints a 60-second single-use feed token and answers the provider's loopback URL; the provider answers a page (≤ 10,000 rows, ≤ 16 MB, NDJSON or Arrow IPC) and the next cursor, the bytes never through the kernel's PHP; every page logged `application.feed` (counts, never rows); a `people: true` feed only with the owner's explicit approval and **pseudonymised member ids by default** (the owner's (d), 2026-10-10) — and the plugin's rule amended (D4) | owed: kernel spec + db/180; the plugin 0.10.0 (`sms-and-reads.md` → `feeds`; `shared-schema.md`'s exception) |
 | **K38** | **Run facts carry who asked** — `POST /api/v1/runs/facts.php` answers `requested_by_member_id` (from `agent_runs.requested_by`) and whether that person holds this application, for a `chat` run (and a dispatched run that names a person); the application intersects the agent's and the person's access. Until then the lake fails closed (§8) | owed: kernel, a few lines in `html/api/v1/runs/facts.php` + the plugin's `agents.md` |
 | K26 | K7 tells a provider who asks; `timeout_seconds` | **built** (db/173) — `product_rows`, `metric_value` declare 30 |
 | K16 | K8 (wake an agent from an application) — owed to every sibling | the chat-turn dispatch until then |
 | K6 | texts to a member | **built** — an incident's text |
 | — | **Feeds owed by the siblings once K37 exists** (first candidates, the owner's order): the GL's journal lines and invoices (G5), Inventory's sales and stock movements (INV4), Sales CRM's deals and activities (CRM1), Help Desk's tickets (HD6), Projects' issues (P5), ProcessCore's runs and shipments (PC1), Consultant Tracking's time and invoices (CT5), txtSchedules' shifts (TS1), HR's headcount (H4 — people) | each sibling's spec when K37 lands |
 | — | MaluDB: **nothing owed in version 1** — the lake keeps no memory database of its own and calls no model; its activity goes to the tenant's memory as every sibling's | the catalog graph is Extended (`/v1/graph/import` exists) |
-| — | **This host** (the owner): the VM's CPU type to `host` / `x86-64-v3` (no AVX today — open question b); a dedicated volume for `DL_STORAGE_DIR` (open question a); `/var/crash/_usr_bin_python3.12.1000.crash` left by the research's Polars test — remove it | the owner's |
+| — | **This host** (the owner; decided 2026-10-10, §15): **a new Proxmox virtual disk → `lake-vg` → mounted at `/srv/lake`** (the volume group has no free space today); **the VM's CPU type to `host` / `x86-64-v3`** (a restart); `/var/crash/_usr_bin_python3.12.1000.crash` left by the research's Polars test — remove it. Both Proxmox changes fit one maintenance window; Phase 0's engine proof runs on a scratch directory before either | the owner's, before Phase 5 |
 
 ## 13. The decisions (recommendations; the owner's answers go in §15)
 
@@ -873,7 +873,7 @@ expected metrics.
 | D15 | Agents | **Expert and Data Steward hired on install; the pause list of §5; the Steward weekdays 06:40** | one agent |
 | D16 | Default, ports, the division | **On request, not a default; the repository public (the owner, 2026-10-10); ports 8193 / 8847 / 8848, scratch 9001–9007; the Spaces division** — the planning model builds K36, Phase 0 (the engine proof first), Phases 1–2, slice 1 and the three exemplars (slices 2, 3, 5, with 4 between); Sonnet 5.5 builds slices 6–10 and Phase 4 | the fifth default install — defensible later, not before it has run at one business |
 
-**Open questions for the owner beyond the table**: (a) **the data directory** — under the install
+**Open questions for the owner beyond the table** — **answered 2026-10-10, every one as recommended (§15)**: (a) **the data directory** — under the install
 (`/srv/apps/datalake/storage`) on the shared volume, or a dedicated volume the owner mounts (recommended: the lake and its spill
 should not be able to fill the disk PostgreSQL lives on); (b) **the VM's CPU type** — switch to `host` / `x86-64-v3` (a restart of
 the VM; every vectorised library faster, Polars usable) or stay on x86-64-v2; (c) **the first sibling data** the lake reads in v1 —
@@ -895,8 +895,9 @@ approval per feed.
 - **System users**: `datalake-writer` (writes `landing/` pulls, `lake/`, `tmp/`, `exports/`) and `datalake-query` (reads `lake/`
   only); `www-data` writes `landing/` uploads through `upload_parts` and **cannot read `lake/`** (mode 0750, group `datalake`).
   The query socket `/run/datalake/query.sock` (group `www-data` + the MCP services' user).
-- **The data directory** `DL_STORAGE_DIR` (default `/srv/apps/datalake/storage`; a mount when the owner names one — open question a):
-  `landing/`, `lake/` (DuckLake's `DATA_PATH`), `exports/`, `tmp/` (spill, capped), `backup/` (unless `DL_BACKUP_DIR` points elsewhere).
+- **The data directory** `DL_STORAGE_DIR` = **`/srv/lake`, a dedicated volume** (the owner's (a), 2026-10-10; `ROOT_STEPS.sh` refuses a
+  directory on PostgreSQL's filesystem unless `--allow-shared-volume`, which only a scratch proof uses): `landing/`, `lake/` (DuckLake's
+  `DATA_PATH`), `exports/`, `tmp/` (spill, capped), `backup/` (unless `DL_BACKUP_DIR` points elsewhere).
 - Units: `datalake-records-mcp`, `datalake-activity-mcp`, `datalake-activity-ingest` (+ timer), `datalake-directory-sync` (+ timer),
   **`datalake-writer`** (long-running, the queue), **`datalake-query@1..3`** (the pool, hardened), `datalake-worker` (+ timer, every
   minute: schedules → writer jobs, source pulls, freshness, the outbox, usage roll-ups, retention, dispatch retries, grant and request
@@ -905,7 +906,7 @@ approval per feed.
   `icon feather-database`, `criticality medium`, `vhost.label datalake`, no `scopes`, `sso`, `directory {reads: true, writes: false}`,
   `assistant {command_bar: true, agent: expert}`, `agents [expert, steward]` each `hired_on_install: true`, `approvals` (§5),
   endpoints, services, `runtime.python {dir: services, venv: services/.venv, requirements: services/requirements.txt}`,
-  `database.provision deploy/os-provision.sh`, `shares` (three; 30 s), `reads` (open question c).
+  `database.provision deploy/os-provision.sh`, `shares` (three; 30 s), `reads` (five — the owner's (c), §8).
 - Env: the contract's required keys plus `DL_STORAGE_DIR`, `DL_BACKUP_DIR`, `DL_QUERY_SOCKET`, `DL_QUERY_WORKERS` (3),
   `DL_WRITER_MEMORY`, `DL_QUERY_MEMORY`, `DL_EXTENSION_DIR`, `DL_LAKE_DB_DSN` / `DL_QUERY_DB_DSN` (the engine roles' connections, read
   only by `services/`), `DL_MASK_SALT_FILE` (the installation's masking salt, root-written, read by the query service alone),
@@ -917,14 +918,20 @@ approval per feed.
 
 ## 15. The owner's answers
 
-**2026-10-10 — answered so far** (the rest awaits the walk-through of §13):
+**2026-10-10 — answered so far** (D1–D16 await the walk-through of §13):
 
 | # | Decision | Where it lives |
 |---|---|---|
 | D1 (part) | **DNS label `datalake`** (`datalake.<domain>`) | `maludb-os.json`; §14 |
 | D16 (part) | **The repository public** (`github.com/maludb/maludb-os-datalake`) | the org; §14 |
+| (a) | **The data directory on a dedicated volume.** This host's volume group has no free extent (`ubuntu-vg` 529.99 GB, VFree 0 — the root volume was grown over a second 500 GB disk on 2026-10-05), so the owner adds **a new virtual disk in Proxmox**, makes it its own volume group (`lake-vg`) and filesystem, and mounts it at **`/srv/lake`** (`noatime`) = `DL_STORAGE_DIR`; DuckDB's spill (`tmp/`) and the backups' local copy live there too. `deploy/ROOT_STEPS.sh` **refuses** the storage step when `DL_STORAGE_DIR` is on the same filesystem as PostgreSQL's data directory (`--allow-shared-volume` for a scratch proof only) | §14; `deploy/ROOT_STEPS.sh` |
+| (b) | **The VM's CPU type switched to `host` (or `x86-64-v3`)** in Proxmox — a VM restart, the owner's; Phase 0's `tests/engine/cpu.sh` reruns afterwards and records the flags it found. The design does not depend on it: the pinned set runs on x86-64-v2 too, and Polars stays out of v1 either way | §0.3; §12 |
+| (c) | **The first sibling data** (`reads[]` in v1): the GL's `account_balances`, `ar_aging_summary`, `ap_due_summary`; Inventory's `sales_closed` (paged); Sales CRM's `deals_won` (paged, `since`) — money and sales first. The other shares of §8 are later `reads[]`, one line each | §8; `maludb-os.json` |
+| (d) | **K37 feeds that name people carry pseudonymised member ids by default** (a keyed hash per installation, stable so joins work, the same salt discipline as the masks); real names only with the owner's explicit approval per feed, recorded on the connection | §12 (K37) |
 
 ## 16. State
+
+**2026-10-10, later — the open questions answered** (§15: (a) a dedicated volume at `/srv/lake` on a new Proxmox disk — the volume group has no free space; (b) the CPU type to `host`; (c) the GL's three summaries, Inventory's `sales_closed`, Sales CRM's `deals_won` first; (d) K37 people feeds pseudonymised by default). D1–D16 still await the owner.
 
 **2026-10-10 — planned; awaiting the owner's decisions (§13).** The research of §0 done in four tracks (the requirements R1–R71 and how
 lakes fail; the front ends of eighteen products screen by screen; the formats, engines and this server, with DuckDB, PyArrow and

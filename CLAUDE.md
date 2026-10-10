@@ -75,5 +75,6 @@ the API, K7 shares). The owner's brief (2026-10-10): our own data lake, **no exi
 - Commit after every finished step on `main` in the repository's message style; never push unless the owner asks.
 
 ## State
-2026-10-10 — planned; the design awaits the owner's decisions (§13 D1–D16 and four open questions). Nothing built. Ports 8193 / 8847 /
+2026-10-10 — planned; the four open questions answered as recommended (§15: `/srv/lake` on a dedicated volume, the CPU type `host`,
+the GL / Inventory / CRM reads first, people feeds pseudonymised); D1–D16 await the owner. Nothing built. Ports 8193 / 8847 /
 8848 and scratch 9001–9007 reserved; K36 (the kernel's catalog row) follows the owner's go.
