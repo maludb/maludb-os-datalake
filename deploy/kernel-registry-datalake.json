@@ -2,16 +2,216 @@
   "schema": "maludb-os.registry/1",
   "app_key": "datalake",
   "name": "Data Lake",
-  "note": "The installer (bin/app_install.php, step 'registry') writes mcp/registries/datalake.json in the kernel from this file's `resolve` block plus mcp/action_registry.json (Phase 1). Each resolve tool answers a plain LIST of rows carrying id_field and label_field when given `q` alone (docs/datalake-mcp-tool-surface.md, the resolution table — Phase 1 fills the params each entity resolves and adds the rest). A dataset resolves by its key (<zone>.<name>) or its title; a column, a load, a query run, an export, a proposal, a dispatch, a notification and a token are ids only, never resolved by name. Phase 0: the resolvers' names only.",
+  "note": "The installer (bin/app_install.php, step 'registry') writes mcp/registries/datalake.json in the kernel from this file's `resolve` block plus mcp/action_registry.json. Each resolve tool answers a plain LIST of rows carrying id_field and label_field when given `q` alone (docs/datalake-mcp-tool-surface.md, 'The resolvers'). A dataset resolves by its key (<zone>.<name>) or its title. contract, column, query_run, note, retention, token, dispatch and schema_version are ids only, never resolved by name.",
   "resolve": {
-    "dataset":     {"tool": "find_datasets",      "query_param": "q", "id_field": "dataset_id",     "label_field": "key",          "params": ["dataset"]},
-    "source":      {"tool": "find_sources",       "query_param": "q", "id_field": "source_id",      "label_field": "name",         "params": ["source"]},
-    "check":       {"tool": "find_checks",        "query_param": "q", "id_field": "check_id",       "label_field": "label",        "params": ["check"]},
-    "incident":    {"tool": "find_incidents",     "query_param": "q", "id_field": "incident_id",    "label_field": "title",        "params": ["incident"]},
-    "saved_query": {"tool": "find_saved_queries", "query_param": "q", "id_field": "saved_query_id", "label_field": "title",        "params": ["saved_query", "query"]},
-    "metric":      {"tool": "find_metrics",       "query_param": "q", "id_field": "metric_id",      "label_field": "name",         "params": ["metric"]},
-    "transform":   {"tool": "find_transforms",    "query_param": "q", "id_field": "transform_id",   "label_field": "name",         "params": ["transform"]},
-    "member":      {"tool": "find_members",       "query_param": "q", "id_field": "member_id",      "label_field": "display_name", "params": ["member", "owner", "steward", "assignee", "agent"]},
-    "department":  {"tool": "find_departments",   "query_param": "q", "id_field": "department_id",  "label_field": "name",         "params": ["department"]}
+    "dataset": {
+      "tool": "find_datasets",
+      "query_param": "q",
+      "id_field": "dataset_id",
+      "label_field": "key",
+      "params": [
+        "dataset",
+        "output_dataset",
+        "input",
+        "target_dataset",
+        "successor",
+        "references_dataset"
+      ]
+    },
+    "member": {
+      "tool": "find_members",
+      "query_param": "q",
+      "id_field": "member_id",
+      "label_field": "display_name",
+      "params": [
+        "member",
+        "owner",
+        "steward",
+        "assignee",
+        "agent",
+        "requester",
+        "approver"
+      ]
+    },
+    "group": {
+      "tool": "find_groups",
+      "query_param": "q",
+      "id_field": "group_id",
+      "label_field": "name",
+      "params": [
+        "group"
+      ]
+    },
+    "department": {
+      "tool": "find_departments",
+      "query_param": "q",
+      "id_field": "department_id",
+      "label_field": "name",
+      "params": [
+        "department"
+      ]
+    },
+    "tag": {
+      "tool": "find_tags",
+      "query_param": "q",
+      "id_field": "tag_id",
+      "label_field": "slug",
+      "params": [
+        "tag"
+      ]
+    },
+    "term": {
+      "tool": "glossary",
+      "query_param": "q",
+      "id_field": "term_id",
+      "label_field": "name",
+      "params": [
+        "term"
+      ]
+    },
+    "source": {
+      "tool": "find_sources",
+      "query_param": "q",
+      "id_field": "source_id",
+      "label_field": "name",
+      "params": [
+        "source"
+      ]
+    },
+    "load": {
+      "tool": "find_loads",
+      "query_param": "q",
+      "id_field": "load_id",
+      "label_field": "load_id",
+      "params": [
+        "load"
+      ]
+    },
+    "upload": {
+      "tool": "find_uploads",
+      "query_param": "q",
+      "id_field": "upload_id",
+      "label_field": "filename",
+      "params": [
+        "upload"
+      ]
+    },
+    "template": {
+      "tool": "find_import_templates",
+      "query_param": "q",
+      "id_field": "template_id",
+      "label_field": "name",
+      "params": [
+        "template"
+      ]
+    },
+    "check": {
+      "tool": "find_checks",
+      "query_param": "q",
+      "id_field": "check_id",
+      "label_field": "kind",
+      "params": [
+        "check"
+      ]
+    },
+    "incident": {
+      "tool": "open_incidents",
+      "query_param": "q",
+      "id_field": "incident_id",
+      "label_field": "title",
+      "params": [
+        "incident"
+      ]
+    },
+    "transform": {
+      "tool": "find_transforms",
+      "query_param": "q",
+      "id_field": "transform_id",
+      "label_field": "name",
+      "params": [
+        "transform"
+      ]
+    },
+    "metric": {
+      "tool": "find_metrics",
+      "query_param": "q",
+      "id_field": "metric_id",
+      "label_field": "name",
+      "params": [
+        "metric"
+      ]
+    },
+    "saved_query": {
+      "tool": "find_saved_queries",
+      "query_param": "q",
+      "id_field": "saved_query_id",
+      "label_field": "title",
+      "params": [
+        "saved_query"
+      ]
+    },
+    "access_request": {
+      "tool": "find_access_requests",
+      "query_param": "q",
+      "id_field": "request_id",
+      "label_field": "request_id",
+      "params": [
+        "access_request"
+      ]
+    },
+    "grant": {
+      "tool": "find_grants",
+      "query_param": "q",
+      "id_field": "grant_id",
+      "label_field": "grant_id",
+      "params": [
+        "grant"
+      ]
+    },
+    "erasure": {
+      "tool": "get_erasure",
+      "query_param": "q",
+      "id_field": "erasure_id",
+      "label_field": "erasure_id",
+      "params": [
+        "erasure"
+      ]
+    },
+    "proposal": {
+      "tool": "steward_proposals",
+      "query_param": "q",
+      "id_field": "proposal_id",
+      "label_field": "kind",
+      "params": [
+        "proposal"
+      ]
+    },
+    "export": {
+      "tool": "my_exports",
+      "query_param": "q",
+      "id_field": "export_id",
+      "label_field": "export_id",
+      "params": [
+        "export"
+      ]
+    },
+    "api_key": {
+      "tool": "find_keys",
+      "query_param": "q",
+      "id_field": "key_id",
+      "label_field": "label",
+      "params": [
+        "api_key"
+      ]
+    },
+    "notification": {
+      "tool": "my_notifications",
+      "query_param": "q",
+      "id_field": "notification_id",
+      "label_field": "title",
+      "params": [
+        "notification"
+      ]
+    }
   }
 }

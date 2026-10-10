@@ -967,6 +967,15 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-10, later — PHASE 1 WRITTEN, for the owner's checkpoint** (`docs/phase1-consistency.md` is the record and lists the 32 decisions
+the specs took): the tool surface (`docs/datalake-mcp-tool-surface.md` — records 69 tools, activity 6, 22 resolvers, the three K7 shares, the K38 rule),
+the action manifest (`docs/datalake-action-manifest.md` — **80 screens, 105 actions**, 29 paused for an agent, 22 people only) → `mcp/action_registry.json`
+and `maludb-os.json` `approvals[]` (generated, `--check` green), the resolve block (`deploy/kernel-registry-datalake.json`), three build specs
+(`lake-engine.md`, `query-service.md`, `access-and-policies.md`) and eleven slice specs (`sso-shell` + ten; slices 2, 3 and 5 the exemplars),
+db/018 (the Phase 1 reads, the policy's final shape with the K38 ceiling, the stub wall honouring who an agent acts for — the schema proof **181**),
+`tests/phase1/check_specs.sh` **61 checks green** (every screen and action claimed once, every tool named, every agent grant real). **Next: the
+owner approves Phase 1 → Phase 2 (`docs/build-specs/sso-shell.md`).**
+
 **2026-10-10, later — PHASE 0 COMPLETE.** K36 built (kernel db/179). The kit (`tests/phase0/run.sh`, 83 checks); the schema db/001–017
 (`db/proof/phase0_proof.sql` via `tests/phase0/schema.sh`, **158 checks** over ten callers — found and fixed: NULL-unsafe ownership
 checks that let a non-owner decide where a dataset had no steward; the query service's role held table grants it does not need); the

@@ -180,8 +180,9 @@ SELECT pg_temp.check((SELECT p #>> '{datasets,curated.sales_orders,level}' FROM 
                      AND (SELECT p #>> '{datasets,curated.sales_orders,masks,customer_email}' FROM pol) = 'partial_email'
                      AND (SELECT p #>> '{datasets,curated.sales_orders,row_filter}' FROM pol) LIKE '%ARRAY[7]%', 'the policy: orders readable, the email masked, the row filter bound');
 SELECT pg_temp.check((SELECT jsonb_array_length(p #> '{datasets,curated.sales_orders,columns}') FROM pol) = 5, 'the policy lists the dataset''s live columns');
-SELECT pg_temp.check((SELECT p #>> '{refused,curated.payroll}' FROM pol) LIKE '%may not read%' AND (SELECT p #>> '{refused,curated.products}' FROM pol) LIKE '%discover%'
-                     AND (SELECT p #>> '{refused,curated.nothing}' FROM pol) = 'no such dataset', 'refusals say why: no access, discover-only, no such dataset');
+SELECT pg_temp.check((SELECT p #>> '{refused,curated.payroll,rule}' FROM pol) = 'not_readable' AND (SELECT p #>> '{refused,curated.payroll,message}' FROM pol) LIKE '%may not read%'
+                     AND (SELECT p #>> '{refused,curated.products,rule}' FROM pol) = 'discover_only'
+                     AND (SELECT p #>> '{refused,curated.nothing,rule}' FROM pol) = 'no_such_dataset', 'refusals say why, by rule: not_readable, discover_only, no_such_dataset');
 SELECT pg_temp.check((SELECT (p #>> '{limits,timeout_s}')::int FROM pol) = 30 AND (SELECT (p #>> '{limits,row_limit}')::int FROM pol) = 1000, 'a screen: 30 s and 1,000 rows (D7)');
 SELECT pg_temp.check((dl_query_policy(26, NULL, ARRAY['curated.sales_orders'], 'export') #>> '{limits,timeout_s}')::int = 300
                      AND (dl_query_policy(26, NULL, ARRAY['curated.sales_orders'], 'export') #>> '{limits,row_limit}')::int = 100000
@@ -193,7 +194,7 @@ SELECT pg_temp.check((dl_query_policy(27, NULL, ARRAY['curated.payroll'], 'scree
                      AND (dl_query_policy(27, NULL, ARRAY['curated.payroll'], 'screen') #>> '{datasets,curated.payroll,level}') = 'read_unmasked', 'read_unmasked: no masks');
 SELECT pg_temp.refused($$SELECT dl_query_policy(26, NULL, ARRAY['curated.products'], 'shell')$$, 'unknown query source', 'an unknown source is refused');
 SELECT pg_temp.check((dl_query_policy_app('gl', ARRAY['product.monthly_revenue', 'curated.sales_orders']) #>> '{datasets,product.monthly_revenue,level}') = 'read'
-                     AND (dl_query_policy_app('gl', ARRAY['product.monthly_revenue', 'curated.sales_orders']) #>> '{refused,curated.sales_orders}') = 'not shared with gl'
+                     AND (dl_query_policy_app('gl', ARRAY['product.monthly_revenue', 'curated.sales_orders']) #>> '{refused,curated.sales_orders,rule}') = 'not_shared'
                      AND (dl_query_policy_app('gl', ARRAY['product.monthly_revenue']) #>> '{limits,result_bytes}')::int = 262144, 'a K7 consumer reads what is granted to it, within K7''s 256 kB');
 SET ROLE datalake_query;
 SELECT pg_temp.check((dl_query_policy(26, NULL, ARRAY['curated.sales_orders'], 'screen') #>> '{datasets,curated.sales_orders,level}') = 'read', 'the query service''s role may compile a policy');
@@ -491,6 +492,56 @@ RESET ROLE;
 UPDATE erasure_requests SET status = 'done', finished_at = now() WHERE id = pg_temp.i('er');
 SELECT dl_erasure_seal(pg_temp.i('er'));
 SELECT pg_temp.check((SELECT identifiers::text NOT LIKE '%buyer7%' AND identifiers -> 0 ? 'sha256' FROM erasure_requests WHERE id = pg_temp.i('er')), 'a done erasure keeps its identifiers only as hashes');
+
+-- ================================================================ Phase 1 reads (db/018)
+SELECT pg_temp.check((dl_query_policy(26, NULL, ARRAY['curated.sales_orders'], 'screen') #>> '{datasets,curated.sales_orders,classification}') = 'confidential'
+                     AND (dl_query_policy(26, NULL, ARRAY['curated.sales_orders'], 'screen') #>> '{datasets,curated.sales_orders,has_personal}')::boolean,
+                     'the policy carries each dataset''s classification and personal flag');
+SELECT pg_temp.check((dl_query_policy(40, NULL, ARRAY['curated.sales_orders', 'product.monthly_revenue'], 'agent', 'internal_unpersonal') #>> '{refused,curated.sales_orders,rule}') = 'k38_pending'
+                     AND (dl_query_policy(40, NULL, ARRAY['product.monthly_revenue'], 'agent', 'internal_unpersonal') #>> '{datasets,product.monthly_revenue,level}') IS NOT DISTINCT FROM
+                         (dl_query_policy(40, NULL, ARRAY['product.monthly_revenue'], 'agent') #>> '{datasets,product.monthly_revenue,level}'),
+                     'before K38 an agent''s chat turn is refused personal and confidential data (k38_pending) and keeps the rest — fail closed');
+SELECT pg_temp.refused($$SELECT dl_query_policy(26, NULL, ARRAY['curated.products'], 'screen', 'open_everything')$$, 'unknown ceiling', 'an unknown ceiling is refused');
+INSERT INTO dataset_usage_daily (dataset_id, day, queries, people, agents, rows_read) VALUES (pg_temp.ds('curated.sales_orders'), current_date, 9, 2, 1, 900),
+       (pg_temp.ds('curated.payroll'), current_date, 50, 1, 0, 50);
+SELECT pg_temp.as_member(26);
+SELECT pg_temp.check((SELECT key FROM dl_popular_datasets(30) LIMIT 1) = 'curated.payroll' AND (SELECT count(*) FROM dl_popular_datasets(30)) = 2, 'popular datasets, the most used first — Priya now reads payroll');
+SELECT pg_temp.as_member(29);
+SELECT pg_temp.check((SELECT count(*) FROM dl_popular_datasets(30)) = 0, 'the external sees no popular dataset she may not discover');
+SELECT pg_temp.as_member(26);
+SELECT pg_temp.check((SELECT count(*) FROM dl_dataset_frequent_users(pg_temp.ds('curated.sales_orders'))) = 1
+                     AND (SELECT name FROM dl_dataset_frequent_users(pg_temp.ds('curated.sales_orders'))) = 'SMOKE Priya', 'frequent users come from the audit');
+SELECT pg_temp.check((SELECT string_agg(key, ',' ORDER BY key) FROM dl_my_access('read')) = 'curated.payroll,curated.sales_orders,sandbox.m26_my_upload',
+                     'what Priya may read: payroll (her approved request), orders (her department), her sandbox');
+SELECT pg_temp.check((SELECT row_filtered FROM dl_my_access('read') WHERE key = 'curated.sales_orders') AND (SELECT expires_at IS NOT NULL FROM dl_my_access('read') WHERE key = 'curated.payroll'),
+                     'it says which reads are filtered and which grants expire');
+SELECT pg_temp.check((SELECT count(*) FROM dl_access_list(pg_temp.ds('curated.sales_orders'))) = 0, 'a reader who is not the owner sees no access list');
+SELECT pg_temp.as_member(28);
+SELECT pg_temp.check((SELECT count(*) FROM dl_access_list(pg_temp.ds('curated.sales_orders'))) = 4
+                     AND (SELECT string_agg(via, ',' ORDER BY via) FROM dl_access_list(pg_temp.ds('curated.sales_orders'))) = 'dataset,dataset,owner,steward',
+                     'the owner sees who reads orders: herself, the steward, Sales and the expert');
+SELECT pg_temp.check((SELECT kind = 'person' AND queries = 1 FROM dl_dataset_readers(pg_temp.ds('curated.sales_orders'))), 'the owner sees who read it, from the audit');
+SELECT pg_temp.check((SELECT count(*) FROM dl_access_history(pg_temp.ds('curated.sales_orders'), now())) = 0, 'access history is grants.manage''s');
+SELECT pg_temp.check(dl_engine_state() IS NULL, 'the engine''s state is the admin''s');
+SELECT pg_temp.as_member(1);
+SELECT pg_temp.check((SELECT count(*) FROM dl_access_history(pg_temp.ds('curated.sales_orders'), now())) = 3, 'who could read orders now: the owner, Sales, the expert');
+RESET ROLE; UPDATE grants SET created_at = now() - interval '1 day'; UPDATE datasets SET created_at = now() - interval '2 days'; SELECT pg_temp.as_member(1);
+SELECT pg_temp.check((SELECT count(*) FROM dl_access_history(pg_temp.ds('product.monthly_revenue'), now() - interval '1 hour')) = 3
+                     AND (SELECT count(*) FROM dl_access_history(pg_temp.ds('product.monthly_revenue'), now() + interval '1 hour')) = 2,
+                     'the revoked everyone grant counts before its revocation, not after');
+SELECT pg_temp.check((SELECT count(*) FROM dl_grants_expiring(40)) = 1, 'grants expiring: Priya''s payroll grant (30 days)');
+SELECT pg_temp.check((SELECT count(*) FROM dl_grants_unused(90)) = 0, 'no dataset grant is older than 90 days yet');
+SELECT pg_temp.check((dl_engine_state() -> 'queue' ->> 'failed_24h')::int = 1 AND (dl_engine_state() -> 'queries_today' ->> 'ok')::int >= 1, 'the engine''s state: the failed job, today''s query');
+SELECT pg_temp.check((dl_share_datasets_index('gl') -> 'datasets' -> 0 ->> 'key') = 'product.monthly_revenue' AND jsonb_array_length(dl_share_datasets_index('gl') -> 'datasets') = 1
+                     AND jsonb_array_length(dl_share_datasets_index('inventory') -> 'datasets') = 0, 'the K7 index answers what is granted to the consumer, nothing else');
+SELECT pg_temp.as_member(40); SELECT set_config('app.on_behalf_of', '29', true);
+SELECT pg_temp.check(NOT dl_can_see_stub(pg_temp.ds('curated.payroll')), 'an agent acting for the external sees no stub either (access-and-policies decision 7)');
+SELECT set_config('app.on_behalf_of', '26', true);
+SELECT pg_temp.check(dl_can_see_stub(pg_temp.ds('curated.payroll')), '…and acting for an insider it does');
+SELECT set_config('app.on_behalf_of', '', true); SELECT pg_temp.as_member(1);
+SELECT pg_temp.check(has_function_privilege('datalake_lake', 'dl_query_run_log(jsonb)', 'EXECUTE'), 'the writer writes the audit of the exports and transforms it runs');
+UPDATE dl_settings SET steward_member_id = 41;
+SELECT pg_temp.check(dl_steward_agent() = 41, 'the Steward the settings name');
 
 -- ================================================================ the read roles see views only; the engine's schema is not theirs
 SET ROLE datalake_activity_ro; SELECT pg_temp.as_member(26);

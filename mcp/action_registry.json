@@ -1,0 +1,4462 @@
+{
+    "generated_from": "docs/datalake-action-manifest.md",
+    "generated_at": "2026-10-10T18:08:14+00:00",
+    "screens": {
+        "home": {
+            "screen": "home",
+            "url": "/",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "the start: the search box with Search and Ask, certified products, my recent and followed datasets, popular this month, open incidents on datasets I use, decisions waiting for me; engineers: failed loads, late datasets, the Steward's proposals; the admin: the engine, storage, the last backup and drill; a new person's one button, Upload a spreadsheet",
+            "params": [],
+            "built": true,
+            "stub": false
+        },
+        "search": {
+            "screen": "search",
+            "url": "/search",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "the catalog search's results as cards — certified first, stubs for what I may not discover",
+            "params": [
+                "q",
+                "kind",
+                "zone",
+                "department",
+                "owner",
+                "tag",
+                "classification",
+                "certification",
+                "personal"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "notifications": {
+            "screen": "notifications",
+            "url": "/notifications",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "my notices, unread first",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "activity": {
+            "screen": "activity",
+            "url": "/activity",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "my own trail here",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "settings": {
+            "screen": "settings",
+            "url": "/settings/",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "my preferences: which notices by email and by text, the digest",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "settings-tokens": {
+            "screen": "settings-tokens",
+            "url": "/settings/tokens/",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "when": "my MCP tokens and my API keys (with the SQL switch): mint (shown once), rotate, revoke",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "browse": {
+            "screen": "browse",
+            "url": "/browse",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "the lake by zone, by department and by tag, as cards with certification, health, owner and \"data updated\"",
+            "params": [
+                "zone",
+                "department",
+                "tag",
+                "owner",
+                "status"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "dataset-view": {
+            "screen": "dataset-view",
+            "url": "/datasets/{id}",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "one dataset: the header (crumbs, badge, health, owner and steward, data and metadata updated, rows, size, Query this, Request access, Follow); tabs About, Columns, Preview, Quality, Lineage, Usage, Access, History — by anchor; a stub shows the name, the owner and Request access only",
+            "params": [
+                "tab"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "dataset-add": {
+            "screen": "dataset-add",
+            "url": "/datasets/new",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "to register a curated or product dataset before a promotion or a transform makes it: zone, name, title, owner, steward, department, the contract's key",
+            "params": [
+                "zone",
+                "name"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "dataset-edit": {
+            "screen": "dataset-edit",
+            "url": "/datasets/{id}/edit",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "to describe a dataset (title, description, purpose, usage, limitations), set its owner, steward, department, tier, freshness expectations, schema-evolution mode, status, the deprecation note and successor",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "column-view": {
+            "screen": "column-view",
+            "url": "/datasets/{id}/columns/{column}",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "one column: its meaning, type, classification and personal kind, the glossary term, the reference, the profile over time",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "column-edit": {
+            "screen": "column-edit",
+            "url": "/datasets/{id}/columns/{column}/edit",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "to describe a column: business name, description, glossary term, critical, the dataset and column it references",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "glossary": {
+            "screen": "glossary",
+            "url": "/glossary",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "the business glossary: terms by category, draft and approved",
+            "params": [
+                "q",
+                "status"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "term-view": {
+            "screen": "term-view",
+            "url": "/glossary/{id}",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "one term: definition, synonyms, the columns that carry it",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "term-add": {
+            "screen": "term-add",
+            "url": "/glossary/new",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "to add a term",
+            "params": [
+                "name",
+                "parent"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "term-edit": {
+            "screen": "term-edit",
+            "url": "/glossary/{id}/edit",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "to change a term's definition, synonyms, category, steward",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "tags": {
+            "screen": "tags",
+            "url": "/tags",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "when": "the tag vocabulary: managed and free, counts, colours",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "upload": {
+            "screen": "upload",
+            "url": "/upload",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "to drop files (CSV, TSV, XLSX, XLS, ODS, JSON, NDJSON, Parquet — up to 5 GB, sent in parts) and see each land",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "upload-map": {
+            "screen": "upload-map",
+            "url": "/uploads/{id}/map",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "the mapping: the first 50 rows, each column's name, type and personal-data proposal, the sheet and header row, the target (my sandbox, or an engineer's raw dataset, append or replace), the key; save as a template",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "sandbox": {
+            "screen": "sandbox",
+            "url": "/sandbox",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "my sandbox datasets and my quota",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "load-list": {
+            "screen": "load-list",
+            "url": "/loads",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "loads by dataset, source and status",
+            "params": [
+                "dataset",
+                "source",
+                "status",
+                "since"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "load-view": {
+            "screen": "load-view",
+            "url": "/loads/{id}",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "one load: counts, the schema seen, drift, rescued fields, the checks' outcome, the rejected lines (their raw text at write level), rollback",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "templates": {
+            "screen": "templates",
+            "url": "/templates",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "when": "saved mappings for files that come back every month",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "sql": {
+            "screen": "sql",
+            "url": "/sql",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "the editor (desk): the datasets I may read, the editor with completion of their keys, Run and Cancel, the result with the display cap and the truncation notice, quick column stats, Save, Download, Save as dataset, my recent runs; a refusal names its rule and offers Request access",
+            "params": [
+                "dataset",
+                "saved_query",
+                "as_of"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "queries": {
+            "screen": "queries",
+            "url": "/queries",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "saved queries: mine and shared, the Verified badge",
+            "params": [
+                "q",
+                "verified",
+                "dataset",
+                "owner"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "query-view": {
+            "screen": "query-view",
+            "url": "/queries/{id}",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "one saved query: its question, SQL, parameters, the datasets it reads, verified by whom; Run shows the result only",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "query-edit": {
+            "screen": "query-edit",
+            "url": "/queries/{id}/edit",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "to change a saved query's title, question, SQL, parameters, sharing",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "query-run-view": {
+            "screen": "query-run-view",
+            "url": "/runs/{id}",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "one query run: the SQL (mine, or all for the audit), datasets, masks, row filters, rows, time, status",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "exports": {
+            "screen": "exports",
+            "url": "/exports",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "when": "my exports: ready, expired, the rows and whether some columns were masked",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "my-access": {
+            "screen": "my-access",
+            "url": "/access",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "what I may read and through what; my requests",
+            "params": [
+                "level"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "requests": {
+            "screen": "requests",
+            "url": "/access/requests",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "requests: tabs Mine, To decide, History — approve with a level and an optional expiry, or deny with a reason",
+            "params": [
+                "box"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "request-add": {
+            "screen": "request-add",
+            "url": "/access/requests/new",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "to ask for access to a dataset: the level and the reason",
+            "params": [
+                "dataset",
+                "level"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "grants": {
+            "screen": "grants",
+            "url": "/access/grants",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "the grants on a dataset, a zone or a tag",
+            "params": [
+                "dataset",
+                "zone",
+                "tag",
+                "principal"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "grant-add": {
+            "screen": "grant-add",
+            "url": "/access/grants/new",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "to grant a level on a dataset, a zone or a tag to a person, a group, a department, an agent or everyone — with a row filter and an expiry",
+            "params": [
+                "dataset",
+                "zone",
+                "tag"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "groups": {
+            "screen": "groups",
+            "url": "/groups",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "groups as cards: custom and department mirrors",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "group-view": {
+            "screen": "group-view",
+            "url": "/groups/{id}",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "one group: members, owners, the grants it holds",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "group-add": {
+            "screen": "group-add",
+            "url": "/groups/new",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "to make a group: custom, or mirroring a department",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "group-edit": {
+            "screen": "group-edit",
+            "url": "/groups/{id}/edit",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "to rename a group or change its description",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "policies": {
+            "screen": "policies",
+            "url": "/access/policies",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "the masks: each personal kind and classification and how it is masked below read_unmasked",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "personal-data": {
+            "screen": "personal-data",
+            "url": "/access/personal-data",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "the personal-data map: columns by kind, proposed and confirmed — confirm or reject",
+            "params": [
+                "kind",
+                "confirmed",
+                "dataset"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "admin-read": {
+            "screen": "admin-read",
+            "url": "/access/break-glass",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "when": "the admin's break-glass: open a dataset's rows for an hour with a reason",
+            "params": [
+                "dataset"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "quality": {
+            "screen": "quality",
+            "url": "/quality",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "the lake's health: failing checks today, late datasets, open incidents — at 375 a status list",
+            "params": [
+                "severity",
+                "department"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "incident-list": {
+            "screen": "incident-list",
+            "url": "/incidents",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "incidents by status, severity and assignee",
+            "params": [
+                "status",
+                "severity",
+                "assignee",
+                "dataset"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "incident-view": {
+            "screen": "incident-view",
+            "url": "/incidents/{id}",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "one incident: its check and the result that opened it, the Steward's triage, the notes, what it reaches downstream; acknowledge, assign, note, resolve",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "checks": {
+            "screen": "checks",
+            "url": "/datasets/{id}/checks",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "a dataset's checks with their last results and the 7-day strip",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "check-add": {
+            "screen": "check-add",
+            "url": "/datasets/{id}/checks/new",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "to add a check from a template: not null, unique, accepted values, range, regex, row count, freshness, referential, schema, custom SQL",
+            "params": [
+                "kind",
+                "column"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "check-edit": {
+            "screen": "check-edit",
+            "url": "/checks/{id}/edit",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "to change a check's parameters, severity, blocking, schedule",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "contract-view": {
+            "screen": "contract-view",
+            "url": "/datasets/{id}/contract",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "the dataset's contract: the typed schema, the key, the SLA, the versions, the ODCS download",
+            "params": [
+                "version"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "contract-edit": {
+            "screen": "contract-edit",
+            "url": "/datasets/{id}/contract/edit",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "to draft the next version: columns and types, required, unique, the key, the ordering column, the SLA — breaking changes shown, with their impact",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "quarantine": {
+            "screen": "quarantine",
+            "url": "/datasets/{id}/quarantine",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "when": "the rows promotion held back, with their reasons (at write level; masked below)",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "source-list": {
+            "screen": "source-list",
+            "url": "/sources",
+            "section": "Sources and pulls (slice 6)",
+            "when": "sources as cards: connector, schedule, last pull, state, why paused",
+            "params": [
+                "connector",
+                "paused"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "source-view": {
+            "screen": "source-view",
+            "url": "/sources/{id}",
+            "section": "Sources and pulls (slice 6)",
+            "when": "one source: its settings (never the credential, its last four only), the pulls with their counts, the datasets it feeds; Test, Pull now, Pause",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "source-add": {
+            "screen": "source-add",
+            "url": "/sources/new",
+            "section": "Sources and pulls (slice 6)",
+            "when": "to add a source: the connector's form — a file at a URL, an SFTP directory, a sibling's share through the kernel, an outside PostgreSQL database — the target dataset and the schedule",
+            "params": [
+                "connector"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "source-edit": {
+            "screen": "source-edit",
+            "url": "/sources/{id}/edit",
+            "section": "Sources and pulls (slice 6)",
+            "when": "to change a source's settings, target, schedule, rate",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "products": {
+            "screen": "products",
+            "url": "/products",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "the product gallery: certified products first, their owners, freshness and metrics",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "transform-list": {
+            "screen": "transform-list",
+            "url": "/transforms",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "transforms: output, inputs, mode, schedule, last run",
+            "params": [
+                "dataset",
+                "enabled"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "transform-view": {
+            "screen": "transform-view",
+            "url": "/transforms/{id}",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "one transform: the SQL, inputs and output, mode, schedule, the frozen level, the runs, the lineage it makes",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "transform-add": {
+            "screen": "transform-add",
+            "url": "/transforms/new",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "to write a transform (desk): the output dataset, the SQL over dataset keys, mode, schedule",
+            "params": [
+                "output_dataset"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "transform-edit": {
+            "screen": "transform-edit",
+            "url": "/transforms/{id}/edit",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "to change a transform's SQL, mode or schedule (a new version)",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "metric-list": {
+            "screen": "metric-list",
+            "url": "/metrics",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "metrics: certified first, their product, grains and dimensions",
+            "params": [
+                "dataset",
+                "certified"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "metric-view": {
+            "screen": "metric-view",
+            "url": "/metrics/{id}",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "one metric: its definition, its value by month as a small chart, the dimensions to cut by",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "metric-add": {
+            "screen": "metric-add",
+            "url": "/metrics/new",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "to define a metric over a product",
+            "params": [
+                "dataset"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "metric-edit": {
+            "screen": "metric-edit",
+            "url": "/metrics/{id}/edit",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "to change a metric's expression, time column, grains, dimensions, filters",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "lineage-graph": {
+            "screen": "lineage-graph",
+            "url": "/datasets/{id}/lineage",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "when": "the lineage graph (desk): two hops up and down as an SVG; nodes I may not discover counted, unnamed",
+            "params": [
+                "depth"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "retention": {
+            "screen": "retention",
+            "url": "/admin/retention",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "retention by zone and by dataset, the landing window, the audit's windows",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "erasure-list": {
+            "screen": "erasure-list",
+            "url": "/admin/erasures",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "erasure requests and their state",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "erasure-add": {
+            "screen": "erasure-add",
+            "url": "/admin/erasures/new",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "to ask the lake to forget a person: the identifiers by kind, the reason, the scope",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "erasure-view": {
+            "screen": "erasure-view",
+            "url": "/admin/erasures/{id}",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "one erasure: the scan's report (datasets, rows, zones, what downstream loses rows, which loads become not replayable), the warning that time travel ends for every dataset, approve (another admin), the progress, the proof",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "maintenance": {
+            "screen": "maintenance",
+            "url": "/admin/maintenance",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "storage by dataset and zone, quotas, the last maintenance passes, the writer's queue; run maintenance now",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "backups": {
+            "screen": "backups",
+            "url": "/admin/backups",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "when": "the last backups and restore drills, their checks; run a drill",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "connections": {
+            "screen": "connections",
+            "url": "/admin/connections",
+            "section": "The lake's API, keys and the K7 shares (slice 9)",
+            "when": "the siblings: what the lake reads from them (K7 sources, their last pull, no_connection) and what it shares with them (products and metrics granted to each application, their reads)",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "api": {
+            "screen": "api",
+            "url": "/api",
+            "section": "The lake's API, keys and the K7 shares (slice 9)",
+            "when": "the lake's API: the routes, my keys' limits and the SQL switch, examples with my own key's last four",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "ask": {
+            "screen": "ask",
+            "url": "/ask",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "to ask the lake in words: the conversation with the expert through the kernel's chat endpoint; each answer with the interpretation, the result as a table or a simple chart, Show SQL, the datasets and the metric or verified query used, the query run, a note when columns were masked; Yes / Fix it / Ask a steward",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "steward": {
+            "screen": "steward",
+            "url": "/steward",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "the Steward's inbox: drafted descriptions, personal data, owners, checks, drift, unused, promotion — accept, edit or dismiss with the diff",
+            "params": [
+                "kind",
+                "dataset",
+                "status"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "coverage": {
+            "screen": "coverage",
+            "url": "/coverage",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "coverage against the target by tier and department: described, owned, classified, checked, certified",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "admin-settings": {
+            "screen": "admin-settings",
+            "url": "/admin/settings",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "the lake's settings: windows, quotas, the upload ceiling, the masking salt's id, the certification target",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "admin-limits": {
+            "screen": "admin-limits",
+            "url": "/admin/limits",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "the query service's limits: timeouts, rows shown and downloaded, result bytes, workers, memory, concurrency, the agents' rate",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "query-audit": {
+            "screen": "query-audit",
+            "url": "/admin/queries",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "every query run: who, on whose behalf, which agent, which datasets, masks, rows, status — the SQL for the audit",
+            "params": [
+                "member",
+                "dataset",
+                "status",
+                "source",
+                "from",
+                "to"
+            ],
+            "built": false,
+            "stub": false
+        },
+        "engine": {
+            "screen": "engine",
+            "url": "/admin/engine",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "the engine: the writer's queue and running jobs, the query service's runs, refusals and timeouts today, the last snapshot",
+            "params": [],
+            "built": false,
+            "stub": false
+        },
+        "agents-settings": {
+            "screen": "agents-settings",
+            "url": "/admin/agents",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "when": "the agents: which is the Steward, the duty's hour, the daily proposal cap, the dispatches",
+            "params": [],
+            "built": false,
+            "stub": false
+        }
+    },
+    "actions": {
+        "prefs_save": {
+            "action": "prefs_save",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/prefs.php",
+            "params": [
+                {
+                    "name": "email_enabled",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "text_enabled",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "kinds",
+                    "required": false,
+                    "repeated": true,
+                    "hint": "the kinds that notify"
+                },
+                {
+                    "name": "text_kinds",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "digest",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "settings.prefs",
+            "who": "own",
+            "agent": true,
+            "record_id": "the prefs",
+            "built": false
+        },
+        "notification_read": {
+            "action": "notification_read",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/notifications/read.php",
+            "params": [
+                {
+                    "name": "notification",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "one — or none for all"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "notification.read",
+            "who": "own",
+            "agent": true,
+            "record_id": "the notification",
+            "built": false
+        },
+        "notifications_read_all": {
+            "action": "notifications_read_all",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/notifications/read-all.php",
+            "params": [
+                {
+                    "name": "all",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes — every unread notice of mine"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "notification.read_all",
+            "who": "own",
+            "agent": true,
+            "record_id": "the count",
+            "built": false
+        },
+        "token_mint": {
+            "action": "token_mint",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/mint.php",
+            "params": [
+                {
+                    "name": "label",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "up to 80 characters"
+                },
+                {
+                    "name": "expires_in_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "blank for never"
+                }
+            ],
+            "undo": "token_revoke",
+            "confirm": false,
+            "approval": null,
+            "log_event": "token.mint",
+            "who": "own",
+            "agent": false,
+            "record_id": "the token",
+            "built": false
+        },
+        "token_revoke": {
+            "action": "token_revoke",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/revoke.php",
+            "params": [
+                {
+                    "name": "token",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "token.revoke",
+            "who": "own or keys.all",
+            "agent": false,
+            "record_id": "the token",
+            "built": false
+        },
+        "key_mint": {
+            "action": "key_mint",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/key-mint.php",
+            "params": [
+                {
+                    "name": "label",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "up to 80 characters"
+                },
+                {
+                    "name": "rate_per_minute",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 to 100000 — the setting by default"
+                },
+                {
+                    "name": "rate_per_day",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 to 10000000"
+                },
+                {
+                    "name": "allow_sql",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no — ad-hoc SQL needs sql.editor too"
+                },
+                {
+                    "name": "expires_in_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "key_revoke",
+            "confirm": false,
+            "approval": "external_send",
+            "log_event": "key.mint",
+            "who": "own and keys.own",
+            "agent": false,
+            "record_id": "the key",
+            "built": false
+        },
+        "key_rotate": {
+            "action": "key_rotate",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/key-rotate.php",
+            "params": [
+                {
+                    "name": "api_key",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "the old one keeps 24 hours"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "key.rotate",
+            "who": "own",
+            "agent": false,
+            "record_id": "the new key",
+            "built": false
+        },
+        "key_revoke": {
+            "action": "key_revoke",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/key-revoke.php",
+            "params": [
+                {
+                    "name": "api_key",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "key.revoke",
+            "who": "own or keys.all",
+            "agent": false,
+            "record_id": "the key",
+            "built": false
+        },
+        "key_sql_switch": {
+            "action": "key_sql_switch",
+            "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
+            "endpoint": "/settings/tokens/key-sql.php",
+            "params": [
+                {
+                    "name": "api_key",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "allow_sql",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "yes or no"
+                }
+            ],
+            "undo": "key_sql_switch",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "key.sql_switch",
+            "who": "own and sql.editor",
+            "agent": false,
+            "record_id": "the key",
+            "built": false
+        },
+        "dataset_create": {
+            "action": "dataset_create",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/save.php",
+            "params": [
+                {
+                    "name": "zone",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "curated or product — raw datasets are made by loads and sandbox ones by their owners"
+                },
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "lowercase letters digits and underscores"
+                },
+                {
+                    "name": "title",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "owner",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a member — the caller by default"
+                },
+                {
+                    "name": "steward",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "department",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "tier",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 or 2 or 3"
+                }
+            ],
+            "undo": "dataset_retire",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.create",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_update": {
+            "action": "dataset_update",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/save.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "title",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "purpose",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "usage",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "limitations",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "owner",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "steward",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "department",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "tier",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 or 2 or 3"
+                },
+                {
+                    "name": "freshness_warn_after",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an interval such as 1 day"
+                },
+                {
+                    "name": "freshness_error_after",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "evolution_mode",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "add or rescue or fail"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.update",
+            "who": "owner or steward or catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_tag": {
+            "action": "dataset_tag",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/tag.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "tag",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a slug — a new free tag is made"
+                }
+            ],
+            "undo": "dataset_untag",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.tag",
+            "who": "owner or steward or catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_untag": {
+            "action": "dataset_untag",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/untag.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "tag",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "dataset_tag",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.untag",
+            "who": "owner or steward or catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_deprecate": {
+            "action": "dataset_deprecate",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/deprecate.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "note",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "why and what to use instead"
+                },
+                {
+                    "name": "successor",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a dataset"
+                }
+            ],
+            "undo": "dataset_update",
+            "confirm": true,
+            "approval": null,
+            "log_event": "dataset.deprecate",
+            "who": "owner or catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_retire": {
+            "action": "dataset_retire",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/retire.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its key is never reused — a sandbox dataset by its owner"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "dataset.retire",
+            "who": "own (sandbox) or catalog.edit",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_follow": {
+            "action": "dataset_follow",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/follow.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "what",
+                    "required": false,
+                    "repeated": true,
+                    "hint": "schema_changed or check_failed or deprecated or access_decided or certification_lost or load_failed — all by default"
+                }
+            ],
+            "undo": "dataset_unfollow",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.follow",
+            "who": "follow.use and discover",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "dataset_unfollow": {
+            "action": "dataset_unfollow",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/unfollow.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "dataset_follow",
+            "confirm": false,
+            "approval": null,
+            "log_event": "dataset.unfollow",
+            "who": "own",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "column_update": {
+            "action": "column_update",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/datasets/columns/save.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "column",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its id or name"
+                },
+                {
+                    "name": "business_name",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "term",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a glossary term — or none"
+                },
+                {
+                    "name": "critical",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "references_dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a dataset — or none"
+                },
+                {
+                    "name": "references_column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "column.update",
+            "who": "owner or steward or catalog.edit",
+            "agent": true,
+            "record_id": "the column",
+            "built": false
+        },
+        "note_add": {
+            "action": "note_add",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/notes/add.php",
+            "params": [
+                {
+                    "name": "kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "dataset or incident or saved_query"
+                },
+                {
+                    "name": "record",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its id"
+                },
+                {
+                    "name": "body",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "up to 8000 characters"
+                }
+            ],
+            "undo": "note_delete",
+            "confirm": false,
+            "approval": null,
+            "log_event": "note.add",
+            "who": "discover",
+            "agent": true,
+            "record_id": "the note",
+            "built": false
+        },
+        "note_delete": {
+            "action": "note_delete",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/notes/delete.php",
+            "params": [
+                {
+                    "name": "note",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "note.delete",
+            "who": "own or catalog.edit",
+            "agent": true,
+            "record_id": "the note",
+            "built": false
+        },
+        "term_create": {
+            "action": "term_create",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/glossary/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "definition",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "synonyms",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "parent",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a term"
+                },
+                {
+                    "name": "steward",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a member"
+                }
+            ],
+            "undo": "term_deprecate",
+            "confirm": false,
+            "approval": null,
+            "log_event": "term.create",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the term",
+            "built": false
+        },
+        "term_update": {
+            "action": "term_update",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/glossary/save.php",
+            "params": [
+                {
+                    "name": "term",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "name",
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "definition",
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "synonyms",
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "parent",
+                    "repeated": false,
+                    "hint": "a term"
+                },
+                {
+                    "required": false,
+                    "name": "steward",
+                    "repeated": false,
+                    "hint": "a member"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "term.update",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the term",
+            "built": false,
+            "partial": true
+        },
+        "term_approve": {
+            "action": "term_approve",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/glossary/approve.php",
+            "params": [
+                {
+                    "name": "term",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "term_update",
+            "confirm": false,
+            "approval": null,
+            "log_event": "term.approve",
+            "who": "catalog.edit",
+            "agent": false,
+            "record_id": "the term",
+            "built": false
+        },
+        "term_deprecate": {
+            "action": "term_deprecate",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/glossary/deprecate.php",
+            "params": [
+                {
+                    "name": "term",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "term_update",
+            "confirm": true,
+            "approval": null,
+            "log_event": "term.deprecate",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the term",
+            "built": false
+        },
+        "tag_create": {
+            "action": "tag_create",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/tags/save.php",
+            "params": [
+                {
+                    "name": "label",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "slug",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "made from the label when omitted"
+                },
+                {
+                    "name": "kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "managed or free"
+                },
+                {
+                    "name": "colour",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a hex colour"
+                }
+            ],
+            "undo": "tag_archive",
+            "confirm": false,
+            "approval": null,
+            "log_event": "tag.create",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the tag",
+            "built": false
+        },
+        "tag_update": {
+            "action": "tag_update",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/tags/save.php",
+            "params": [
+                {
+                    "name": "tag",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "label",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "colour",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "tag.update",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the tag",
+            "built": false
+        },
+        "tag_archive": {
+            "action": "tag_archive",
+            "section": "The catalog (slice 1 — the CRUD exemplar)",
+            "endpoint": "/tags/archive.php",
+            "params": [
+                {
+                    "name": "tag",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "grants on the tag stay until revoked"
+                }
+            ],
+            "undo": "tag_update",
+            "confirm": true,
+            "approval": null,
+            "log_event": "tag.archive",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the tag",
+            "built": false
+        },
+        "upload_map_confirm": {
+            "action": "upload_map_confirm",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/uploads/map.php",
+            "params": [
+                {
+                    "name": "upload",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "target",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "sandbox or raw"
+                },
+                {
+                    "name": "target_dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an existing raw dataset — engineers"
+                },
+                {
+                    "name": "name",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a new dataset's name"
+                },
+                {
+                    "name": "mode",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "append or replace"
+                },
+                {
+                    "name": "sheet",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "header_row",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 to 50"
+                },
+                {
+                    "name": "columns",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an object of source column to name and type and personal kind"
+                },
+                {
+                    "name": "dedupe_key",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "template",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a template to apply"
+                },
+                {
+                    "name": "save_template",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a name to save this mapping as"
+                }
+            ],
+            "undo": "load_rollback",
+            "confirm": false,
+            "approval": null,
+            "log_event": "upload.map",
+            "who": "sandbox.upload (raw: loads.manage)",
+            "agent": false,
+            "record_id": "the load",
+            "built": false
+        },
+        "upload_discard": {
+            "action": "upload_discard",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/uploads/discard.php",
+            "params": [
+                {
+                    "name": "upload",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "an unmapped upload — its landing file goes when no load uses it"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "upload.discard",
+            "who": "own",
+            "agent": false,
+            "record_id": "the upload",
+            "built": false
+        },
+        "load_queue": {
+            "action": "load_queue",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/loads/queue.php",
+            "params": [
+                {
+                    "name": "load",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "replays a load from its landing file — refused when the landing was purged"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "load.queue",
+            "who": "loads.manage and write",
+            "agent": true,
+            "record_id": "the load",
+            "built": false
+        },
+        "load_rollback": {
+            "action": "load_rollback",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/loads/rollback.php",
+            "params": [
+                {
+                    "name": "load",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a new snapshot without its rows — history is never rewritten"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "load.rollback",
+            "who": "loads.manage and write",
+            "agent": true,
+            "record_id": "the load",
+            "built": false
+        },
+        "template_save": {
+            "action": "template_save",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/templates/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "csv or xlsx or json or parquet"
+                },
+                {
+                    "name": "mapping",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "an object as upload_map_confirm's columns"
+                },
+                {
+                    "name": "template",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "to update one"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "template.save",
+            "who": "sandbox.upload",
+            "agent": true,
+            "record_id": "the template",
+            "built": false
+        },
+        "template_delete": {
+            "action": "template_delete",
+            "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
+            "endpoint": "/templates/delete.php",
+            "params": [
+                {
+                    "name": "template",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "template.delete",
+            "who": "own or loads.manage",
+            "agent": true,
+            "record_id": "the template",
+            "built": false
+        },
+        "saved_query_save": {
+            "action": "saved_query_save",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/queries/save.php",
+            "params": [
+                {
+                    "name": "title",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "sql",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "one SELECT over dataset keys"
+                },
+                {
+                    "name": "question",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "the plain question it answers"
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "parameters",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a list of name and type and default"
+                },
+                {
+                    "name": "shared",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "saved_query",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "to update one — its badge drops when the SQL changes"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "saved_query.save",
+            "who": "queries.save",
+            "agent": true,
+            "record_id": "the saved query",
+            "built": false
+        },
+        "saved_query_delete": {
+            "action": "saved_query_delete",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/queries/delete.php",
+            "params": [
+                {
+                    "name": "saved_query",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "saved_query.delete",
+            "who": "own",
+            "agent": true,
+            "record_id": "the saved query",
+            "built": false
+        },
+        "query_verify": {
+            "action": "query_verify",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/queries/verify.php",
+            "params": [
+                {
+                    "name": "saved_query",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "verify",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no — no removes the badge"
+                }
+            ],
+            "undo": "query_verify",
+            "confirm": false,
+            "approval": "other",
+            "log_event": "query.verify",
+            "who": "queries.verify",
+            "agent": true,
+            "record_id": "the saved query",
+            "built": false
+        },
+        "sandbox_save": {
+            "action": "sandbox_save",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/sql/save-dataset.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "my sandbox dataset — sandbox.m{me}_name"
+                },
+                {
+                    "name": "sql",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "one SELECT"
+                },
+                {
+                    "name": "title",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "as_of",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "dataset_retire",
+            "confirm": false,
+            "approval": null,
+            "log_event": "sandbox.save",
+            "who": "sandbox.save",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "export_make": {
+            "action": "export_make",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/exports/make.php",
+            "params": [
+                {
+                    "name": "format",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "csv or xlsx or parquet"
+                },
+                {
+                    "name": "sql",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "one SELECT"
+                },
+                {
+                    "name": "saved_query",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a whole dataset I may read"
+                },
+                {
+                    "name": "as_of",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "export_delete",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "export.make",
+            "who": "export.own",
+            "agent": true,
+            "record_id": "the export",
+            "built": false
+        },
+        "export_delete": {
+            "action": "export_delete",
+            "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
+            "endpoint": "/exports/delete.php",
+            "params": [
+                {
+                    "name": "export",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "export.delete",
+            "who": "own",
+            "agent": true,
+            "record_id": "the export",
+            "built": false
+        },
+        "access_request_create": {
+            "action": "access_request_create",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/requests/save.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "level",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "discover or read or read_unmasked or write"
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "3 to 2000 characters"
+                },
+                {
+                    "name": "wanted_until",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a date"
+                }
+            ],
+            "undo": "access_request_withdraw",
+            "confirm": false,
+            "approval": null,
+            "log_event": "access.request",
+            "who": "access.request",
+            "agent": false,
+            "record_id": "the request",
+            "built": false
+        },
+        "access_request_draft": {
+            "action": "access_request_draft",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/requests/draft.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "level",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "for",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "the person the agent acts for — the asker by default"
+                }
+            ],
+            "undo": "access_request_withdraw",
+            "confirm": false,
+            "approval": null,
+            "log_event": "access.draft",
+            "who": "access.request",
+            "agent": true,
+            "record_id": "the request",
+            "built": false
+        },
+        "access_request_withdraw": {
+            "action": "access_request_withdraw",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/requests/withdraw.php",
+            "params": [
+                {
+                    "name": "access_request",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "access.withdraw",
+            "who": "own",
+            "agent": true,
+            "record_id": "the request",
+            "built": false
+        },
+        "access_decide": {
+            "action": "access_decide",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/requests/decide.php",
+            "params": [
+                {
+                    "name": "access_request",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "approve",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "level",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "another level than asked"
+                },
+                {
+                    "name": "until",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a date"
+                },
+                {
+                    "name": "note",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a denial says why"
+                }
+            ],
+            "undo": "grant_revoke",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "access.decide",
+            "who": "owner or grants.manage",
+            "agent": true,
+            "record_id": "the request",
+            "built": false
+        },
+        "grant_set": {
+            "action": "grant_set",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/grants/save.php",
+            "params": [
+                {
+                    "name": "target",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "dataset or zone or tag"
+                },
+                {
+                    "name": "dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "zone",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "raw or curated or product"
+                },
+                {
+                    "name": "tag",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "principal_kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "member or group or department or agent or everyone"
+                },
+                {
+                    "name": "principal",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "the member or group or department or agent"
+                },
+                {
+                    "name": "level",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "discover or read or read_unmasked or write or own"
+                },
+                {
+                    "name": "row_filter",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a predicate over the dataset's columns with {member_id} {departments} {groups}"
+                },
+                {
+                    "name": "until",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a date"
+                },
+                {
+                    "name": "reason",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "grant_revoke",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "grant.set",
+            "who": "owner (on their dataset) or grants.manage",
+            "agent": true,
+            "record_id": "the grant",
+            "built": false
+        },
+        "grant_revoke": {
+            "action": "grant_revoke",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/grants/revoke.php",
+            "params": [
+                {
+                    "name": "grant",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "grant_set",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "grant.revoke",
+            "who": "owner (on their dataset) or grants.manage",
+            "agent": true,
+            "record_id": "the grant",
+            "built": false
+        },
+        "group_create": {
+            "action": "group_create",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/groups/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "key",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "custom or department"
+                },
+                {
+                    "name": "department",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "for a mirror"
+                }
+            ],
+            "undo": "group_archive",
+            "confirm": false,
+            "approval": null,
+            "log_event": "group.create",
+            "who": "grants.manage",
+            "agent": true,
+            "record_id": "the group",
+            "built": false
+        },
+        "group_update": {
+            "action": "group_update",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/groups/save.php",
+            "params": [
+                {
+                    "name": "group",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "name",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "group.update",
+            "who": "grants.manage or a group owner",
+            "agent": true,
+            "record_id": "the group",
+            "built": false
+        },
+        "group_archive": {
+            "action": "group_archive",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/groups/archive.php",
+            "params": [
+                {
+                    "name": "group",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its grants stay until revoked"
+                }
+            ],
+            "undo": "group_update",
+            "confirm": true,
+            "approval": null,
+            "log_event": "group.archive",
+            "who": "grants.manage",
+            "agent": true,
+            "record_id": "the group",
+            "built": false
+        },
+        "group_member_add": {
+            "action": "group_member_add",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/groups/members/add.php",
+            "params": [
+                {
+                    "name": "group",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "member",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "role",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "owner or member"
+                }
+            ],
+            "undo": "group_member_remove",
+            "confirm": false,
+            "approval": null,
+            "log_event": "group.member_add",
+            "who": "grants.manage or a group owner",
+            "agent": true,
+            "record_id": "the group",
+            "built": false
+        },
+        "group_member_remove": {
+            "action": "group_member_remove",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/groups/members/remove.php",
+            "params": [
+                {
+                    "name": "group",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "member",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "group_member_add",
+            "confirm": true,
+            "approval": null,
+            "log_event": "group.member_remove",
+            "who": "grants.manage or a group owner",
+            "agent": true,
+            "record_id": "the group",
+            "built": false
+        },
+        "policy_set": {
+            "action": "policy_set",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/policies/save.php",
+            "params": [
+                {
+                    "name": "applies_to",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a personal kind or confidential or restricted or rescued"
+                },
+                {
+                    "name": "mask",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "full or partial_email or partial or hash or null or year_only"
+                }
+            ],
+            "undo": "policy_set",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "policy.set",
+            "who": "policies.manage",
+            "agent": true,
+            "record_id": "the policy",
+            "built": false
+        },
+        "column_classify": {
+            "action": "column_classify",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/columns/classify.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "column",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "classification",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "public or internal or confidential or restricted"
+                },
+                {
+                    "name": "personal_kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a kind — or none"
+                }
+            ],
+            "undo": "column_classify",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "column.classify",
+            "who": "catalog.edit",
+            "agent": true,
+            "record_id": "the column",
+            "built": false
+        },
+        "personal_confirm": {
+            "action": "personal_confirm",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/columns/confirm.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "column",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "accept",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "yes or no"
+                },
+                {
+                    "name": "personal_kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "another kind than proposed"
+                }
+            ],
+            "undo": "column_classify",
+            "confirm": false,
+            "approval": null,
+            "log_event": "column.confirm",
+            "who": "owner or steward or catalog.edit",
+            "agent": false,
+            "record_id": "the column",
+            "built": false
+        },
+        "admin_read_open": {
+            "action": "admin_read_open",
+            "section": "Access, policies, groups and personal data (slice 4)",
+            "endpoint": "/access/break-glass.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "10 to 2000 characters — the owner is told"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "other",
+            "log_event": "dataset.admin_read",
+            "who": "lake.admin_read",
+            "agent": false,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "contract_draft_save": {
+            "action": "contract_draft_save",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/contracts/save.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "version",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "major.minor.patch"
+                },
+                {
+                    "name": "schema",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a list of name and logical_type and physical_type and required and unique and primary_key and description"
+                },
+                {
+                    "name": "key",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "ordering_column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "sla",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an object of freshness and retention and time_to_detect and time_to_notify and time_to_repair"
+                },
+                {
+                    "name": "contract",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a draft to update"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "contract.draft",
+            "who": "contracts.manage",
+            "agent": true,
+            "record_id": "the contract",
+            "built": false
+        },
+        "contract_publish": {
+            "action": "contract_publish",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/contracts/publish.php",
+            "params": [
+                {
+                    "name": "contract",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a draft — a breaking change must be a new major version"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "other",
+            "log_event": "contract.publish",
+            "who": "contracts.manage",
+            "agent": true,
+            "record_id": "the contract",
+            "built": false
+        },
+        "promote_run": {
+            "action": "promote_run",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/promote.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a curated dataset — its raw inputs since the last promotion"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "promote.run",
+            "who": "promote.run and write",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "promote_rebuild": {
+            "action": "promote_rebuild",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/rebuild.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "rebuilds curated from all of raw under the active contract"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "promote.rebuild",
+            "who": "promote.run and write",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "drift_decide": {
+            "action": "drift_decide",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/drift.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "schema_version",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a pending change"
+                },
+                {
+                    "name": "accept",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "yes or no"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "drift.decide",
+            "who": "contracts.manage",
+            "agent": false,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "check_create": {
+            "action": "check_create",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/checks/save.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "not_null or unique or accepted_values or range or regex or row_count or freshness or referential or schema or custom_sql"
+                },
+                {
+                    "name": "column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "params",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an object as the kind needs"
+                },
+                {
+                    "name": "dimension",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "accuracy or completeness or conformity or consistency or coverage or timeliness or uniqueness or validity"
+                },
+                {
+                    "name": "severity",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "warn or error"
+                },
+                {
+                    "name": "blocking",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no — an agent's check is never blocking"
+                },
+                {
+                    "name": "run_when",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "on_load or hourly or daily"
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "check_disable",
+            "confirm": false,
+            "approval": null,
+            "log_event": "check.create",
+            "who": "checks.manage (an agent: its grant of this action)",
+            "agent": true,
+            "record_id": "the check",
+            "built": false
+        },
+        "check_update": {
+            "action": "check_update",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/checks/save.php",
+            "params": [
+                {
+                    "name": "check",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "dataset",
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "kind",
+                    "repeated": false,
+                    "hint": "not_null or unique or accepted_values or range or regex or row_count or freshness or referential or schema or custom_sql"
+                },
+                {
+                    "required": false,
+                    "name": "column",
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "params",
+                    "repeated": false,
+                    "hint": "an object as the kind needs"
+                },
+                {
+                    "required": false,
+                    "name": "dimension",
+                    "repeated": false,
+                    "hint": "accuracy or completeness or conformity or consistency or coverage or timeliness or uniqueness or validity"
+                },
+                {
+                    "required": false,
+                    "name": "severity",
+                    "repeated": false,
+                    "hint": "warn or error"
+                },
+                {
+                    "required": false,
+                    "name": "blocking",
+                    "repeated": false,
+                    "hint": "yes or no — an agent's check is never blocking"
+                },
+                {
+                    "required": false,
+                    "name": "run_when",
+                    "repeated": false,
+                    "hint": "on_load or hourly or daily"
+                },
+                {
+                    "required": false,
+                    "name": "description",
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "check.update",
+            "who": "checks.manage",
+            "agent": true,
+            "record_id": "the check",
+            "built": false,
+            "partial": true
+        },
+        "check_disable": {
+            "action": "check_disable",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/checks/disable.php",
+            "params": [
+                {
+                    "name": "check",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "enable",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes — turns it back on"
+                }
+            ],
+            "undo": "check_disable",
+            "confirm": false,
+            "approval": null,
+            "log_event": "check.disable",
+            "who": "checks.manage",
+            "agent": true,
+            "record_id": "the check",
+            "built": false
+        },
+        "check_delete": {
+            "action": "check_delete",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/checks/delete.php",
+            "params": [
+                {
+                    "name": "check",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its results go with it"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "check.delete",
+            "who": "checks.manage",
+            "agent": true,
+            "record_id": "the check",
+            "built": false
+        },
+        "check_run": {
+            "action": "check_run",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/checks/run.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "every enabled check now"
+                },
+                {
+                    "name": "check",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "one"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "check.run",
+            "who": "checks.manage or steward",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "incident_ack": {
+            "action": "incident_ack",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/incidents/ack.php",
+            "params": [
+                {
+                    "name": "incident",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "incident.ack",
+            "who": "incidents.manage or steward or owner",
+            "agent": true,
+            "record_id": "the incident",
+            "built": false
+        },
+        "incident_assign": {
+            "action": "incident_assign",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/incidents/assign.php",
+            "params": [
+                {
+                    "name": "incident",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "assignee",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a member"
+                }
+            ],
+            "undo": "incident_assign",
+            "confirm": false,
+            "approval": null,
+            "log_event": "incident.assign",
+            "who": "incidents.manage or owner",
+            "agent": true,
+            "record_id": "the incident",
+            "built": false
+        },
+        "incident_note": {
+            "action": "incident_note",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/incidents/note.php",
+            "params": [
+                {
+                    "name": "incident",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "body",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "up to 8000 characters — names and counts never values"
+                },
+                {
+                    "name": "kind",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "note or triage"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "incident.note",
+            "who": "discover",
+            "agent": true,
+            "record_id": "the incident",
+            "built": false
+        },
+        "incident_resolve": {
+            "action": "incident_resolve",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/incidents/resolve.php",
+            "params": [
+                {
+                    "name": "incident",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "resolution",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "root_cause",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "incident.resolve",
+            "who": "incidents.manage or owner",
+            "agent": false,
+            "record_id": "the incident",
+            "built": false
+        },
+        "incident_dismiss": {
+            "action": "incident_dismiss",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/incidents/dismiss.php",
+            "params": [
+                {
+                    "name": "incident",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "incident.dismiss",
+            "who": "incidents.manage",
+            "agent": false,
+            "record_id": "the incident",
+            "built": false
+        },
+        "certify": {
+            "action": "certify",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/certify.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "level",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "certified or promoted — promoted is the owner's lighter badge"
+                }
+            ],
+            "undo": "certify_remove",
+            "confirm": true,
+            "approval": "other",
+            "log_event": "certify.set",
+            "who": "checks.manage (promoted: owner)",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "certify_remove": {
+            "action": "certify_remove",
+            "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
+            "endpoint": "/quality/uncertify.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "certify",
+            "confirm": true,
+            "approval": null,
+            "log_event": "certify.remove",
+            "who": "checks.manage or owner",
+            "agent": true,
+            "record_id": "the dataset",
+            "built": false
+        },
+        "source_create": {
+            "action": "source_create",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "connector",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "upload or http_file or sftp_file or k7 or postgres"
+                },
+                {
+                    "name": "target_dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a raw dataset — made when new"
+                },
+                {
+                    "name": "settings",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an object as the connector needs — a URL or a directory or a provider and tool or a host and database and tables and watermark"
+                },
+                {
+                    "name": "schedule_minutes",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "0 for manual"
+                },
+                {
+                    "name": "rate_per_second",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "0.1 to 10"
+                },
+                {
+                    "name": "user_agent",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "source_delete",
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.create",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_update": {
+            "action": "source_update",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/save.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "name",
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "required": false,
+                    "name": "connector",
+                    "repeated": false,
+                    "hint": "upload or http_file or sftp_file or k7 or postgres"
+                },
+                {
+                    "required": false,
+                    "name": "target_dataset",
+                    "repeated": false,
+                    "hint": "a raw dataset — made when new"
+                },
+                {
+                    "required": false,
+                    "name": "settings",
+                    "repeated": false,
+                    "hint": "an object as the connector needs — a URL or a directory or a provider and tool or a host and database and tables and watermark"
+                },
+                {
+                    "required": false,
+                    "name": "schedule_minutes",
+                    "repeated": false,
+                    "hint": "0 for manual"
+                },
+                {
+                    "required": false,
+                    "name": "rate_per_second",
+                    "repeated": false,
+                    "hint": "0.1 to 10"
+                },
+                {
+                    "required": false,
+                    "name": "user_agent",
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.update",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false,
+            "partial": true
+        },
+        "source_credential_set": {
+            "action": "source_credential_set",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/credential.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "api_key or oauth_client or basic or sftp_password or sftp_key or bearer or database_password"
+                },
+                {
+                    "name": "secret",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "sealed at once — never shown again"
+                },
+                {
+                    "name": "label",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "other",
+            "log_event": "source.credential_set",
+            "who": "sources.manage",
+            "agent": false,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_test": {
+            "action": "source_test",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/test.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a probe — no pull is counted"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.test",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_pull_now": {
+            "action": "source_pull_now",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/pull.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.pull",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_pause": {
+            "action": "source_pause",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/pause.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "reason",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "source_resume",
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.pause",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_resume": {
+            "action": "source_resume",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/resume.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "source_pause",
+            "confirm": false,
+            "approval": null,
+            "log_event": "source.resume",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "source_delete": {
+            "action": "source_delete",
+            "section": "Sources and pulls (slice 6)",
+            "endpoint": "/sources/delete.php",
+            "params": [
+                {
+                    "name": "source",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its datasets stay — their loads lose the source"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "source.delete",
+            "who": "sources.manage",
+            "agent": true,
+            "record_id": "the source",
+            "built": false
+        },
+        "transform_save": {
+            "action": "transform_save",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/transforms/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "output_dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "curated or product or my sandbox"
+                },
+                {
+                    "name": "sql",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "one SELECT over dataset keys"
+                },
+                {
+                    "name": "mode",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "replace or incremental_merge — row-wise SQL only"
+                },
+                {
+                    "name": "schedule",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a cron expression or after_inputs"
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "transform",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "to update one — a new version refrozen"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "transform.save",
+            "who": "transforms.manage (a sandbox output: sandbox.transform)",
+            "agent": true,
+            "record_id": "the transform",
+            "built": false
+        },
+        "transform_run": {
+            "action": "transform_run",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/transforms/run.php",
+            "params": [
+                {
+                    "name": "transform",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "transform.run",
+            "who": "transforms.manage or the owner",
+            "agent": true,
+            "record_id": "the transform",
+            "built": false
+        },
+        "transform_enable": {
+            "action": "transform_enable",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/transforms/enable.php",
+            "params": [
+                {
+                    "name": "transform",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "enabled",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                }
+            ],
+            "undo": "transform_enable",
+            "confirm": false,
+            "approval": null,
+            "log_event": "transform.enable",
+            "who": "transforms.manage or the owner",
+            "agent": true,
+            "record_id": "the transform",
+            "built": false
+        },
+        "transform_delete": {
+            "action": "transform_delete",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/transforms/delete.php",
+            "params": [
+                {
+                    "name": "transform",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its output dataset stays"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "transform.delete",
+            "who": "transforms.manage or the owner",
+            "agent": true,
+            "record_id": "the transform",
+            "built": false
+        },
+        "metric_save": {
+            "action": "metric_save",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/metrics/save.php",
+            "params": [
+                {
+                    "name": "name",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "title",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a product"
+                },
+                {
+                    "name": "expression",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "an aggregate"
+                },
+                {
+                    "name": "time_column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "grains",
+                    "required": false,
+                    "repeated": true,
+                    "hint": "day or week or month or quarter or year"
+                },
+                {
+                    "name": "dimensions",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "filters",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "a fixed predicate"
+                },
+                {
+                    "name": "format",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "number or currency or percent or integer"
+                },
+                {
+                    "name": "unit",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "description",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "metric",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "to update one — its certification drops when the definition changes"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": false,
+            "approval": null,
+            "log_event": "metric.save",
+            "who": "metrics.manage",
+            "agent": true,
+            "record_id": "the metric",
+            "built": false
+        },
+        "metric_certify": {
+            "action": "metric_certify",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/metrics/certify.php",
+            "params": [
+                {
+                    "name": "metric",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "certify",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no"
+                }
+            ],
+            "undo": "metric_certify",
+            "confirm": false,
+            "approval": "other",
+            "log_event": "metric.certify",
+            "who": "metrics.manage",
+            "agent": true,
+            "record_id": "the metric",
+            "built": false
+        },
+        "metric_retire": {
+            "action": "metric_retire",
+            "section": "Transforms, products, metrics and lineage (slice 7)",
+            "endpoint": "/metrics/retire.php",
+            "params": [
+                {
+                    "name": "metric",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "metric.retire",
+            "who": "metrics.manage",
+            "agent": true,
+            "record_id": "the metric",
+            "built": false
+        },
+        "retention_set": {
+            "action": "retention_set",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/retention/save.php",
+            "params": [
+                {
+                    "name": "zone",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "raw or curated or product or sandbox"
+                },
+                {
+                    "name": "dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "keep_days",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "1 or more"
+                },
+                {
+                    "name": "by_column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an event-time column"
+                },
+                {
+                    "name": "action",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "delete or archive"
+                },
+                {
+                    "name": "retention",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "to update one"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "retention.set",
+            "who": "retention.manage",
+            "agent": true,
+            "record_id": "the retention",
+            "built": false
+        },
+        "retention_remove": {
+            "action": "retention_remove",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/retention/remove.php",
+            "params": [
+                {
+                    "name": "retention",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "retention_set",
+            "confirm": true,
+            "approval": null,
+            "log_event": "retention.remove",
+            "who": "retention.manage",
+            "agent": true,
+            "record_id": "the retention",
+            "built": false
+        },
+        "erasure_create": {
+            "action": "erasure_create",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/erasures/save.php",
+            "params": [
+                {
+                    "name": "identifiers",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a list of kind and value — up to 20"
+                },
+                {
+                    "name": "reason",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "scope",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "all or zones or datasets"
+                },
+                {
+                    "name": "zones",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                },
+                {
+                    "name": "datasets",
+                    "required": false,
+                    "repeated": true,
+                    "hint": ""
+                }
+            ],
+            "undo": "erasure_cancel",
+            "confirm": false,
+            "approval": null,
+            "log_event": "erasure.request",
+            "who": "erasure.manage",
+            "agent": false,
+            "record_id": "the erasure",
+            "built": false
+        },
+        "erasure_scan": {
+            "action": "erasure_scan",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/erasures/scan.php",
+            "params": [
+                {
+                    "name": "erasure",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "the writer reports before anything is deleted"
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "erasure.scan",
+            "who": "erasure.manage",
+            "agent": false,
+            "record_id": "the erasure",
+            "built": false
+        },
+        "erasure_approve": {
+            "action": "erasure_approve",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/erasures/approve.php",
+            "params": [
+                {
+                    "name": "erasure",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "time_travel_acknowledged",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "yes — time travel before now ends for every dataset"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "erasure.approve",
+            "who": "erasure.manage and not its requester",
+            "agent": true,
+            "record_id": "the erasure",
+            "built": false
+        },
+        "erasure_cancel": {
+            "action": "erasure_cancel",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/erasures/cancel.php",
+            "params": [
+                {
+                    "name": "erasure",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "before it is approved"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "erasure.cancel",
+            "who": "erasure.manage",
+            "agent": false,
+            "record_id": "the erasure",
+            "built": false
+        },
+        "maintenance_run": {
+            "action": "maintenance_run",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/maintenance/run.php",
+            "params": [
+                {
+                    "name": "scope",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "all or a dataset"
+                },
+                {
+                    "name": "dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "maintenance.run",
+            "who": "maintenance.run",
+            "agent": true,
+            "record_id": "the maintenance run",
+            "built": false
+        },
+        "snapshot_expire_now": {
+            "action": "snapshot_expire_now",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/maintenance/expire.php",
+            "params": [
+                {
+                    "name": "older_than",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a time — every dataset loses time travel before it"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "snapshot.expire",
+            "who": "maintenance.run",
+            "agent": true,
+            "record_id": "the maintenance run",
+            "built": false
+        },
+        "landing_purge": {
+            "action": "landing_purge",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/maintenance/landing-purge.php",
+            "params": [
+                {
+                    "name": "load",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "its landing file goes now — the load becomes not replayable"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": "deletion",
+            "log_event": "landing.purge",
+            "who": "loads.manage",
+            "agent": true,
+            "record_id": "the load",
+            "built": false
+        },
+        "landing_pin": {
+            "action": "landing_pin",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/maintenance/landing-pin.php",
+            "params": [
+                {
+                    "name": "load",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "pin",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes or no — a pinned landing file outlives the window"
+                }
+            ],
+            "undo": "landing_pin",
+            "confirm": false,
+            "approval": null,
+            "log_event": "landing.pin",
+            "who": "loads.manage",
+            "agent": true,
+            "record_id": "the load",
+            "built": false
+        },
+        "drill_run": {
+            "action": "drill_run",
+            "section": "Retention, erasure, maintenance and backups (slice 8)",
+            "endpoint": "/admin/backups/drill.php",
+            "params": [
+                {
+                    "name": "confirm",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "yes — restores the last backup into a scratch catalog and runs the fixed queries"
+                }
+            ],
+            "undo": null,
+            "confirm": true,
+            "approval": null,
+            "log_event": "backup.drill",
+            "who": "maintenance.run",
+            "agent": false,
+            "record_id": "the drill",
+            "built": false
+        },
+        "share_application": {
+            "action": "share_application",
+            "section": "The lake's API, keys and the K7 shares (slice 9)",
+            "endpoint": "/admin/connections/share.php",
+            "params": [
+                {
+                    "name": "dataset",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a product"
+                },
+                {
+                    "name": "application",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "the sibling's catalog key"
+                },
+                {
+                    "name": "level",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "discover or read — read by default"
+                }
+            ],
+            "undo": "share_revoke",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "share.grant",
+            "who": "grants.manage",
+            "agent": true,
+            "record_id": "the grant",
+            "built": false
+        },
+        "share_revoke": {
+            "action": "share_revoke",
+            "section": "The lake's API, keys and the K7 shares (slice 9)",
+            "endpoint": "/admin/connections/unshare.php",
+            "params": [
+                {
+                    "name": "grant",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "a share to an application"
+                }
+            ],
+            "undo": "share_application",
+            "confirm": true,
+            "approval": "external_send",
+            "log_event": "share.revoke",
+            "who": "grants.manage",
+            "agent": true,
+            "record_id": "the grant",
+            "built": false
+        },
+        "steward_propose": {
+            "action": "steward_propose",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/steward/propose.php",
+            "params": [
+                {
+                    "name": "kind",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "description or column_description or personal_data or owner or check or drift or unused or promotion or coverage or glossary_link"
+                },
+                {
+                    "name": "proposed_value",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "an object"
+                },
+                {
+                    "name": "dataset",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "column",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "rationale",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "from schema and profile and lineage — never a value"
+                }
+            ],
+            "undo": "proposal_decide",
+            "confirm": false,
+            "approval": null,
+            "log_event": "steward.propose",
+            "who": "catalog.browse (the Steward)",
+            "agent": true,
+            "record_id": "the proposal",
+            "built": false
+        },
+        "proposal_decide": {
+            "action": "proposal_decide",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/steward/decide.php",
+            "params": [
+                {
+                    "name": "proposal",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "decision",
+                    "required": true,
+                    "repeated": false,
+                    "hint": "accepted or edited or dismissed"
+                },
+                {
+                    "name": "value",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "the edited value"
+                },
+                {
+                    "name": "note",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "steward.decide",
+            "who": "owner or steward or catalog.edit",
+            "agent": false,
+            "record_id": "the proposal",
+            "built": false
+        },
+        "settings_save": {
+            "action": "settings_save",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/admin/settings/save.php",
+            "params": [
+                {
+                    "name": "landing_keep_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "snapshot_keep_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_text_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "audit_keep_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "backup_keep_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "sandbox_quota_bytes",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "max_upload_bytes",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "inline_flush_minutes",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "certification_target",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "unused_after_days",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "business_name",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "timezone",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": true,
+            "approval": "other",
+            "log_event": "settings.save",
+            "who": "settings.manage",
+            "agent": true,
+            "record_id": "the settings",
+            "built": false
+        },
+        "query_limits_set": {
+            "action": "query_limits_set",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/admin/limits/save.php",
+            "params": [
+                {
+                    "name": "query_timeout_screen_s",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_timeout_agent_s",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_timeout_export_s",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_rows_shown",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_rows_download",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_result_bytes",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_workers",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_memory_mb",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_threads",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_concurrency_person",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                },
+                {
+                    "name": "query_rate_agent_per_minute",
+                    "required": false,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": true,
+            "approval": "other",
+            "log_event": "query_limits.set",
+            "who": "query_limits.manage",
+            "agent": true,
+            "record_id": "the settings",
+            "built": false
+        },
+        "agents_settings_save": {
+            "action": "agents_settings_save",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/admin/agents/save.php",
+            "params": [
+                {
+                    "name": "steward",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "an agent"
+                },
+                {
+                    "name": "steward_hour",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "0 to 23"
+                },
+                {
+                    "name": "steward_minute",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "0 to 59"
+                },
+                {
+                    "name": "proposals_per_day",
+                    "required": false,
+                    "repeated": false,
+                    "hint": "1 to 100"
+                }
+            ],
+            "undo": "restore prior",
+            "confirm": true,
+            "approval": "other",
+            "log_event": "agents_settings.save",
+            "who": "agents.settings",
+            "agent": true,
+            "record_id": "the settings",
+            "built": false
+        },
+        "dispatch_retry": {
+            "action": "dispatch_retry",
+            "section": "Agents, the Steward, notifications, home and admin (slice 10)",
+            "endpoint": "/admin/agents/retry.php",
+            "params": [
+                {
+                    "name": "dispatch",
+                    "required": true,
+                    "repeated": false,
+                    "hint": ""
+                }
+            ],
+            "undo": null,
+            "confirm": false,
+            "approval": null,
+            "log_event": "agent.dispatch_retry",
+            "who": "agents.settings",
+            "agent": false,
+            "record_id": "the dispatch",
+            "built": false
+        }
+    }
+}

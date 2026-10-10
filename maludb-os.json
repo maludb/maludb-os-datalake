@@ -1,541 +1,564 @@
 {
-  "schema": "maludb-os.application/1",
-  "catalog_key": "datalake",
-  "name": "Data Lake",
-  "description": "The business's own data lake with a built-in lakehouse: spreadsheets people upload, files and outside databases read on a schedule, and extracts of the other applications' data through the kernel — landed as received, typed and checked against a contract, owned and certified. A catalog to find every dataset with its owner, meaning, freshness, quality and lineage; classifications, masks and row filters to protect it, with every read audited and an erasure that proves itself; a SQL editor, saved and verified queries, metrics and an ask window whose answers show their SQL. Built on open formats and embeddable libraries (DuckLake on PostgreSQL, Parquet, DuckDB) — no data platform adopted.",
-  "business_area": "Technology & Infrastructure",
-  "category": "database",
-  "icon": "feather-database",
-  "version": "0.1.0",
-  "criticality": "medium",
-  "vhost": {
-    "label": "datalake",
-    "document_root": "html",
-    "internal_port_env": "APP_INTERNAL_PORT"
-  },
-  "database": {
-    "suffix": "datalake",
-    "migrations": "db",
-    "provision": "deploy/os-provision.sh",
-    "roles": {
-      "rw": "datalake_rw",
-      "records_ro": "datalake_records_ro",
-      "activity_ro": "datalake_activity_ro"
-    }
-  },
-  "env": {
-    "required": [
-      "APP_NAME",
-      "APP_URL",
-      "DB_HOST",
-      "DB_PORT",
-      "DB_NAME",
-      "DB_USER",
-      "DB_PASSWORD",
-      "MCP_RECORDS_DB_USER",
-      "MCP_RECORDS_DB_PASSWORD",
-      "MCP_ACTIVITY_DB_USER",
-      "MCP_ACTIVITY_DB_PASSWORD",
-      "APP_INTERNAL_PORT",
-      "MCP_RECORDS_PORT",
-      "MCP_ACTIVITY_PORT",
-      "ACTION_TOKEN_KEY",
-      "ACTIONS_RELAY_KEY",
-      "OS_APPLICATION_TOKEN",
-      "OS_INTERNAL_URL",
-      "OS_LAUNCHER_URL",
-      "APP_KEY",
-      "MALUDB_API_URL",
-      "MALUDB_API_TOKEN",
-      "DL_STORAGE_DIR"
-    ],
-    "optional": [
-      "MALUMAIL_API_KEY",
-      "MAIL_FROM",
-      "MAIL_FROM_NAME",
-      "DL_BACKUP_DIR",
-      "DL_QUERY_SOCKET",
-      "DL_QUERY_WORKERS",
-      "DL_QUERY_MEMORY",
-      "DL_WRITER_MEMORY",
-      "DL_EXTENSION_DIR",
-      "DL_LAKE_DB_DSN",
-      "DL_QUERY_DB_DSN",
-      "DL_MASK_SALT_FILE",
-      "API_CORS_ORIGINS"
-    ]
-  },
-  "services": [
-    "deploy/datalake-records-mcp.service",
-    "deploy/datalake-activity-mcp.service",
-    "deploy/datalake-activity-ingest.service",
-    "deploy/datalake-activity-ingest.timer",
-    "deploy/datalake-directory-sync.service",
-    "deploy/datalake-directory-sync.timer",
-    "deploy/datalake-worker.service",
-    "deploy/datalake-worker.timer",
-    "deploy/datalake-writer.service",
-    "deploy/datalake-query.target"
-  ],
-  "endpoints": [
-    {
-      "name": "Web UI",
-      "kind": "ui",
-      "path": "/",
-      "auth_kind": "none",
-      "agent_reachable": false
+    "schema": "maludb-os.application/1",
+    "catalog_key": "datalake",
+    "name": "Data Lake",
+    "description": "The business's own data lake with a built-in lakehouse: spreadsheets people upload, files and outside databases read on a schedule, and extracts of the other applications' data through the kernel — landed as received, typed and checked against a contract, owned and certified. A catalog to find every dataset with its owner, meaning, freshness, quality and lineage; classifications, masks and row filters to protect it, with every read audited and an erasure that proves itself; a SQL editor, saved and verified queries, metrics and an ask window whose answers show their SQL. Built on open formats and embeddable libraries (DuckLake on PostgreSQL, Parquet, DuckDB) — no data platform adopted.",
+    "business_area": "Technology & Infrastructure",
+    "category": "database",
+    "icon": "feather-database",
+    "version": "0.1.0",
+    "criticality": "medium",
+    "vhost": {
+        "label": "datalake",
+        "document_root": "html",
+        "internal_port_env": "APP_INTERNAL_PORT"
     },
-    {
-      "name": "Health",
-      "kind": "http_api",
-      "path": "/api/v1/health",
-      "auth_kind": "none",
-      "agent_reachable": false
+    "database": {
+        "suffix": "datalake",
+        "migrations": "db",
+        "provision": "deploy/os-provision.sh",
+        "roles": {
+            "rw": "datalake_rw",
+            "records_ro": "datalake_records_ro",
+            "activity_ro": "datalake_activity_ro"
+        }
     },
-    {
-      "name": "Lake API",
-      "kind": "http_api",
-      "path": "/api/v1/",
-      "auth_kind": "bearer",
-      "agent_reachable": false
-    },
-    {
-      "name": "Records MCP",
-      "kind": "mcp",
-      "path": "/mcp/records",
-      "auth_kind": "bearer",
-      "agent_reachable": true,
-      "mcp_surface_version": 1
-    },
-    {
-      "name": "Activity MCP",
-      "kind": "mcp",
-      "path": "/mcp/activity",
-      "auth_kind": "bearer",
-      "agent_reachable": true,
-      "mcp_surface_version": 1
-    }
-  ],
-  "actions": {
-    "manifest": "docs/datalake-action-manifest.md",
-    "registry": "mcp/action_registry.json",
-    "base_url_env": "APP_INTERNAL_PORT"
-  },
-  "skills": [
-    "skills/datalake-basics",
-    "skills/answering-with-data",
-    "skills/writing-safe-sql",
-    "skills/describing-data",
-    "skills/land-a-new-spreadsheet",
-    "skills/triage-a-failed-check",
-    "skills/answer-where-does-this-number-come-from",
-    "skills/weekday-steward-report",
-    "skills/handle-an-erasure-request"
-  ],
-  "sso": {
-    "path": "/sso",
-    "logout_path": "/sso/logout"
-  },
-  "directory": {
-    "reads": true,
-    "writes": false
-  },
-  "assistant": {
-    "command_bar": true,
-    "agent": "expert"
-  },
-  "roles": [
-    {
-      "key": "user",
-      "name": "Member",
-      "description": "Finds data in the catalog, reads what is granted to them (masked), runs saved queries and metrics, asks the Expert, requests access, uploads a file into their sandbox, follows datasets.",
-      "capability": "write",
-      "is_admin": false,
-      "rights": [
-        "access.request",
-        "ask.use",
-        "catalog.browse",
-        "data.read",
-        "export.own",
-        "follow.use",
-        "keys.own",
-        "metrics.use",
-        "queries.run",
-        "sandbox.upload"
-      ]
-    },
-    {
-      "key": "analyst",
-      "name": "Analyst",
-      "description": "A Member who works with data: the SQL editor, saved queries, results saved as sandbox datasets, sandbox transforms, proposals for promotion.",
-      "capability": "write",
-      "is_admin": false,
-      "rights": [
-        "access.request",
-        "ask.use",
-        "catalog.browse",
-        "data.read",
-        "export.own",
-        "follow.use",
-        "keys.own",
-        "metrics.use",
-        "products.propose",
-        "queries.run",
-        "queries.save",
-        "sandbox.save",
-        "sandbox.transform",
-        "sandbox.upload",
-        "sql.editor"
-      ]
-    },
-    {
-      "key": "engineer",
-      "name": "Data engineer",
-      "description": "Builds the lake: sources and credentials, loads, contracts and promotion, transforms into curated and product, checks and incidents, descriptions, tags, the glossary, metrics, verified queries, maintenance.",
-      "capability": "write",
-      "is_admin": false,
-      "rights": [
-        "access.request",
-        "ask.use",
-        "catalog.browse",
-        "catalog.edit",
-        "checks.manage",
-        "contracts.manage",
-        "data.read",
-        "export.own",
-        "follow.use",
-        "incidents.manage",
-        "keys.own",
-        "loads.manage",
-        "maintenance.run",
-        "metrics.manage",
-        "metrics.use",
-        "products.propose",
-        "promote.run",
-        "queries.run",
-        "queries.save",
-        "queries.verify",
-        "sandbox.save",
-        "sandbox.transform",
-        "sandbox.upload",
-        "sources.manage",
-        "sql.editor",
-        "transforms.manage"
-      ]
-    },
-    {
-      "key": "admin",
-      "name": "Lake admin",
-      "description": "Every right: grants beyond a dataset's owner, classifications and masks, row filters, retention, erasure, settings, the query limits, the audit of every query, keys, agents, break-glass reads. A super-admin holds this role.",
-      "capability": "admin",
-      "is_admin": true,
-      "rights": [
-        "access.request",
-        "agents.settings",
-        "ask.use",
-        "audit.read",
-        "catalog.browse",
-        "catalog.edit",
-        "checks.manage",
-        "contracts.manage",
-        "data.read",
-        "erasure.manage",
-        "export.own",
-        "follow.use",
-        "grants.manage",
-        "incidents.manage",
-        "keys.all",
-        "keys.own",
-        "lake.admin_read",
-        "loads.manage",
-        "maintenance.run",
-        "metrics.manage",
-        "metrics.use",
-        "policies.manage",
-        "products.propose",
-        "promote.run",
-        "queries.run",
-        "queries.save",
-        "queries.verify",
-        "query_limits.manage",
-        "retention.manage",
-        "sandbox.save",
-        "sandbox.transform",
-        "sandbox.upload",
-        "settings.manage",
-        "sources.manage",
-        "sql.editor",
-        "transforms.manage"
-      ]
-    }
-  ],
-  "shares": [
-    {
-      "tool": "datasets_index",
-      "description": "The products granted to the asking application: key, title, description, columns, as-of, certification (os.datalake-datasets/1)",
-      "scoped": false
-    },
-    {
-      "tool": "product_rows",
-      "description": "A granted product's rows, masked as for a Member, paged ≤ 500 rows and ≤ 256 kB, `since` by its ordering column (os.datalake-rows/1)",
-      "scoped": false,
-      "timeout_seconds": 30
-    },
-    {
-      "tool": "metric_value",
-      "description": "A certified metric granted to the asking application, by grain and dimension over a period (os.datalake-metric/1)",
-      "scoped": false,
-      "timeout_seconds": 30
-    }
-  ],
-  "reads": [
-    {
-      "app": "gl",
-      "tool": "account_balances",
-      "why": "The ledger's balances by account, nightly, as a dataset with lineage back to the share (the owner's (c)); degrades to a paused source on no_connection"
-    },
-    {
-      "app": "gl",
-      "tool": "ar_aging_summary",
-      "why": "Receivables aging buckets, nightly (the owner's (c))"
-    },
-    {
-      "app": "gl",
-      "tool": "ap_due_summary",
-      "why": "Payables due by week, nightly (the owner's (c))"
-    },
-    {
-      "app": "inventory",
-      "tool": "sales_closed",
-      "why": "Closed sales by period, paged — the sales history the owner asks of first (the owner's (c))"
-    },
-    {
-      "app": "sales_crm",
-      "tool": "deals_won",
-      "why": "Won deals by period, paged with `since` (the owner's (c))"
-    }
-  ],
-  "agents": [
-    {
-      "key": "expert",
-      "job_description": "os/expert.md",
-      "access_capability": "write",
-      "hired_on_install": true,
-      "roles": [
-        "user"
-      ],
-      "tool_grants": {
-        "Records MCP": [
-          "catalog_search",
-          "get_dataset",
-          "dataset_describe",
-          "dataset_columns",
-          "dataset_preview",
-          "find_datasets",
-          "glossary",
-          "get_term",
-          "dataset_usage",
-          "popular_datasets",
-          "query_run",
-          "find_metrics",
-          "metric_value",
-          "find_saved_queries",
-          "run_saved_query",
-          "get_query_run",
-          "my_sandbox",
-          "dataset_health",
-          "failing_checks",
-          "late_datasets",
-          "open_incidents",
-          "get_incident",
-          "lineage_upstream",
-          "lineage_downstream",
-          "impact",
-          "schema_history",
-          "profile_history",
-          "get_contract",
-          "access_list",
-          "access_explain",
-          "my_access",
-          "find_loads",
-          "get_load",
-          "search"
+    "env": {
+        "required": [
+            "APP_NAME",
+            "APP_URL",
+            "DB_HOST",
+            "DB_PORT",
+            "DB_NAME",
+            "DB_USER",
+            "DB_PASSWORD",
+            "MCP_RECORDS_DB_USER",
+            "MCP_RECORDS_DB_PASSWORD",
+            "MCP_ACTIVITY_DB_USER",
+            "MCP_ACTIVITY_DB_PASSWORD",
+            "APP_INTERNAL_PORT",
+            "MCP_RECORDS_PORT",
+            "MCP_ACTIVITY_PORT",
+            "ACTION_TOKEN_KEY",
+            "ACTIONS_RELAY_KEY",
+            "OS_APPLICATION_TOKEN",
+            "OS_INTERNAL_URL",
+            "OS_LAUNCHER_URL",
+            "APP_KEY",
+            "MALUDB_API_URL",
+            "MALUDB_API_TOKEN",
+            "DL_STORAGE_DIR"
         ],
-        "Activity MCP": [
-          "record_history",
-          "recent_activity",
-          "activity_search"
-        ],
-        "Actions MCP": [
-          "saved_query_save",
-          "sandbox_save",
-          "access_request_draft",
-          "follow",
-          "export_make"
+        "optional": [
+            "MALUMAIL_API_KEY",
+            "MAIL_FROM",
+            "MAIL_FROM_NAME",
+            "DL_BACKUP_DIR",
+            "DL_QUERY_SOCKET",
+            "DL_QUERY_WORKERS",
+            "DL_QUERY_MEMORY",
+            "DL_WRITER_MEMORY",
+            "DL_EXTENSION_DIR",
+            "DL_LAKE_DB_DSN",
+            "DL_QUERY_DB_DSN",
+            "DL_MASK_SALT_FILE",
+            "API_CORS_ORIGINS"
         ]
-      },
-      "skills": [
+    },
+    "services": [
+        "deploy/datalake-records-mcp.service",
+        "deploy/datalake-activity-mcp.service",
+        "deploy/datalake-activity-ingest.service",
+        "deploy/datalake-activity-ingest.timer",
+        "deploy/datalake-directory-sync.service",
+        "deploy/datalake-directory-sync.timer",
+        "deploy/datalake-worker.service",
+        "deploy/datalake-worker.timer",
+        "deploy/datalake-writer.service",
+        "deploy/datalake-query.target"
+    ],
+    "endpoints": [
+        {
+            "name": "Web UI",
+            "kind": "ui",
+            "path": "/",
+            "auth_kind": "none",
+            "agent_reachable": false
+        },
+        {
+            "name": "Health",
+            "kind": "http_api",
+            "path": "/api/v1/health",
+            "auth_kind": "none",
+            "agent_reachable": false
+        },
+        {
+            "name": "Lake API",
+            "kind": "http_api",
+            "path": "/api/v1/",
+            "auth_kind": "bearer",
+            "agent_reachable": false
+        },
+        {
+            "name": "Records MCP",
+            "kind": "mcp",
+            "path": "/mcp/records",
+            "auth_kind": "bearer",
+            "agent_reachable": true,
+            "mcp_surface_version": 1
+        },
+        {
+            "name": "Activity MCP",
+            "kind": "mcp",
+            "path": "/mcp/activity",
+            "auth_kind": "bearer",
+            "agent_reachable": true,
+            "mcp_surface_version": 1
+        }
+    ],
+    "actions": {
+        "manifest": "docs/datalake-action-manifest.md",
+        "registry": "mcp/action_registry.json",
+        "base_url_env": "APP_INTERNAL_PORT"
+    },
+    "skills": [
         "skills/datalake-basics",
         "skills/answering-with-data",
         "skills/writing-safe-sql",
-        "skills/answer-where-does-this-number-come-from",
-        "skills/land-a-new-spreadsheet"
-      ]
-    },
-    {
-      "key": "steward",
-      "job_description": "os/steward.md",
-      "access_capability": "write",
-      "hired_on_install": true,
-      "roles": [
-        "user"
-      ],
-      "duty": {
-        "name": "The weekday steward report",
-        "schedule_cron": "40 6 * * 1-5"
-      },
-      "tool_grants": {
-        "Records MCP": [
-          "catalog_search",
-          "get_dataset",
-          "dataset_describe",
-          "dataset_columns",
-          "find_datasets",
-          "glossary",
-          "dataset_usage",
-          "dataset_health",
-          "failing_checks",
-          "late_datasets",
-          "open_incidents",
-          "get_incident",
-          "lineage_upstream",
-          "lineage_downstream",
-          "impact",
-          "schema_history",
-          "profile_history",
-          "get_contract",
-          "catalog_gaps",
-          "coverage",
-          "personal_data_map",
-          "steward_proposals",
-          "steward_report",
-          "find_loads",
-          "get_load",
-          "search"
-        ],
-        "Activity MCP": [
-          "record_history",
-          "actor_timeline",
-          "recent_activity"
-        ],
-        "Actions MCP": [
-          "steward_propose",
-          "incident_note",
-          "incident_ack",
-          "check_create",
-          "follow"
-        ]
-      },
-      "skills": [
-        "skills/datalake-basics",
         "skills/describing-data",
+        "skills/land-a-new-spreadsheet",
         "skills/triage-a-failed-check",
-        "skills/weekday-steward-report"
-      ]
-    }
-  ],
-  "approvals": [
-    {
-      "action": "access_decide",
-      "category": "external_send"
+        "skills/answer-where-does-this-number-come-from",
+        "skills/weekday-steward-report",
+        "skills/handle-an-erasure-request"
+    ],
+    "sso": {
+        "path": "/sso",
+        "logout_path": "/sso/logout"
     },
-    {
-      "action": "admin_read_open",
-      "category": "other"
+    "directory": {
+        "reads": true,
+        "writes": false
     },
-    {
-      "action": "agents_settings_save",
-      "category": "other"
+    "assistant": {
+        "command_bar": true,
+        "agent": "expert"
     },
-    {
-      "action": "certify",
-      "category": "other"
-    },
-    {
-      "action": "contract_publish",
-      "category": "other"
-    },
-    {
-      "action": "dataset_retire",
-      "category": "deletion"
-    },
-    {
-      "action": "erasure_approve",
-      "category": "deletion"
-    },
-    {
-      "action": "export_make",
-      "category": "external_send"
-    },
-    {
-      "action": "grant_revoke",
-      "category": "external_send"
-    },
-    {
-      "action": "grant_set",
-      "category": "external_send"
-    },
-    {
-      "action": "key_mint",
-      "category": "external_send"
-    },
-    {
-      "action": "landing_purge",
-      "category": "deletion"
-    },
-    {
-      "action": "load_rollback",
-      "category": "deletion"
-    },
-    {
-      "action": "policy_set",
-      "category": "external_send"
-    },
-    {
-      "action": "query_limits_set",
-      "category": "other"
-    },
-    {
-      "action": "retention_set",
-      "category": "deletion"
-    },
-    {
-      "action": "settings_save",
-      "category": "other"
-    },
-    {
-      "action": "share_application",
-      "category": "external_send"
-    },
-    {
-      "action": "snapshot_expire_now",
-      "category": "deletion"
-    },
-    {
-      "action": "source_credential_set",
-      "category": "other"
-    },
-    {
-      "action": "source_delete",
-      "category": "deletion"
-    },
-    {
-      "action": "transform_delete",
-      "category": "deletion"
-    },
-    {
-      "action": "verify_query",
-      "category": "other"
-    }
-  ]
+    "roles": [
+        {
+            "key": "user",
+            "name": "Member",
+            "description": "Finds data in the catalog, reads what is granted to them (masked), runs saved queries and metrics, asks the Expert, requests access, uploads a file into their sandbox, follows datasets.",
+            "capability": "write",
+            "is_admin": false,
+            "rights": [
+                "access.request",
+                "ask.use",
+                "catalog.browse",
+                "data.read",
+                "export.own",
+                "follow.use",
+                "keys.own",
+                "metrics.use",
+                "queries.run",
+                "sandbox.upload"
+            ]
+        },
+        {
+            "key": "analyst",
+            "name": "Analyst",
+            "description": "A Member who works with data: the SQL editor, saved queries, results saved as sandbox datasets, sandbox transforms, proposals for promotion.",
+            "capability": "write",
+            "is_admin": false,
+            "rights": [
+                "access.request",
+                "ask.use",
+                "catalog.browse",
+                "data.read",
+                "export.own",
+                "follow.use",
+                "keys.own",
+                "metrics.use",
+                "products.propose",
+                "queries.run",
+                "queries.save",
+                "sandbox.save",
+                "sandbox.transform",
+                "sandbox.upload",
+                "sql.editor"
+            ]
+        },
+        {
+            "key": "engineer",
+            "name": "Data engineer",
+            "description": "Builds the lake: sources and credentials, loads, contracts and promotion, transforms into curated and product, checks and incidents, descriptions, tags, the glossary, metrics, verified queries, maintenance.",
+            "capability": "write",
+            "is_admin": false,
+            "rights": [
+                "access.request",
+                "ask.use",
+                "catalog.browse",
+                "catalog.edit",
+                "checks.manage",
+                "contracts.manage",
+                "data.read",
+                "export.own",
+                "follow.use",
+                "incidents.manage",
+                "keys.own",
+                "loads.manage",
+                "maintenance.run",
+                "metrics.manage",
+                "metrics.use",
+                "products.propose",
+                "promote.run",
+                "queries.run",
+                "queries.save",
+                "queries.verify",
+                "sandbox.save",
+                "sandbox.transform",
+                "sandbox.upload",
+                "sources.manage",
+                "sql.editor",
+                "transforms.manage"
+            ]
+        },
+        {
+            "key": "admin",
+            "name": "Lake admin",
+            "description": "Every right: grants beyond a dataset's owner, classifications and masks, row filters, retention, erasure, settings, the query limits, the audit of every query, keys, agents, break-glass reads. A super-admin holds this role.",
+            "capability": "admin",
+            "is_admin": true,
+            "rights": [
+                "access.request",
+                "agents.settings",
+                "ask.use",
+                "audit.read",
+                "catalog.browse",
+                "catalog.edit",
+                "checks.manage",
+                "contracts.manage",
+                "data.read",
+                "erasure.manage",
+                "export.own",
+                "follow.use",
+                "grants.manage",
+                "incidents.manage",
+                "keys.all",
+                "keys.own",
+                "lake.admin_read",
+                "loads.manage",
+                "maintenance.run",
+                "metrics.manage",
+                "metrics.use",
+                "policies.manage",
+                "products.propose",
+                "promote.run",
+                "queries.run",
+                "queries.save",
+                "queries.verify",
+                "query_limits.manage",
+                "retention.manage",
+                "sandbox.save",
+                "sandbox.transform",
+                "sandbox.upload",
+                "settings.manage",
+                "sources.manage",
+                "sql.editor",
+                "transforms.manage"
+            ]
+        }
+    ],
+    "shares": [
+        {
+            "tool": "datasets_index",
+            "description": "The products granted to the asking application: key, title, description, columns, as-of, certification (os.datalake-datasets/1)",
+            "scoped": false
+        },
+        {
+            "tool": "product_rows",
+            "description": "A granted product's rows, masked as for a Member, paged ≤ 500 rows and ≤ 256 kB, `since` by its ordering column (os.datalake-rows/1)",
+            "scoped": false,
+            "timeout_seconds": 30
+        },
+        {
+            "tool": "metric_value",
+            "description": "A certified metric granted to the asking application, by grain and dimension over a period (os.datalake-metric/1)",
+            "scoped": false,
+            "timeout_seconds": 30
+        }
+    ],
+    "reads": [
+        {
+            "app": "gl",
+            "tool": "account_balances",
+            "why": "The ledger's balances by account, nightly, as a dataset with lineage back to the share (the owner's (c)); degrades to a paused source on no_connection"
+        },
+        {
+            "app": "gl",
+            "tool": "ar_aging_summary",
+            "why": "Receivables aging buckets, nightly (the owner's (c))"
+        },
+        {
+            "app": "gl",
+            "tool": "ap_due_summary",
+            "why": "Payables due by week, nightly (the owner's (c))"
+        },
+        {
+            "app": "inventory",
+            "tool": "sales_closed",
+            "why": "Closed sales by period, paged — the sales history the owner asks of first (the owner's (c))"
+        },
+        {
+            "app": "sales_crm",
+            "tool": "deals_won",
+            "why": "Won deals by period, paged with `since` (the owner's (c))"
+        }
+    ],
+    "agents": [
+        {
+            "key": "expert",
+            "job_description": "os/expert.md",
+            "access_capability": "write",
+            "hired_on_install": true,
+            "roles": [
+                "user"
+            ],
+            "tool_grants": {
+                "Records MCP": [
+                    "catalog_search",
+                    "get_dataset",
+                    "dataset_describe",
+                    "dataset_columns",
+                    "dataset_preview",
+                    "find_datasets",
+                    "glossary",
+                    "get_term",
+                    "dataset_usage",
+                    "popular_datasets",
+                    "query_run",
+                    "find_metrics",
+                    "metric_value",
+                    "find_saved_queries",
+                    "run_saved_query",
+                    "get_query_run",
+                    "my_sandbox",
+                    "dataset_health",
+                    "failing_checks",
+                    "late_datasets",
+                    "open_incidents",
+                    "get_incident",
+                    "lineage_upstream",
+                    "lineage_downstream",
+                    "impact",
+                    "schema_history",
+                    "profile_history",
+                    "get_contract",
+                    "access_list",
+                    "access_explain",
+                    "my_access",
+                    "find_loads",
+                    "get_load"
+                ],
+                "Activity MCP": [
+                    "record_history",
+                    "recent_activity",
+                    "activity_search"
+                ],
+                "Actions MCP": [
+                    "saved_query_save",
+                    "sandbox_save",
+                    "access_request_draft",
+                    "dataset_follow",
+                    "export_make"
+                ]
+            },
+            "skills": [
+                "skills/datalake-basics",
+                "skills/answering-with-data",
+                "skills/writing-safe-sql",
+                "skills/answer-where-does-this-number-come-from",
+                "skills/land-a-new-spreadsheet"
+            ]
+        },
+        {
+            "key": "steward",
+            "job_description": "os/steward.md",
+            "access_capability": "write",
+            "hired_on_install": true,
+            "roles": [
+                "user"
+            ],
+            "duty": {
+                "name": "The weekday steward report",
+                "schedule_cron": "40 6 * * 1-5"
+            },
+            "tool_grants": {
+                "Records MCP": [
+                    "catalog_search",
+                    "get_dataset",
+                    "dataset_describe",
+                    "dataset_columns",
+                    "find_datasets",
+                    "glossary",
+                    "dataset_usage",
+                    "dataset_health",
+                    "failing_checks",
+                    "late_datasets",
+                    "open_incidents",
+                    "get_incident",
+                    "lineage_upstream",
+                    "lineage_downstream",
+                    "impact",
+                    "schema_history",
+                    "profile_history",
+                    "get_contract",
+                    "catalog_gaps",
+                    "coverage",
+                    "personal_data_map",
+                    "steward_proposals",
+                    "steward_report",
+                    "find_loads",
+                    "get_load",
+                    "find_checks"
+                ],
+                "Activity MCP": [
+                    "record_history",
+                    "actor_timeline",
+                    "recent_activity"
+                ],
+                "Actions MCP": [
+                    "steward_propose",
+                    "incident_note",
+                    "incident_ack",
+                    "check_create",
+                    "dataset_follow"
+                ]
+            },
+            "skills": [
+                "skills/datalake-basics",
+                "skills/describing-data",
+                "skills/triage-a-failed-check",
+                "skills/weekday-steward-report"
+            ]
+        }
+    ],
+    "approvals": [
+        {
+            "action": "access_decide",
+            "category": "external_send"
+        },
+        {
+            "action": "admin_read_open",
+            "category": "other"
+        },
+        {
+            "action": "agents_settings_save",
+            "category": "other"
+        },
+        {
+            "action": "certify",
+            "category": "other"
+        },
+        {
+            "action": "check_delete",
+            "category": "deletion"
+        },
+        {
+            "action": "column_classify",
+            "category": "external_send"
+        },
+        {
+            "action": "contract_publish",
+            "category": "other"
+        },
+        {
+            "action": "dataset_retire",
+            "category": "deletion"
+        },
+        {
+            "action": "erasure_approve",
+            "category": "deletion"
+        },
+        {
+            "action": "export_make",
+            "category": "external_send"
+        },
+        {
+            "action": "grant_revoke",
+            "category": "external_send"
+        },
+        {
+            "action": "grant_set",
+            "category": "external_send"
+        },
+        {
+            "action": "key_mint",
+            "category": "external_send"
+        },
+        {
+            "action": "key_sql_switch",
+            "category": "external_send"
+        },
+        {
+            "action": "landing_purge",
+            "category": "deletion"
+        },
+        {
+            "action": "load_rollback",
+            "category": "deletion"
+        },
+        {
+            "action": "metric_certify",
+            "category": "other"
+        },
+        {
+            "action": "metric_retire",
+            "category": "deletion"
+        },
+        {
+            "action": "policy_set",
+            "category": "external_send"
+        },
+        {
+            "action": "query_limits_set",
+            "category": "other"
+        },
+        {
+            "action": "query_verify",
+            "category": "other"
+        },
+        {
+            "action": "retention_set",
+            "category": "deletion"
+        },
+        {
+            "action": "settings_save",
+            "category": "other"
+        },
+        {
+            "action": "share_application",
+            "category": "external_send"
+        },
+        {
+            "action": "share_revoke",
+            "category": "external_send"
+        },
+        {
+            "action": "snapshot_expire_now",
+            "category": "deletion"
+        },
+        {
+            "action": "source_credential_set",
+            "category": "other"
+        },
+        {
+            "action": "source_delete",
+            "category": "deletion"
+        },
+        {
+            "action": "transform_delete",
+            "category": "deletion"
+        }
+    ]
 }
