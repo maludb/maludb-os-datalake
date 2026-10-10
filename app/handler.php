@@ -9,12 +9,19 @@ declare(strict_types=1);
  * `{ok, did, record_id, location}` from emit_action_status(). Required by app/bootstrap.php after http.php.
  */
 
-/** POST + login + CSRF (an action token stands in): an anonymous POST is a 401, never a bare 403. */
+/**
+ * POST + login + CSRF (an action token stands in): an anonymous POST is a 401, never a bare 403. An agent's evaluation run changes
+ * nothing (access-and-policies §6: the kernel's eval runner never sends a write; this is the second wall). The person an agent's run acts
+ * for (K38) is already on the connection (app.on_behalf_of, set by the bootstrap), so require_level() judges the intersection.
+ */
 function dl_handler_begin(): void
 {
     require_post();
     require_login();
     verify_csrf();
+    if (is_action_authed() && !empty(($GLOBALS['__run_facts'] ?? null)['is_eval'] ?? false)) {
+        refuse(403, 'An evaluation run changes nothing.');
+    }
 }
 
 function req_has(string $name): bool

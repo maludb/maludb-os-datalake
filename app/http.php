@@ -224,6 +224,7 @@ function render_screen(string $title, string $pageHtml, array $layout = []): voi
         header('X-Screen: ' . ($layout['screen'] ?? ''));
         header('X-Entity: ' . ($layout['entity'] ?? ''));
         header('X-Record-Id: ' . ($layout['recordId'] ?? ''));
+        header('X-Dataset-Key: ' . ($layout['datasetKey'] ?? ''));     // a dataset's pages stamp its key (the manifest's convention)
         echo $pageHtml;
         return;
     }

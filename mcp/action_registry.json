@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-10T18:08:14+00:00",
+    "generated_at": "2026-10-10T21:12:01+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -27,7 +27,7 @@
                 "certification",
                 "personal"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "notifications": {
@@ -36,7 +36,7 @@
             "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
             "when": "my notices, unread first",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "activity": {
@@ -45,7 +45,7 @@
             "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
             "when": "my own trail here",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "settings": {
@@ -54,7 +54,7 @@
             "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
             "when": "my preferences: which notices by email and by text, the digest",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "settings-tokens": {
@@ -63,7 +63,7 @@
             "section": "Home, me, search and the shell (Phase 2 — sso-shell)",
             "when": "my MCP tokens and my API keys (with the SQL switch): mint (shown once), rotate, revoke",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "browse": {
@@ -79,7 +79,7 @@
                 "status"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "dataset-view": {
             "screen": "dataset-view",
@@ -141,7 +141,7 @@
                 "status"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "term-view": {
             "screen": "term-view",
@@ -189,7 +189,7 @@
             "when": "to drop files (CSV, TSV, XLSX, XLS, ODS, JSON, NDJSON, Parquet — up to 5 GB, sent in parts) and see each land",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "upload-map": {
             "screen": "upload-map",
@@ -207,7 +207,7 @@
             "when": "my sandbox datasets and my quota",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "load-list": {
             "screen": "load-list",
@@ -221,7 +221,7 @@
                 "since"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "load-view": {
             "screen": "load-view",
@@ -252,7 +252,7 @@
                 "as_of"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "queries": {
             "screen": "queries",
@@ -266,7 +266,7 @@
                 "owner"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "query-view": {
             "screen": "query-view",
@@ -313,7 +313,7 @@
                 "level"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "requests": {
             "screen": "requests",
@@ -444,7 +444,7 @@
                 "department"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "incident-list": {
             "screen": "incident-list",
@@ -538,7 +538,7 @@
                 "paused"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "source-view": {
             "screen": "source-view",
@@ -576,7 +576,7 @@
             "when": "the product gallery: certified products first, their owners, freshness and metrics",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "transform-list": {
             "screen": "transform-list",
@@ -588,7 +588,7 @@
                 "enabled"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "transform-view": {
             "screen": "transform-view",
@@ -629,7 +629,7 @@
                 "certified"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "metric-view": {
             "screen": "metric-view",
@@ -750,7 +750,7 @@
             "when": "to ask the lake in words: the conversation with the expert through the kernel's chat endpoint; each answer with the interpretation, the result as a table or a simple chart, Show SQL, the datasets and the metric or verified query used, the query run, a note when columns were masked; Yes / Fix it / Ask a steward",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "steward": {
             "screen": "steward",
@@ -763,7 +763,7 @@
                 "status"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "coverage": {
             "screen": "coverage",
@@ -781,7 +781,7 @@
             "when": "the lake's settings: windows, quotas, the upload ceiling, the masking salt's id, the certification target",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "admin-limits": {
             "screen": "admin-limits",
@@ -871,7 +871,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the prefs",
-            "built": false
+            "built": true
         },
         "notification_read": {
             "action": "notification_read",
@@ -892,7 +892,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the notification",
-            "built": false
+            "built": true
         },
         "notifications_read_all": {
             "action": "notifications_read_all",
@@ -913,7 +913,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "token_mint": {
             "action": "token_mint",
@@ -940,7 +940,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the token",
-            "built": false
+            "built": true
         },
         "token_revoke": {
             "action": "token_revoke",
@@ -961,7 +961,7 @@
             "who": "own or keys.all",
             "agent": false,
             "record_id": "the token",
-            "built": false
+            "built": true
         },
         "key_mint": {
             "action": "key_mint",
@@ -1006,7 +1006,7 @@
             "who": "own and keys.own",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "key_rotate": {
             "action": "key_rotate",
@@ -1027,7 +1027,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the new key",
-            "built": false
+            "built": true
         },
         "key_revoke": {
             "action": "key_revoke",
@@ -1048,7 +1048,7 @@
             "who": "own or keys.all",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "key_sql_switch": {
             "action": "key_sql_switch",
@@ -1075,7 +1075,7 @@
             "who": "own and sql.editor",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "dataset_create": {
             "action": "dataset_create",

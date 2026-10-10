@@ -152,3 +152,60 @@ horizontal scroll) and 1280; no console errors; the installer's `plan` clean; th
 ## Open questions
 None — decisions taken in this spec: the keys are finished in the shell (the manifest's section is the shell's); the engine's two services are started
 empty here so every slice proves against a running service; the home's tiles belong to the slices whose data they show.
+
+## Built and proven (2026-10-10)
+The shell stands: a person signs on through the kernel's hand-off and lands on **Home** — the search box with **Search** (`dl_search`) and **Ask**
+(`/ask`, slice 10's), then the tiles, each from its own partial: decisions waiting for me (access requests I decide, the Steward's proposals on mine —
+counted for real, zero until slices 4 and 10 make them), certified products (slice 7), popular this month (`dl_popular_datasets(30, NULL, 6)` — the
+wall the function's: a dataset I may not discover is never popular for me), recent and followed (slices 3 and 1), open incidents (slice 5); an
+engineer's tile and the admin's (slice 10) — each tile not built yet prints which slice builds it. A person who may discover no dataset sees ONE button,
+**Upload a spreadsheet** (a plain link to `/upload` until slice 2 ships it), and an engineer a quiet link to connect a source. The sidebar is
+`NAV_ITEMS` — eighteen items in the design's order in three groups and Me, each gated by its right; the header carries the business name, the highest
+role as a badge (Super-admin › Lake admin › Data engineer › Analyst › Member), the search box with Search and Ask (a magnifier at 375), the decisions
+badge, the bell, the switcher (K31) and the account menu. The phone's tab bar is **Home · Search · Ask · Me** (Me opens the sidebar). Search: datasets
+as cards (title, key, zone chip, certification badge, owner, usage, the excerpt marked), a dataset the person may only know exists as a **locked stub
+card** (its name, its owner, Request access — never an excerpt, a key or a classification), nothing for an external; facets as chips; paged 25;
+`search.catalog` logged with the query cut at 120, the count and the stub count. My settings (the sixteen kinds by email, by text, the digest), Tokens
+and keys (MCP tokens; **API keys finished**: rates, the SQL switch for `sql.editor`, rotation keeping the old key 24 h, revoke — anyone's for
+`keys.all`; a secret shown once), notifications, My activity in words. **The engine runs empty** under its units' own command lines: the writer
+claims, fails a kind no slice has built with *"not built until slice N"* and no retry; the query service answers `ping` on every instance's socket and
+refuses any other kind `not_built`; PHP reaches both through `app/lake/client.php` only, and `/api/v1/health` reports `engine: {writer, query}`
+without failing on them. **The dataset gate** (`app/lake/gate.php`) and **K38** are live: an agent's relayed run acts for the person the kernel says
+asked (`app.on_behalf_of` — the intersection), under the fail-closed ceiling when the kernel does not say. Sixteen placeholders call
+`render_nav_stub()`; the registry reads **6 screens and 9 actions built, 16 stubs**.
+
+**Proven** by `tests/phase2/run.sh` (scratch `dl_dev2` with the engine's roles provisioned by `deploy/os-provision.sh` itself — `DL_DEV_ENGINE=1`):
+**322 checks under php -S, 327 under a real Apache** serving the rendered vhost with the internal port on 9007 (firstrun 21 on the empty lake,
+browser 75 at 375 × 740, 1280 × 800 and JavaScript off with screenshots, gates 109 over six roles, engine 33 — the services, the queue, the engine
+gone and back, the gate, K38 — guard 6, vhost 42/47, picker 24, switcher 12) plus the registry `--check` and the schema proof (181); Phase 0's kit (83),
+the schema (181), the engine proof (157) and Phase 1's claims (61) re-run green; the installer's `plan` reads clean (59 steps, 7 notes — 9 built actions).
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **The writer's liveness** is its PostgreSQL connection: `application_name = datalake-writer` in `pg_stat_activity` (visible to the application's
+   role — the writer has no socket); `lake_ping()` answers `ok|down` per service, the query service by `ping` on each instance.
+2. **A dead socket** answers query-service §8's shape — `status: error, refusal_rule: engine_unavailable`, a sentence, `retry: true` — the one later
+   slices read (this spec said `status: engine_unavailable`). All instances busy → `busy` after 2 s of retries.
+3. **The query service's peer check** admits www-data's uid and its own (in production its own is `datalake-query`, which nothing else runs as; a
+   proof runs both as one user). `ping` answers even while an instance is busy (health), every other kind takes the instance's one-request lock.
+   Its Phase 0 prototype (`serve()`/`ask()`, a caller-built policy) stays importable for the engine proof only — never reachable from the unit.
+4. **A job of an unbuilt kind** gets `max_attempts = attempts` before `dl_job_finish(false)` — failed at once, no retry. `writer_main.py` merges
+   `services/lake/jobs/DISPATCH` when slice 2 adds the package (`services/lake/README.md` names who adds what).
+5. **K38 in PHP**: `lake_apply_run_requester()` (the bootstrap, every relayed agent call): `requested_by_member_id` → `app.on_behalf_of`; a chat
+   run's facts without the key, or no facts at all → the ceiling, and `require_level()` refuses a confidential, restricted or personal dataset at
+   `read` or above `k38_pending`; a duty reads as the agent alone. `dl_handler_begin()` refuses an evaluation run (`is_eval`) — the second wall.
+6. **The menu's rights**: Quality `catalog.browse` (a reading screen of what one may discover), Transforms `transforms.manage|sandbox.transform`,
+   Steward `catalog.edit` (the screen admits owners and stewards in slice 10), Admin → `/admin/settings` (`settings.manage`).
+7. **Files**: the tokens screen is `html/settings/tokens/index.php` (the registry resolves `/settings/tokens/` there); `shared/header.php` is the app's
+   top header and `shared/page-header.php` a screen's title and crumbs; API keys are `dlk_` + 48 hex.
+8. **`notification_read` with none named** marks every unread notice (the manifest's "or none for all"), logged `notification.read` with `all: true`.
+9. **The gate's fixture route** (`tests/phase2/routes/gate.php` at `/__proof/gate.php`) exists only for the proofs: the dev router serves it under
+   the scratch environment and `tests/phase2/servers.sh` adds a proof-only Alias to the rendered vhost — never `html/` or `deploy/`.
+
+**Found and fixed in Phase 2:**
+- **db/019** — `mcp_activity_log` was granted to the activity server's role only; My activity reads it as the application (Sales CRM's db/018, again).
+- **`deploy/os-provision.sh` wrote the DSNs unquoted** (`DL_LAKE_DB_DSN=host=… port=… …`): PHP and systemd read the whole line, but a shell that
+  sources the file read several assignments. A value with whitespace is now written double-quoted (all three readers strip the quotes).
+- **The writer's role reads no `dl_settings`**: it asks `dl_setting_int('writer_concurrency')` (db/005's functions) instead.
+- `config/.env.example` named the socket a path; it is a prefix (`/run/datalake/query` → `query-N.sock`), as query-service §2 says.
+- `tests/setup_dev.sh` gains `DL_DEV_ENGINE=1` (the ledger recorded, `os-provision.sh` run as the installer would, DuckLake's first attach, the engine
+  views), the sockets under `var/run`, the passfiles and a masking salt under `var/pass-<db>`; it refuses when the application is installed here.

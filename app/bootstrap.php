@@ -86,8 +86,12 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/directory.php';
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/api/kernel.php';
-// The shell's navigation, the switcher and the record picker are Phase 2's (docs/build-specs/sso-shell.md); the kit stands without them.
-// The lake's engine is reached only through app/lake/client.php (Phase 2): PHP never opens DuckDB, the files or the ducklake schema.
+require_once __DIR__ . '/switcher.php';                 // the application switcher (K31): os_my_applications(), the header's Helpdesk button and menu
+require_once __DIR__ . '/picker.php';                   // the record picker: picker_field(), picker_source() — the registry is app/pickers.php
+require_once __DIR__ . '/features/shell/nav.php';       // the ONE menu table, the tabs, the placeholders (render_nav_stub)
+require_once __DIR__ . '/features/shell/queries.php';   // the bell, the decisions waiting, the business name
+require_once __DIR__ . '/lake/gate.php';                // the dataset gate every slice calls (dataset_by_ref, dataset_level, require_level) and K38's requester
+require_once __DIR__ . '/lake/client.php';              // the ONE door to the engine (lake_query, lake_enqueue, lake_ping) — PHP never opens DuckDB or the files
 
 // A JSON caller (the kernel's actions server, an approval replay) never receives PHP's own
 // error output — a 500 it can parse instead of an HTML fragment.
@@ -155,6 +159,12 @@ if (PHP_SAPI !== 'cli') {
                     $GLOBALS['__action_authed'] = true;
                     $GLOBALS['__agent_run_id'] = action_token_run_id($actionToken);
                     $GLOBALS['__action_token'] = $actionToken;
+                    // K38 (access-and-policies §6): an agent's run a person asked for (a chat turn, a manual run, a delegation) acts for that
+                    // person — app.on_behalf_of, so every level and view answers the INTERSECTION; a chat turn on a kernel that does not say
+                    // who asked reads under the fail-closed ceiling. Set before db_apply_context() below.
+                    if ($m['member_kind'] === 'agent' && action_token_run_id($actionToken) !== null) {
+                        lake_apply_run_requester(run_facts($actionToken));
+                    }
                     header_remove('Set-Cookie');
                     register_shutdown_function(static function (): void {
                         if (session_status() === PHP_SESSION_ACTIVE) {

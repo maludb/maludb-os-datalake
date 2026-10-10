@@ -968,6 +968,14 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-10, later — PHASE 2 THE SHELL BUILT and proven** (`tests/phase2/run.sh`: **322 checks under php -S, 327 under a real Apache** with
+the deploy vhost — first run 21, the browser at 375/1280 and without JavaScript 75, rights and screens 109, the engine 33, the guard 6, the vhost
+42/47, the picker 24, the switcher 12; the schema proof 181; the registry and approvals in step): the shell, the switcher and the record picker,
+home, search with stubs, notifications, my activity, settings and tokens with the four key actions finished, `/api/v1/health` with the engine,
+`app/lake/gate.php` (the walls and K38 live) and `app/lake/client.php`, the writer and the query service running empty under their real commands;
+db/019; fixed on the way: the provision script wrote unquoted DSNs, the writer's role read the settings table directly, the socket was a path not a
+prefix. Decisions recorded in `docs/build-specs/sso-shell.md` "Built and proven". **Next: slice 1, the catalog (the CRUD exemplar).**
+
 **2026-10-10, later — PHASE 1 APPROVED by the owner ("Go").** Next: Phase 2 (`docs/build-specs/sso-shell.md`) → slice 1 → slices 2, 3, 4, 5 by the planning model (2, 3 and 5 the exemplars) → the handoff to Sonnet 5.5 for slices 6–10 and Phase 4.
 
 **2026-10-10, later — the owner walked through Phase 1's 32 decisions and took every recommendation** (§15): K38 BUILT in the kernel the same day (8c9b6fa), the monthly restore drill added to slice 8. **Next: the owner's go → Phase 2.**

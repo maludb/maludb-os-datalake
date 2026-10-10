@@ -92,8 +92,8 @@ check "$(curl -s $APP/api/v1/health | php -r '$h = json_decode(stream_get_conten
 url27=$(php bin/dev_handoff.php 27)
 check "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -c "$TMP/jar27" "$url27")" "302 $APP/" "a signed hand-off token opens a session (302 to /)"
 home27=$(curl -s -b "$TMP/jar27" "$APP/")
-has "$home27" 'id="home-member">SMOKE Marco<' "the home placeholder names the signed-in member"
-has "$home27" 'id="home-roles">Member, Analyst, Data engineer<' "…and the roles the kernel sent, by their names"
+has "$home27" 'id="header-user-name">SMOKE Marco<' "the home (the shell since Phase 2) names the signed-in member"
+has "$home27" 'id="header-role-badge">Data engineer<' "…and the highest role the kernel sent, as the header's badge"
 check "$(curl -s -o /dev/null -w '%{http_code}' "$url27")" "403" "the same token a second time is refused (replay)"
 check "$(curl -s -o /dev/null -w '%{http_code}' "$(HANDOFF_TTL=-120 php bin/dev_handoff.php 26)")" "403" "an expired token is refused"
 bad_url=$(APP_KEY=other php bin/dev_handoff.php 26 | sed "s#$APP##")

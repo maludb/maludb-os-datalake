@@ -3,7 +3,8 @@
  * Router for `php -S 127.0.0.1:9001 -t html tests/dev_router.php` — the vhost's rewrites (deploy/apache-datalake.conf), so the proofs run
  * without Apache: /sso, /sso/logout, /api/v1/health and the token API (/api/v1/{name}[/{id|key}[/{do}]] → api/v1/{name}.php with id/key/do);
  * the uploads in parts /upload/{start|part|finish}; the picker /pick/; a dataset by its key /datasets/{zone.name}[/{tab}] → datasets/view.php
- * (key, tab); a page of a record (/incidents/12/resolve) and the canonical URLs (/x/new, /x/{id}/edit, /x/{id}, /x → x.php or x/index.php).
+ * (key, tab); a page of a record (/incidents/12/resolve) and the canonical URLs (/x/new, /x/{id}/edit, /x/{id}, /x → x.php or x/index.php);
+ * and, under the scratch environment only, the proofs' fixture doors /__proof/<name>.php (tests/phase2/routes/).
  * A rewrite to a file its slice has not built yet answers 404, as Apache does. Anything that is a real file is served as it is.
  */
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -13,6 +14,12 @@ if ($path !== '/' && is_file($root . $path)) {
     return false;                                             // a static file or a real .php file
 }
 $set = static function (array $kv): void { foreach ($kv as $k => $v) { $_GET[$k] = $v; $_REQUEST[$k] = $v; } };
+// the proofs' own doors (tests/phase2/routes/ — the gate's fixture route): only under the scratch environment, never a file of html/
+if (preg_match('#^/__proof/([a-z_-]+)\.php$#', $path, $m) && (string) getenv('DL_DEV_ENV') !== '' && is_file(__DIR__ . '/phase2/routes/' . $m[1] . '.php')) {
+    $_SERVER['SCRIPT_NAME'] = $path;
+    require __DIR__ . '/phase2/routes/' . $m[1] . '.php';
+    return true;
+}
 $map = ['/sso' => '/sso.php', '/sso/logout' => '/sso/logout.php', '/api/v1/health' => '/api/v1/health.php'];
 $rel = rtrim($path, '/') ?: '/';
 if (isset($map[$rel])) { $target = $map[$rel]; }

@@ -32,7 +32,9 @@ envset() {
     local k=$1 v=$2 tmp
     tmp=$(mktemp)
     if [ -f "$ENVF" ]; then grep -v "^$k=" "$ENVF" > "$tmp" || true; fi
-    printf '%s=%s\n' "$k" "$v" >> "$tmp"
+    # a value with a space (a libpq DSN) is double-quoted: the PHP loader, systemd's EnvironmentFile and envval() strip the quotes, and a
+    # shell that sources the file (the proofs) reads ONE value instead of several assignments (found in Phase 2, 2026-10-10)
+    case "$v" in *[[:space:]]*) printf '%s="%s"\n' "$k" "$v" >> "$tmp" ;; *) printf '%s=%s\n' "$k" "$v" >> "$tmp" ;; esac
     if [ -f "$ENVF" ]; then cat "$tmp" > "$ENVF"; else install -m 640 "$tmp" "$ENVF"; fi
     rm -f "$tmp"
 }

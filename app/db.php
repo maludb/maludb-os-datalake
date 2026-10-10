@@ -18,12 +18,17 @@ function db(): PDO
     return $pdo;
 }
 
-/** Connection-scoped acting member (memory.md §1). Anonymous = '' and every rule denies. */
+/**
+ * Connection-scoped acting member (memory.md §1). Anonymous = '' and every rule denies. For an agent's relayed call the bootstrap also
+ * names the person the run acts for (K38 — the run facts' requested_by_member_id, access-and-policies §6): `app.on_behalf_of`, so
+ * dl_level() and every view answer the INTERSECTION of the agent's access and that person's. '' for everyone else.
+ */
 function db_apply_context(PDO $pdo): void
 {
     $memberId = isset($_SESSION['member_id']) ? (string) ((int) $_SESSION['member_id']) : '';
-    $stmt = $pdo->prepare('SELECT set_config(?, ?, false)');
-    $stmt->execute(['app.member_id', $memberId]);
+    $behalf = isset($GLOBALS['__on_behalf_of']) ? (string) ((int) $GLOBALS['__on_behalf_of']) : '';
+    $stmt = $pdo->prepare('SELECT set_config(?, ?, false), set_config(?, ?, false)');
+    $stmt->execute(['app.member_id', $memberId, 'app.on_behalf_of', $behalf]);
     $pdo->exec("SET TIME ZONE 'UTC'");
 }
 

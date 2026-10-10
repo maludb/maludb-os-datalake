@@ -84,10 +84,19 @@ session_regenerate_id(true);
 $_SESSION = ['member_id' => $memberId, 'csrf_token' => bin2hex(random_bytes(32)), 'signed_on_at' => time()];
 session_open($pdo, $memberId, session_id());
 db_apply_context($pdo);
+// How they are told exists before they look (sso-shell.md): the table's defaults until they choose. The directory sync does the same for every
+// admitted member. Their department groups follow them in (dl_group_sync_department — a department mirror group, when one exists, db/006).
+try {
+    $pdo->prepare('INSERT INTO notification_prefs (member_id) VALUES (:m) ON CONFLICT (member_id) DO NOTHING')->execute(['m' => $memberId]);
+    $pdo->prepare("SELECT dl_group_sync_department(g.id) FROM groups g
+                    WHERE g.kind = 'department' AND g.archived_at IS NULL
+                      AND g.department_id IN (SELECT department_id FROM department_members WHERE member_id = :m AND left_at IS NULL)")->execute(['m' => $memberId]);
+} catch (Throwable $e) {
+    error_log('sso prefs/groups: ' . $e->getMessage());
+}
 log_activity($pdo, 'member.sign_on', 'member', $memberId, ['request_id' => $requestId, 'after' => ['capability' => $capability, 'roles' => $claims['roles'] ?? null]]);
 
-// Where the launcher sent them: `next`, same-origin only (a local path; anything else is the home) — Sales CRM's Phase 2 fix, carried.
-// (Sales CRM also makes the person's notification_prefs row here; the lake's notification tables come with db/006+, so Phase 2 adds that line.)
+// Where the launcher sent them: `next`, same-origin only (a local path; anything else is the home).
 $next = safe_local_path(is_string($_GET['next'] ?? null) ? $_GET['next'] : null) ?? '/';
 header('Cache-Control: no-store');
 header('Location: ' . $next, true, 302);

@@ -1,13 +1,19 @@
 <?php
 declare(strict_types=1);
-/** / — home. Phase 0: a placeholder that proves the sign-on landed (who you are, the roles the kernel sent); the shell and the home screen are Phase 2 (docs/build-specs/sso-shell.md). */
+/**
+ * / — Home (screen `home`; sso-shell.md; design §9): the search box with Search and Ask, then the tiles — certified products, my recent and
+ * followed datasets, popular this month, open incidents on datasets I use, decisions waiting for me; an engineer's and the admin's tiles —
+ * each from its own partial, filled by the slice whose data it shows. A person who may discover no dataset sees ONE button: Upload a
+ * spreadsheet. JSON: present_home() — whitelisted.
+ */
 require_once dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/features/home/queries.php';
 require_login();
+require_right('catalog.browse');
 $pdo = db();
-$me = current_member();
+$s = home_summary($pdo, (int) current_member_id());
 log_screen_view($pdo, 'home');
-$roles = $pdo->query('SELECT r.role_key, r.name FROM dl_roles r WHERE r.role_key = ANY (dl_member_roles(app_current_member_id())) ORDER BY r.sort_order')->fetchAll();
 if (wants_json()) {
-    respond_screen(['member_id' => (int) $me['id'], 'display_name' => $me['display_name'], 'roles' => array_column($roles, 'role_key'), 'phase' => 'Phase 0: the shell is Phase 2']);
+    respond_screen(present_home($s));
 }
-echo view('home/placeholder.php', ['me' => $me, 'roles' => $roles]);
+render_screen('Home', view('home/index.php', ['s' => $s, 'tz' => member_timezone()]), ['activeNav' => 'home', 'screen' => 'home']);

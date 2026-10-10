@@ -21,7 +21,10 @@ if ((string) env('MALUDB_API_URL', '') !== '' && (string) env('MALUDB_API_TOKEN'
 }
 // the data directory (ROOT_STEPS step 3, design §14 — /srv/lake on its own volume): the web application writes only landing/ (uploads); lake/
 // is the engine's and unreadable to it by design, so health asks only that the directory and landing/ exist and landing/ takes writes.
-// The engine's own state (the writer's queue, the query service answering) joins in Phase 2 (app/lake/client.php).
 $dir = rtrim((string) (env('DL_STORAGE_DIR', '') ?: '/srv/lake'), '/');
 $out['storage'] = is_dir($dir) && is_dir($dir . '/landing') && is_writable($dir . '/landing') ? 'ok' : 'missing';
+// The engine (sso-shell.md): the writer (connected — pg_stat_activity) and the query service (a `ping` on its sockets), each ok or down.
+// Reported, never failing the check: the screens that need the engine say so themselves, the rest of the application stands.
+$ping = lake_ping($out['database'] === 'ok' ? db() : null);
+$out['engine'] = ['writer' => $ping['writer'], 'query' => $ping['query'], 'query_instances' => $ping['instances']];
 api_json($out, $out['ok'] ? 200 : 503);

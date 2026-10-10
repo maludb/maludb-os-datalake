@@ -1,4 +1,4 @@
-<?php /** A whole page that says one thing (a refusal, a 404). Data: title, message */ ?>
+<?php /** A whole page that says one thing (a refusal, a 404). Data: title, message, action? = [url, label, id] (the gate's Request access) */ ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +21,8 @@
                     <div class="card-body p-sm-5 text-center">
                         <h4 class="fw-bold mb-3" id="message-title"><?= e($title ?? '') ?></h4>
                         <p class="text-muted" id="message-text"><?= e($message ?? '') ?></p>
-                        <a href="/" class="btn btn-primary mt-2" id="message-home-btn">Back to <?= e(app_name()) ?></a>
+                        <?php if (!empty($action)): ?><a href="<?= e($action[0]) ?>" class="btn btn-primary mt-2" id="<?= e($action[2] ?? 'message-action-btn') ?>"><?= e($action[1]) ?></a><?php endif; ?>
+                        <a href="/" class="btn <?= empty($action) ? 'btn-primary' : 'btn-light' ?> mt-2" id="message-home-btn">Back to <?= e(app_name()) ?></a>
                     </div>
                 </div>
             </div>
