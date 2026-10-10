@@ -64,12 +64,13 @@ function default_activity_source(): string
     return PHP_SAPI === 'cli' ? 'cron' : 'web';
 }
 
-function log_screen_view(PDO $pdo, string $screen): void
+/** A screen opened (not for a JSON reader unless it says X-Screen-View: 1). $opts: a record's screen names it — a dataset's pages pass dataset_id (and the entity), so the dataset's timeline holds its views. */
+function log_screen_view(PDO $pdo, string $screen, array $opts = []): void
 {
     if (wants_json() && ($_SERVER['HTTP_X_SCREEN_VIEW'] ?? '') !== '1') {
         return;
     }
-    log_activity($pdo, 'screen.view', null, null, ['screen' => $screen]);
+    log_activity($pdo, 'screen.view', $opts['entity_type'] ?? null, $opts['entity_id'] ?? null, ['screen' => $screen] + array_intersect_key($opts, ['dataset_id' => 1]));
 }
 
 /**

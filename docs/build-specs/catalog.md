@@ -124,3 +124,92 @@ sources (6), lineage, transforms and metrics (7), retention (8). The writer is n
 None — decisions taken in this spec: the dataset page's frame owns all eight tabs and the later slices replace their partials; `dataset_create` makes curated
 and product datasets only; `column_update` never changes a name, a type or a classification; the steward picker offers members holding `catalog.edit` or
 owning a dataset.
+
+## Built and proven (2026-10-10)
+The catalog stands. **Browse** shows the lake by zone, department and tag (three rows of chips with counts of what the person may discover)
+and the datasets as cards — title, key, zone, certification, the health dot from `dl_dataset_health()`, owner, rows, "data updated", usage —
+a deprecated card greyed with "use {successor}", paged 24, never a stub. **The dataset page** (`/datasets/{id|key}`, `?tab=` or
+`/datasets/{key}/{tab}`) is the header (crumbs zone › department › key, status, certification or "Certification lost: {reason}" for 30
+days, classification and personal data, the health dot, owner and steward, "Data updated" and "Metadata updated" as two lines, rows · size
+· files from `dl_lake_tables` when the engine has the table) and its buttons (Query this — greyed until `/sql` is built, then live by
+itself —, Request access below `read`, Follow / Unfollow, ⋯ Edit · Tag · Deprecate · Retire); then the **eight tabs**, every pane
+server-rendered: About, Columns (a table at 1280, cards at 375), Usage (the 30-cell strip, who reads it most, read together with) and
+History (activity and schema versions merged, paged 50) built; Preview, Quality, Lineage and Access each `tab-pending.php` naming slice 2,
+5, 7 and 4; the notes panel below. **A stub** (a Member on a confidential dataset) is the title, key, owner, department and Request access —
+nothing else, on any tab. The dataset's add and edit forms, the deprecation form, a column's page (its meaning, type, classification and
+personal kind read-only, the term, the reference, the latest profile and the profile over time, made safe) and its edit form (the reference
+a dataset picker + a select of its live columns reloaded on change), the glossary (cards by category), a term's page with Approve and
+Deprecate, its form, and the tag vocabulary with its own make / change / archive form. The eighteen actions write through
+`app/features/*/write.php`; the twelve tools' SQL is in `app/features/{catalog,glossary,tags,history}/queries.php` (Phase 4 ports it).
+`worker_pass_search_catch_up` is real. The registry reads **17 screens and 27 actions built, 14 stubs**.
+
+**Proven** by `tests/phase3/slice1/run.sh` (scratch `dl_dev1` provisioned with the engine): **229 checks under php -S and the same 229 under
+a real Apache** serving the rendered vhost — catalog 65, columns 28, tags 24, glossary 31, walls 24, json 21, browser 36 (the eleven screens
+at 375 × 740 and 1280 × 800: 200, the screen stamped, no sideways scroll, no console error, a screenshot each in `/tmp/dl-shots/slice1`;
+tabs in place and as links without JavaScript; the ⋯ menu with and without; HTMX from a card; the record picker; a plain form POST) — plus
+the server log scanned clean, the registry `--check` and the schema proof (181). Re-run green: Phase 2 (**324 under php -S, 329 under
+Apache**, the suite now following the placeholders still owed), Phase 0's kit (83) and schema (181), Phase 1's claims (61); the installer's
+`plan` reads clean (59 steps, 7 notes, 27 built actions).
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **`require_dataset($pdo, $ref, $need)`** (`app/lake/gate.php`) is the gate for every handler and every record screen of a dataset:
+   `require_level()` with a stub refused as the same 404. Only `html/datasets/view.php` calls `require_level()` at `discover` to render a
+   stub — a handler that called `require_level()` would have acted on a dataset its caller may only know exists.
+2. **The edit rule** is `may_describe_dataset()` / `require_describe()` (`app/features/catalog/queries.php`): level `own` (the owner, or an
+   `own` grant), the steward by id, or `catalog.edit`; refused "Only the owner of {key}, its steward or a data engineer may change its
+   description." Deprecate: `own` or `catalog.edit`. Retire: a sandbox dataset `own` only, any other `catalog.edit`.
+3. **`dataset_update` takes `status`** (draft or active — the edit screen's field; the manifest row gained it): active from deprecated
+   clears the note and the successor — dataset_deprecate's undo.
+4. **Freshness** is "6 hours" / "2 days" for an agent and number + unit on the form, stored canonically (whole days as days), 1 hour to 365
+   days; fail-after shorter than warn-after is named on its field in PHP (the database's CHECK stays the referee, its text is no sentence).
+5. **Logs**: a description, purpose, usage or limitations over 200 characters by its length (≤ 200 its text); a column's and a term's
+   description, a note's body, a deprecation's note always by length; a tag by its slug; `before`/`after` only the changed fields.
+6. **The owner's and steward's links** open the datasets they keep (`/browse?owner=`): another person's trail is `actor_timeline`'s,
+   for `catalog.edit`, with no screen in the manifest.
+7. **Deprecate tells the followers** who asked to hear `deprecated` — `notify_followers()` over `dl_notify()` (the wall per follower, the
+   actor not told); that is the proof's "follower's notification".
+8. **Retire** lands on Browse (a sandbox dataset on `/browse?owner=me`); a retired dataset is nothing to everyone, the admin included
+   (db/008), and leaves the search index.
+9. **Tags**: `dataset_tag`'s `tag` is an id, a slug or words (slugged: "Quarter End" → `quarter-end`); a new slug is a FREE tag labelled
+   as typed; an archived tag is refused in words; `tag_create` is `managed` by default; a slug never changes.
+10. **No JavaScript needed**: the ⋯ menu is a `<details>`; a tab is a link to `?tab=` carrying `data-bs-toggle="tab"` (Bootstrap switches
+    in place); Retire and Deprecate confirm with `hx-confirm` (the sanctioned exemption). `assets/js/tag-editor.js` only previews a tag's
+    slug and a term's synonyms as chips.
+11. **Profiles are made safe by `present_profile()`** for the page and the JSON alike: min, max and top values masked when the column is
+    personal (confirmed or proposed — even an old profile written raw before the column was confirmed), the top values withheld when
+    confidential or restricted, min and max withheld when restricted.
+12. **One pass over the wall per question**: Browse computes the visible set once (`MATERIALIZED`) and the health of the page's 24 rows
+    only; the facets are one more pass.
+13. **The home's followed tile** is built (`HOME_TILE_SLICES` named slice 1): `my_followed_datasets()`; the recent half still names slice 3.
+14. **History** leaves out `screen.view` and `search.catalog`; actors are named from the mirror (a person who has left keeps a name), as My
+    activity does. `log_screen_view()` (`app/activity.php`) gained `$opts` so every dataset page logs with its `dataset_id`.
+15. **A column's URL** takes its name or its id; the search catch-up also catches glossary terms.
+16. **Files beyond the list**: `app/views/catalog/key-preview.php` (the name field's live key, Pattern A) and
+    `app/views/catalog/ref-columns.php` (the reference's select, Pattern A); the routes in `deploy/apache-datalake.conf` and
+    `tests/dev_router.php`; the nav's labels and the layout's screen → menu map; the Phase 2 suite made to follow what is still owed.
+
+**Found and fixed in slice 1:**
+- **db/020**: `mcp_dataset_columns` lacked db/017's `references_dataset_id` and `references_column`; `mcp_datasets` lacked
+  `certification_lost_at`; a taken key had no sentence — **`dl_dataset_key_taken(key)`**, the database's words for a taken or retired key,
+  named on the `name` field (a FUNCTION: the first try, a BEFORE INSERT trigger that raised, defeated Phase 2's `INSERT … ON CONFLICT (key)
+  DO NOTHING` — every later upsert would have broken); `dataset_follows` had no UPDATE for following again (`GRANT UPDATE (what)`).
+- **The vhost's dataset-key rule took `/datasets/save.php` for a key under Apache** (any `x.y` matched; php -S never saw it, a real file
+  is served first there): a key now names its zone (`raw|curated|product|sandbox`) in both vhost blocks and the dev router.
+- **`bin/build_action_registry.php`** could not resolve a nested record (`/datasets/{id}/columns/{column}[/edit]`) and, once
+  `datasets/form.php` existed, resolved `contract-edit` (`/datasets/{id}/contract/edit`) to it: interior ids are now dropped as the vhost
+  does, and a page's edit form is left for its slice to name.
+
+**What the exemplar fixes for slices 2–10** (copy these, by file):
+- **A write handler**: `html/datasets/save.php` (create and update in one file: `dl_handler_begin()` → `require_right()` /
+  `require_dataset()` + the rule → the `dl_text` / `dl_ref` / `dl_choice` / `dl_yes` fields with `$errors` → `dl_refuse_fields()` →
+  `dl_guard()` around a transaction that writes, logs and commits → `dl_done()`); the small ones `tag.php`, `deprecate.php`, `retire.php`,
+  `follow.php`; one handler for every record's notes, `html/notes/{add,delete}.php`.
+- **A screen**: `html/datasets/view.php` (gate → `find_*` → `$may` → `log_screen_view(…, ['entity_type', 'entity_id'])` → JSON through
+  `present_*` → the notices map → `render_screen()` with `datasetKey`); a form `html/datasets/form.php` with its Pattern A fragment.
+- **The dataset page's tabs**: replace your `app/views/datasets/partials/tab-{preview|access|quality|lineage}.php` and keep its data
+  (`d`, `columns`, `usage`, `history`, `may`, `here`); `dataset_tab_built()` and the JSON's `tabs` flip by themselves. A record screen of
+  a dataset: `app/views/catalog/column.php`.
+- **Reads**: walled views only, one SQL per question, presenters that whitelist (`app/features/catalog/{queries,present}.php`); a picker
+  entry delegates to its `*_for_pick()` (`app/pickers.php`).
+- **The proof**: `tests/phase3/slice1/` — `lib.php` (`actor`, `post_json`, `get_json`, `post_form`, `run_tag`, fixtures as postgres),
+  `run.sh` (both modes, the server log scanned, the registry `--check`), `browser.mjs` (the screens at both widths, JavaScript off).

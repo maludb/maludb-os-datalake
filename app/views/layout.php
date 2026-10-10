@@ -160,6 +160,8 @@ $first = array_key_first(nav_groups());
             var navId = { 'settings': 'my-settings', 'settings-tokens': 'tokens', 'metric-list': 'metrics', 'metric-view': 'metrics', 'source-list': 'sources',
                           'source-view': 'sources', 'load-list': 'loads', 'load-view': 'loads', 'transform-list': 'transforms', 'transform-view': 'transforms',
                           'my-access': 'access', 'requests': 'access', 'grants': 'access', 'admin-settings': 'admin', 'dataset-view': 'browse',
+                          'dataset-add': 'browse', 'dataset-edit': 'browse', 'column-view': 'browse', 'column-edit': 'browse', 'term-add': 'glossary',
+                          'term-edit': 'glossary', 'tags': 'glossary',
                           'query-view': 'queries', 'incident-list': 'quality', 'incident-view': 'quality', 'term-view': 'glossary', 'upload-map': 'upload' }[screen] || screen;
             document.querySelectorAll('.nxl-navbar .nxl-link, #tab-bar .app-tab').forEach(function (a) { a.classList.remove('active'); });
             var link = document.querySelector('#nav-' + navId + ' .nxl-link');
@@ -181,6 +183,7 @@ $first = array_key_first(nav_groups());
     </script>
     <script src="/assets/js/common-init.min.js"></script>
     <script src="/assets/js/record-picker.js"></script>   <!-- the record picker (design-system record-picker.md): after common-init -->
+    <script src="/assets/js/tag-editor.js"></script>      <!-- slice 1: the tag field's slug preview, the synonyms' chips (optional — the forms work without it) -->
     <script src="/assets/js/theme-customizer-init.min.js"></script>
 </body>
 </html>

@@ -147,7 +147,7 @@ function back_link(): ?array
     }
     $path = parse_url($back, PHP_URL_PATH) ?: '/';
     $labels = ['/' => 'Home', '/search' => 'Search', '/notifications' => 'Notifications', '/activity' => 'My activity', '/settings/' => 'My settings',
-               '/settings/tokens/' => 'Tokens'];
+               '/settings/tokens/' => 'Tokens', '/tags' => 'Tags'];
     if (isset($labels[$path])) {
         return [$back, $labels[$path]];
     }

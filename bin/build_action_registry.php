@@ -238,20 +238,25 @@ function screen_controller(string $url): ?string
     if (is_file(WEB_ROOT . $path . '/index.php')) {
         return WEB_ROOT . $path . '/index.php';                 // /team/departments → …/index.php
     }
-    // The canonical-URL rewrites: /{module}/new → form.php, /{module}/{id} → view.php.
+    // The canonical-URL rewrites: /{module}/new → form.php, /{module}/{id} → view.php, /{module}/{id}/edit → form.php. A record nested in
+    // another (slice 1's column: /datasets/{id}/columns/{column}[/edit] → datasets/columns/{view,form}.php) drops the interior ids, as the
+    // vhost's rewrite does. The edit form of a PAGE of a record (/datasets/{id}/contract/edit) is its slice's to name: unresolved here.
     $parts = explode('/', trim($path, '/'));
     $last = array_pop($parts);
     $dir = '/' . implode('/', $parts);
+    $noIds = static fn (array $p): string => '/' . implode('/', array_filter($p, static fn (string $x): bool => !ctype_digit($x)));
     if ($last === 'new') {
         return is_file(WEB_ROOT . $dir . '/form.php') ? WEB_ROOT . $dir . '/form.php' : null;
     }
     if ($last === 'edit') {
-        array_pop($parts);                                      // drop the {id} segment
-        $form = WEB_ROOT . '/' . implode('/', $parts) . '/form.php';
+        if (!ctype_digit((string) array_pop($parts))) {
+            return null;
+        }
+        $form = WEB_ROOT . $noIds($parts) . '/form.php';
         return is_file($form) ? $form : null;
     }
     if (ctype_digit($last)) {
-        return is_file(WEB_ROOT . $dir . '/view.php') ? WEB_ROOT . $dir . '/view.php' : null;
+        return is_file(WEB_ROOT . $noIds($parts) . '/view.php') ? WEB_ROOT . $noIds($parts) . '/view.php' : null;
     }
     // /channels/{id}/members → channels/members.php (a page of the record, rewritten by the vhost)
     if (preg_match('/^[a-z_-]+$/', $last) && $parts !== [] && ctype_digit((string) end($parts))) {

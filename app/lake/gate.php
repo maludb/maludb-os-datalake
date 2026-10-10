@@ -100,6 +100,20 @@ function require_level(PDO $pdo, string $ref, string $need): array
     return $d + ['my_level' => $level, 'is_stub' => false];
 }
 
+/**
+ * The gate for everything but the dataset page's own stub render (slice 1, the CRUD exemplar): require_level() with a stub refused as
+ * nothing — a handler, a tab, a column's page, a note never acts on a dataset the caller may only know exists. Every handler and every
+ * screen of a dataset's records calls this; only html/datasets/view.php calls require_level() at `discover` to render a stub.
+ */
+function require_dataset(PDO $pdo, string $ref, string $need = 'discover'): array
+{
+    $d = require_level($pdo, $ref, $need);
+    if (!empty($d['is_stub'])) {
+        respond_not_found('No such dataset.');
+    }
+    return $d;
+}
+
 /** A level refusal: JSON {"error": {code, message, …extra}}; HTMX a flash; a page the sentence with the Request access button. */
 function lake_refuse_level(int $status, string $code, string $message, array $extra, ?string $requestUrl): never
 {

@@ -1,7 +1,8 @@
 <?php
 /**
- * Proof: the shell's gates and its screens (sso-shell.md "Proof"): rights per role on the six screens and the sixteen placeholders (200 vs 403,
- * refused in words), the placeholders' behaviour (a page naming its slice, 501 for JSON and a POST, `stub` in the registry), the menu and the
+ * Proof: the shell's gates and its screens (sso-shell.md "Proof"): rights per role on the six screens and the sixteen menu screens (200 vs 403,
+ * refused in words), the placeholders STILL OWED (a page naming its slice, 501 for JSON and a POST, `stub` in the registry — the suite follows
+ * the slices as they ship, slice 1 built Browse and Glossary), the menu and the
  * tab bar per role, no-session answers, the home's tiles for a Member, an engineer and the admin (each tile its slice's line until built,
  * popular this month through the wall), the search box (a dataset by its key's words, a confidential one as a stub to a Member and nothing to an
  * external, facets, the log, escaping), the person's own screens and their nine actions (prefs, notices, tokens, keys with rates, the SQL
@@ -45,43 +46,50 @@ $badges = array_map('badge_of', $who);
 ok($badges === ['admin' => 'Super-admin', 'engineer' => 'Data engineer', 'analyst' => 'Analyst', 'member' => 'Member', 'bea' => 'Member', 'external' => 'Member'],
     'the header badge reads the highest role held (a person whose roles have not arrived is a Member by capability): ' . implode(', ', $badges));
 
-echo "2. The placeholders — a page naming its slice, 501 for JSON and for a POST\n";
-$stubs = trim((string) shell_exec('grep -rl "render_nav_stub(" ' . escapeshellarg(dirname(__DIR__, 2) . '/html') . ' 2>/dev/null | wc -l'));
-ok((int) $stubs === 16, "sixteen controllers call render_nav_stub — one per menu item a slice builds: $stubs");
-$ph = ['browse' => ['/browse', 'Slice 1', 'Browse'], 'glossary' => ['/glossary', 'Slice 1', 'Glossary'], 'upload' => ['/upload', 'Slice 2', 'Upload'],
-       'sandbox' => ['/sandbox', 'Slice 2', 'My sandbox'], 'loads' => ['/loads', 'Slice 2', 'Loads'], 'sql' => ['/sql', 'Slice 3', 'SQL'],
-       'queries' => ['/queries', 'Slice 3', 'Queries'], 'access' => ['/access', 'Slice 4', 'Access'], 'quality' => ['/quality', 'Slice 5', 'Quality'],
-       'sources' => ['/sources', 'Slice 6', 'Sources'], 'products' => ['/products', 'Slice 7', 'Products'], 'metrics' => ['/metrics', 'Slice 7', 'Metrics'],
-       'transforms' => ['/transforms', 'Slice 7', 'Transforms'], 'ask' => ['/ask', 'Slice 10', 'Ask'], 'steward' => ['/steward', 'Slice 10', 'Steward'],
-       'admin' => ['/admin/settings', 'Slice 10', 'Admin']];
+echo "2. The placeholders — a page naming its slice, 501 for JSON and for a POST (those whose slice has not shipped yet)\n";
+$html = dirname(__DIR__, 2) . '/html';
+$isStub = static fn (string $file): bool => is_file($html . $file) && str_contains((string) file_get_contents($html . $file), 'render_nav_stub(');
+$ph = ['browse' => ['/browse', '/browse.php', 'Slice 1', 'Browse'], 'glossary' => ['/glossary', '/glossary/index.php', 'Slice 1', 'Glossary'], 'upload' => ['/upload', '/upload/index.php', 'Slice 2', 'Upload'],
+       'sandbox' => ['/sandbox', '/sandbox.php', 'Slice 2', 'My sandbox'], 'loads' => ['/loads', '/loads/index.php', 'Slice 2', 'Loads'], 'sql' => ['/sql', '/sql/index.php', 'Slice 3', 'SQL'],
+       'queries' => ['/queries', '/queries/index.php', 'Slice 3', 'Queries'], 'access' => ['/access', '/access/index.php', 'Slice 4', 'Access'], 'quality' => ['/quality', '/quality/index.php', 'Slice 5', 'Quality'],
+       'sources' => ['/sources', '/sources/index.php', 'Slice 6', 'Sources'], 'products' => ['/products', '/products/index.php', 'Slice 7', 'Products'], 'metrics' => ['/metrics', '/metrics/index.php', 'Slice 7', 'Metrics'],
+       'transforms' => ['/transforms', '/transforms/index.php', 'Slice 7', 'Transforms'], 'ask' => ['/ask', '/ask/index.php', 'Slice 10', 'Ask'], 'steward' => ['/steward', '/steward/index.php', 'Slice 10', 'Steward'],
+       'admin' => ['/admin/settings', '/admin/settings/index.php', 'Slice 10', 'Admin']];
+$left = array_filter($ph, static fn (array $p): bool => $isStub($p[1]));
+$stubs = (int) trim((string) shell_exec('grep -rl "render_nav_stub(" ' . escapeshellarg($html) . ' 2>/dev/null | wc -l'));
+ok($stubs === count($left) && count($left) <= 16, "the controllers calling render_nav_stub are the placeholders still owed (" . count($left) . ': ' . implode(', ', array_keys($left)) . ')');
 $bad = [];
-foreach ($ph as $id => [$url, $slice, $title]) {
+foreach ($left as $id => [$url, , $slice, $title]) {
     $b = page($who['admin'], $url)['body'];
     if (!(str_contains($b, 'id="' . $id . '-coming"') && str_contains($b, e_($title) . ' is not built yet') && str_contains($b, $slice . ' builds this screen') && str_contains($b, '<title>' . e_($title) . ' · Data Lake</title>'))) { $bad[] = $url; }
 }
-ok($bad === [], 'every placeholder: the shell, the header and one card saying which slice builds it' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
-$r = page($who['admin'], '/browse', $json);
-ok($r['code'] === 501 && (body_json($r)['error']['code'] ?? '') === 'not_built', 'a JSON caller on a placeholder: 501 not_built');
-$r = req('POST', '/browse', ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
-ok($r['code'] === 501 && str_contains($r['body'], 'This is built by slice 1.'), 'a POST to a placeholder: 501, in words');
-$r = page($who['admin'], '/quality', ['headers' => ['HX-Request: true']]);
-ok($r['code'] === 200 && str_contains($r['body'], 'id="quality-coming"') && !str_contains($r['body'], '<html') && preg_match('/^HX-Title: Quality/mi', $r['headers']) === 1 && preg_match('/^X-Screen: quality\r?$/mi', $r['headers']) === 1,
-    'over HTMX a placeholder is the partial with HX-Title and X-Screen, so the highlight and the command bar follow');
-$v = (int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'metric-list'");
-page($who['admin'], '/metrics');
-ok((int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'metric-list'") === $v + 1, 'opening a placeholder logs screen.view with the manifest\'s screen id (metric-list)');
+ok($bad === [], 'every placeholder still owed: the shell, the header and one card saying which slice builds it' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
+[$stubUrl, , $stubSlice] = array_values($left)[0] ?? ['/admin/settings', '', 'Slice 10'];
+$r = page($who['admin'], $stubUrl, $json);
+ok($r['code'] === 501 && (body_json($r)['error']['code'] ?? '') === 'not_built', "a JSON caller on a placeholder ($stubUrl): 501 not_built");
+$r = req('POST', $stubUrl, ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
+ok($r['code'] === 501 && str_contains($r['body'], 'This is built by ' . strtolower($stubSlice) . '.'), 'a POST to a placeholder: 501, in words');
+if (isset($left['quality'])) {
+    $r = page($who['admin'], '/quality', ['headers' => ['HX-Request: true']]);
+    ok($r['code'] === 200 && str_contains($r['body'], 'id="quality-coming"') && !str_contains($r['body'], '<html') && preg_match('/^HX-Title: Quality/mi', $r['headers']) === 1 && preg_match('/^X-Screen: quality\r?$/mi', $r['headers']) === 1,
+        'over HTMX a placeholder is the partial with HX-Title and X-Screen, so the highlight and the command bar follow');
+}
+if (isset($left['metrics'])) {
+    $v = (int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'metric-list'");
+    page($who['admin'], '/metrics');
+    ok((int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'metric-list'") === $v + 1, 'opening a placeholder logs screen.view with the manifest\'s screen id (metric-list)');
+}
 $built = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/mcp/action_registry.json'), true);
 $sc = $built['screens'] ?? [];
 $ac = $built['actions'] ?? [];
 $stubIds = array_keys(array_filter($sc, static fn ($s) => !empty($s['stub'])));
 $builtIds = array_keys(array_filter($sc, static fn ($s) => !empty($s['built'])));
 $builtActions = array_keys(array_filter($ac, static fn ($a) => !empty($a['built'])));
-sort($stubIds); sort($builtIds); sort($builtActions);
-ok($builtIds === ['activity', 'home', 'notifications', 'search', 'settings', 'settings-tokens'],
-    'the registry marks the shell\'s six screens as built, so the voice surface offers no unbuilt screen: ' . implode(', ', $builtIds));
-ok(count($stubIds) === 16 && in_array('browse', $stubIds, true) && in_array('admin-settings', $stubIds, true), 'and the sixteen placeholders as stubs (' . count($stubIds) . ')');
-ok($builtActions === ['key_mint', 'key_revoke', 'key_rotate', 'key_sql_switch', 'notification_read', 'notifications_read_all', 'prefs_save', 'token_mint', 'token_revoke'],
-    'and the shell\'s nine actions as built: ' . implode(', ', $builtActions));
+$shellScreens = ['activity', 'home', 'notifications', 'search', 'settings', 'settings-tokens'];
+$shellActions = ['key_mint', 'key_revoke', 'key_rotate', 'key_sql_switch', 'notification_read', 'notifications_read_all', 'prefs_save', 'token_mint', 'token_revoke'];
+ok(array_diff($shellScreens, $builtIds) === [], 'the registry marks the shell\'s six screens as built, so the voice surface offers no unbuilt screen');
+ok(count($stubIds) === count($left) && (isset($left['admin']) ? in_array('admin-settings', $stubIds, true) : true), 'and the placeholders still owed as stubs (' . count($stubIds) . ')');
+ok(array_diff($shellActions, $builtActions) === [], 'and the shell\'s nine actions as built');
 
 echo "3. The menu and the tab bar per role, and no session\n";
 $menu = static fn (string $j): array => (preg_match_all('/id="nav-([a-z-]+)"/', page($j, '/')['body'], $m) ? $m[1] : []);
@@ -107,8 +115,9 @@ echo "4. Home — popular through the wall, each tile its slice's line, decision
 $d = body_json(page($who['member'], '/', $json))['data'] ?? [];
 $pop = array_column($d['popular'] ?? [], 'key');
 ok(($d['first_run'] ?? null) === false && $pop === ['curated.sales_orders', 'product.monthly_revenue'], 'Priya\'s home: popular this month, most queried first — and NOT the payroll (30 queries, but she may not discover it): ' . implode(', ', $pop));
-ok(($d['pending'] ?? []) == ['products' => 'slice 7', 'recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5'] && $d['engineer'] === null && $d['admin'] === null,
-    'each tile not built yet is null and names its slice; a Member has no engineer or admin tile');
+$owed = array_filter(['products' => 'slice 7', 'recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5'], static fn (string $k): bool => ($d[$k] ?? null) === null, ARRAY_FILTER_USE_KEY);
+ok(($d['pending'] ?? []) == $owed && isset($owed['products'], $owed['incidents']) && $d['engineer'] === null && $d['admin'] === null,
+    'each tile not built yet is null and names its slice (' . implode(', ', array_keys($owed)) . '); a Member has no engineer or admin tile');
 $h = page($who['member'], '/')['body'];
 ok(str_contains($h, 'id="home-popular"') && str_contains($h, 'id="home-popular-' . $orders . '"') && !str_contains($h, 'home-popular-' . $payroll) && str_contains($h, 'href="/datasets/curated.sales_orders?back=%2F"'),
     'the popular tile renders its cards, each a link carrying ?back= (click-around)');

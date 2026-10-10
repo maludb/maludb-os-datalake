@@ -15,7 +15,7 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass but `key_usage_prune` is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in
- * (design §10): `search_catch_up` slice 1's; `upload_sessions` slice 2's; `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
+ * (design §10): `search_catch_up` slice 1's (BUILT); `upload_sessions` slice 2's; `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
  * `freshness` slice 5's; `schedules` slices 5–7's (checks, source pulls, transforms); `retention`, `maintenance` slice 8's;
  * `outbox`, `dispatches`, `engine_health` slice 10's. REAL from the kit: `key_usage_prune` (dl_prune_key_usage, db/005).
  */
@@ -81,8 +81,34 @@ exit($report['errors'] === [] ? 0 : 1);
 
 /** SLICE 2 — upload sessions past upload_session_hours: their parts deleted, the session expired (a finished upload's blob is the writer's). */
 function worker_pass_upload_sessions(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expired' => 0, 'stub' => true]; }
-/** SLICE 1 — dl_search_catch_up(): every dataset, column, term, saved query and metric whose index row is older than its change. */
-function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['indexed' => 0, 'stub' => true]; }
+/**
+ * SLICE 1 — the search index caught up (catalog.md): the triggers index a person's change at once; this pass catches what they cannot see —
+ * a writer's commit (data_updated_at moves as datalake_lake), usage moving the ranking, a row missed in a failed transaction. Every dataset
+ * whose metadata_updated_at or data_updated_at passed its index row's updated_at (or that has none; or retired with one left) is re-indexed
+ * by dl_index_dataset(), and every glossary term whose updated_at did by dl_index_glossary_term() — at most $limit of each a pass, oldest
+ * change first. (Saved queries and metrics are indexed by their triggers; their slices add them here if they need a catch-up.)
+ */
+function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $st = $pdo->prepare("SELECT d.id FROM datasets d LEFT JOIN search_index s ON s.entity_kind = 'dataset' AND s.entity_id = d.id
+                          WHERE (d.status <> 'retired' AND (s.entity_id IS NULL OR GREATEST(d.metadata_updated_at, COALESCE(d.data_updated_at, d.metadata_updated_at)) > s.updated_at))
+                             OR (d.status = 'retired' AND s.entity_id IS NOT NULL)
+                          ORDER BY GREATEST(d.metadata_updated_at, COALESCE(d.data_updated_at, d.metadata_updated_at)) LIMIT :n");
+    $st->execute(['n' => $limit]);
+    $datasets = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+    foreach ($datasets as $id) {
+        $pdo->prepare('SELECT dl_index_dataset(:id)')->execute(['id' => $id]);
+    }
+    $st = $pdo->prepare("SELECT g.id FROM glossary_terms g LEFT JOIN search_index s ON s.entity_kind = 'glossary_term' AND s.entity_id = g.id
+                          WHERE (g.status <> 'deprecated' AND (s.entity_id IS NULL OR g.updated_at > s.updated_at)) OR (g.status = 'deprecated' AND s.entity_id IS NOT NULL)
+                          ORDER BY g.updated_at LIMIT :n");
+    $st->execute(['n' => $limit]);
+    $terms = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+    foreach ($terms as $id) {
+        $pdo->prepare('SELECT dl_index_glossary_term(:id)')->execute(['id' => $id]);
+    }
+    return ['indexed' => count($datasets), 'terms' => count($terms)];
+}
 /** SLICES 5–7 — what is due becomes a writer job (lake_jobs): a source's next pull (slice 6), a transform's schedule or its inputs' new snapshots (slice 7), a check's `hourly`/`daily` run (slice 5). Never runs the work itself. */
 function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'stub' => true]; }
 /** SLICE 5 — dl_freshness_due(): a dataset past freshness_warn_after / _error_after opens or escalates its freshness incident; a fresh one resolves it. */

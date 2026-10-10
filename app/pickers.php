@@ -36,6 +36,10 @@ function picker_like(string $q): string
     return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
 }
 
+require_once __DIR__ . '/features/catalog/queries.php';      // slice 1: datasets_for_pick, stewards_for_pick (and like_pattern)
+require_once __DIR__ . '/features/glossary/queries.php';     // slice 1: terms_for_pick
+require_once __DIR__ . '/features/tags/queries.php';         // slice 1: tags_for_pick
+
 return [
     'member' => [
         'title' => 'People and agents', 'noun' => 'person', 'roles' => ['catalog.browse'], 'params' => ['agents'],
@@ -71,5 +75,26 @@ return [
             return $r;
         },
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_departments WHERE department_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    // slice 1 — the catalog
+    'dataset' => [
+        'title' => 'Datasets', 'noun' => 'dataset', 'roles' => ['catalog.browse'], 'params' => ['except'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => datasets_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title || \' (\' || key || \')\' FROM mcp_datasets WHERE dataset_id = :id AND NOT is_stub', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'term' => [
+        'title' => 'Glossary terms', 'noun' => 'term', 'roles' => ['catalog.browse'], 'params' => ['except'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => terms_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_glossary_terms WHERE term_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'tag' => [
+        'title' => 'Tags', 'noun' => 'tag', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => tags_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT label FROM mcp_tags WHERE tag_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'steward' => [
+        'title' => 'Stewards', 'noun' => 'steward', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => stewards_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT display_name FROM mcp_members WHERE member_id = :id', ['id' => $id])) === null ? null : (string) $v,
     ],
 ];

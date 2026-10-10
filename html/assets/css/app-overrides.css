@@ -111,3 +111,25 @@ html.app-skin-dark #record-picker .record-picker-search { background: #0f172a; }
 .header-apps-menu { min-width: 260px; }
 .header-apps-menu .header-apps-list { max-height: calc(100vh - 260px); overflow-y: auto; }
 .header-apps-menu .dropdown-item.active { background: var(--bs-primary-bg-subtle, rgba(59, 130, 246, .12)); color: inherit; cursor: default; }
+
+/* ==========================================================================
+   Slice 1 — the catalog (docs/build-specs/catalog.md): the health dot, the dataset page's eight tabs (one scrolling strip at 375 — the
+   strip scrolls, never the page), the ⋯ menu as <details> (it works without JavaScript), the 30-cell usage strip, tag chips, a deprecated
+   card greyed, column cards at 375.
+   ========================================================================== */
+.health-dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; vertical-align: middle; }
+.dataset-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+.dataset-tabs .nav-link { white-space: nowrap; min-height: 44px; display: flex; align-items: center; }
+.dataset-more { position: relative; display: inline-block; }
+.dataset-more > summary { list-style: none; }
+.dataset-more > summary::-webkit-details-marker { display: none; }
+.dataset-more-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 1020; min-width: 12rem; padding: .25rem 0; background: var(--bs-body-bg, #fff);
+    border: 1px solid rgba(0,0,0,.12); border-radius: .375rem; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.dataset-more-menu .dropdown-item { min-height: 44px; display: flex; align-items: center; width: 100%; }
+html.app-skin-dark .dataset-more-menu { background: #1b2431; border-color: rgba(255,255,255,.12); }
+.usage-strip { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 2px; align-items: end; height: 48px; }
+.usage-strip .usage-cell { display: block; background: var(--bs-primary, #3454d1); border-radius: 2px; }
+.usage-strip .usage-cell.zero { background: rgba(0,0,0,.1); }
+.tag-chip { font-weight: 600; font-size: 12px; }
+.is-deprecated .dataset-card { opacity: .6; }
+.column-card .column-name { font-family: var(--bs-font-monospace); font-size: 13px; word-break: break-all; }

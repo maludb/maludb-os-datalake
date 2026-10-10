@@ -7,7 +7,7 @@ declare(strict_types=1);
  * slice builds it. Phase 2 fills `popular` (dl_popular_datasets(30, NULL, 6), db/018), `first_run` and `decisions`.
  *   products   certified products as cards                                   slice 7
  *   recent     my recently queried datasets                                  slice 3
- *   followed   the datasets I follow                                         slice 1
+ *   followed   the datasets I follow (my_followed_datasets — built)          slice 1
  *   popular    popular this month (queries and people, the wall the function's)  Phase 2
  *   incidents  open incidents on datasets I use                              slice 5
  *   decisions  access requests I decide, the Steward's proposals on mine     Phase 2 (counted; slices 4 and 10 make them)
@@ -22,6 +22,7 @@ const HOME_TILE_SLICES = ['products' => 'slice 7', 'recent' => 'slice 3', 'follo
 
 function home_summary(PDO $pdo, int $memberId): array
 {
+    require_once dirname(__DIR__) . '/catalog/queries.php';
     $first = !(bool) one_value($pdo, 'SELECT EXISTS (SELECT 1 FROM mcp_datasets WHERE NOT is_stub)');
     $popular = $pdo->query('SELECT dataset_id, key, title, certification, queries, people FROM dl_popular_datasets(30, NULL, 6)')->fetchAll();
     $engineer = has_right('catalog.edit') ? ['failed_loads' => null, 'late' => null, 'proposals' => null] : null;
@@ -29,7 +30,7 @@ function home_summary(PDO $pdo, int $memberId): array
     return [
         'products'  => null,
         'recent'    => null,
-        'followed'  => null,
+        'followed'  => my_followed_datasets($pdo, 6),           // slice 1
         'popular'   => $popular,
         'incidents' => null,
         'decisions' => decisions($pdo, $memberId),
@@ -59,7 +60,8 @@ function present_home(array $s): array
         'first_run' => $s['first_run'],
         'products'  => $s['products'],
         'recent'    => $s['recent'],
-        'followed'  => $s['followed'],
+        'followed'  => $s['followed'] === null ? null : array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],
+            'zone' => $r['zone'], 'certification' => $r['certification'], 'url' => '/datasets/' . $r['key']], $s['followed']),
         'popular'   => array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],
             'certification' => $r['certification'], 'queries' => (int) $r['queries'], 'people' => (int) $r['people'], 'url' => '/datasets/' . $r['key']], $s['popular']),
         'incidents' => $s['incidents'],

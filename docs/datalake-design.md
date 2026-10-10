@@ -968,6 +968,13 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-10, later — SLICE 1 THE CATALOG (the CRUD exemplar) BUILT and proven** (`tests/phase3/slice1/run.sh` **229 checks under php -S and
+under Apache**: the catalog 65, columns 28, tags 24, the glossary 31, the walls 24, JSON 21, the browser at 375/1280 and without JavaScript 36):
+browse with chips, the dataset page's frame with all eight tabs (About, Columns, Usage, History built; Preview, Access, Quality, Lineage the named
+slices'), the column pages, the glossary, tags, follows, notes; `require_dataset()` the gate of every handler; db/020 (the two reference columns and
+`certification_lost_at` in the views, `dl_dataset_key_taken()`, the follow upsert's grant); found: Apache read `/datasets/save.php` as a dataset key —
+a key in the rewrite now starts with its zone. 16 decisions in `catalog.md` "Built and proven". **Next: slice 2, uploads and loads (THE FIRST EXEMPLAR).**
+
 **2026-10-10, later — PHASE 2 THE SHELL BUILT and proven** (`tests/phase2/run.sh`: **322 checks under php -S, 327 under a real Apache** with
 the deploy vhost — first run 21, the browser at 375/1280 and without JavaScript 75, rights and screens 109, the engine 33, the guard 6, the vhost
 42/47, the picker 24, the switcher 12; the schema proof 181; the registry and approvals in step): the shell, the switcher and the record picker,
