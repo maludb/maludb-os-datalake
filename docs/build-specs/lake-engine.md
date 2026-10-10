@@ -33,7 +33,7 @@ working the `lake_jobs` queue with the library Phase 0 built and proved (`servic
 | `retention` | the worker nightly | `{retention_id}` | `{rows_deleted, snapshot_id}` |
 | `erasure` | `erasure_scan` (`{phase: scan}`), `dl_erasure_approve` (`{phase: erase}`) | `{phase}` + `ref_id` = the erasure | scan: `{found}`; erase: `{proof_ok}` |
 | `rollback` | `load_rollback` | `{load_id}` | `{removed, snapshot_id}` |
-| `backup_lock` | `deploy/backup.sh`, `drill_run` | `{purpose: backup|drill}` | `{held_ms}` |
+| `backup_lock` | the nightly backup timer, the monthly drill timer (the first Sunday 03:00 — the owner's ★8), `drill_run` | `{purpose: backup|drill}` | `{held_ms}` |
 
 - **Idempotency**: a load is keyed by `loads.idempotency_key` (unique — the first guard) and by `_dl_landing_sha256` in the data (the
   engine's backstop: a same-file reload answers `noop` with no snapshot); a promotion is a MERGE by key; a transform overwrites its own

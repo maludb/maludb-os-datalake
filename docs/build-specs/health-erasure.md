@@ -22,7 +22,7 @@ Schema (db/005, 009, 011, 013, 014, 016, 017, never modified): `dl_settings` (th
    `dl_query_runs_prune()` by the PHP worker (granted to `datalake_rw`).
 3. **The hourly flush and the nightly storage census are `maintenance` jobs** with `params.scope` = `flush` / `all` / a dataset key — no new job kind. **Backups and
    drills are `backup_lock` jobs** with `params.op` = `backup` / `drill` — so nothing else runs beside them (`dl_job_claim`).
-4. **Backups are started by a systemd timer this slice adds**, `deploy/datalake-backup.{service,timer}` (02:00 nightly, before the 02:30 maintenance), running
+4. **Backups are started by a systemd timer this slice adds**, `deploy/datalake-backup.{service,timer}`, and **a monthly automatic restore drill** (the owner's ★8, 2026-10-10) by `deploy/datalake-drill.{service,timer}` — `OnCalendar=Sun *-*-01..07 03:00` (the first Sunday, after the 02:00 backup), running `bin/backup.php --drill`; both pairs go into `maludb-os.json` `services` (02:00 nightly, before the 02:30 maintenance), running
    `php bin/backup.php` (enqueue only) as `www-data`; this slice lists both files in `maludb-os.json` `services`. The destination is `DL_BACKUP_DIR`, else
    `DL_STORAGE_DIR/backup`; backups older than `backup_keep_days` are removed by the handler after a good backup.
 5. **The drill restores into a database of its own**, `<DB_NAME>_drill`, made by `deploy/os-provision.sh` (this slice adds the step: created when missing,
@@ -77,7 +77,7 @@ deleted, and no load still `queued`/`running` on them: unlink `DL_STORAGE_DIR/<s
 `html/admin/retention/{index,save,remove}.php`, `html/admin/erasures/{index,form,view,status,save,scan,approve,cancel}.php`, `html/admin/maintenance/{index,run,expire,landing-purge,landing-pin}.php`,
 `html/admin/backups/{index,drill}.php`; `app/features/retention/{queries,present,write}.php`, `app/features/erasures/{queries,present,write}.php`, `app/features/maintenance/{queries,present,write}.php`,
 `app/features/backups/{queries,present,write}.php`; `app/views/admin/{retention,erasures,erasure-form,erasure-view,maintenance,backups}.php` + `app/views/admin/partials/{erasure-report,erasure-proof,erasure-status,storage-table,quota-table,queue-table,maintenance-runs,backup-rows}.php`;
-`services/lake/jobs/{retention,erasure,maintenance,backup}.py`; `bin/backup.php`; `bin/worker.php` (`retention`, `maintenance`); `deploy/datalake-backup.{service,timer}`; `deploy/os-provision.sh` (the drill
+`services/lake/jobs/{retention,erasure,maintenance,backup}.py`; `bin/backup.php` (`--drill` for the timer); `deploy/datalake-drill.{service,timer}`; `bin/worker.php` (`retention`, `maintenance`); `deploy/datalake-backup.{service,timer}`; `deploy/os-provision.sh` (the drill
 database step); `config/.env.example` (`DL_DRILL_DB_DSN`); `maludb-os.json` (`services` + the two backup units; `env.optional` + `DL_DRILL_DB_DSN`); `tests/phase3/slice8/{run.sh,lib.php,retention.php,erasure.php,maintenance.php,backups.php,json.php,browser.mjs}`.
 
 ## Query functions (signatures fixed)

@@ -26,20 +26,31 @@
 - `tests/phase0/run.sh` (the kit, 83) and `tests/engine/run.sh` (the engine, 157) unchanged and green.
 - The installer's `plan` reads the repository clean.
 
-## Decisions the specs took (the design left them open) — for the owner to confirm or change
+## The owner's answers (2026-10-10)
+
+The owner walked through the decisions below and **took every recommendation**: ★1–★8 one by one, 9–16, 17–25 and 26–32 as written. Two
+recommendations changed what the specs had said, and both are now in them:
+- **★2 → K38 built now.** The kernel's run facts answer `requested_by_member_id`, `requested_by_kind` and `requested_by_holds` for a chat,
+  manual or delegated run (kernel 8c9b6fa, `run_facts_requester()`, `docs/build-specs/kernel-run-facts-requester.md`, proof 8 checks; the
+  integration plugin's `agents.md` daa5640). An agent answering a person reads the intersection from day one; the fail-closed ceiling
+  (`k38_pending`, reads and writes) stays as the fallback for an older kernel.
+- **★8 → a monthly automatic restore drill** beside the nightly 02:00 backup: `deploy/datalake-drill.{service,timer}`, the first Sunday at 03:00
+  (`health-erasure.md`, `lake-engine.md` §1).
+
+## Decisions the specs took (the design left them open) — taken as recommended, 2026-10-10
 
 The ones worth reading first are marked ★.
 
 | # | Decision | Where | Why |
 |---|---|---|---|
 | ★1 | **The two shipped agents get no data access on install** — an admin grants the Expert and the Steward what they may read (a zone, a tag, datasets) | access-and-policies §6 | deny-by-default (D6) holds for agents too; until a grant, the Expert answers from the catalog and metrics' definitions only |
-| ★2 | **Until K38, an agent in a person's chat turn is refused confidential and personal datasets for reads AND writes** (`k38_pending`) | access-and-policies §6, query-service §3 | fail closed (D8): the kernel does not yet say who asked |
+| ★2 | **K38 built now** (the owner's choice); on a kernel without it, an agent in a person's chat turn is refused confidential and personal datasets for reads AND writes (`k38_pending`) | access-and-policies §6, query-service §3; kernel 8c9b6fa | the intersection from day one; fail closed (D8) as the fallback |
 | ★3 | **A personal-data proposal at ≥ 0.8 confidence masks the column at once** (`classified_by = rule`) and still waits for a person to confirm; below 0.8 it is only a proposal | lake-engine §3 | a likely email column is masked from its first load (D10), never left open while it waits |
 | ★4 | **Only product datasets can be shared with a sibling application**; `product_rows` also serves a person through the API (≤ 1,000 rows) | api-keys-k7 | siblings read the owned, certified surface (D14) |
 | ★5 | **The owner's five reads are seeded** by `bin/seed_k7_sources.php`: GL `account_balances`, `ar_aging_summary`, `ap_due_summary` (no paging), Inventory `sales_closed` and CRM `deals_won` (offset, 500 a page, a 92-day window moving forward), all nightly, into `raw.gl_*`, `raw.inventory_sales_closed`, `raw.crm_deals_won`; `no_connection` pauses a source, five failures pause and notify | sources-pulls | the owner's (c) |
 | ★6 | **Exports and transforms run in the writer** with the person's (or the transform owner's) policy frozen at the moment of the request | query-service §1, lake-engine §1 | one door's rules, applied where the files are written |
 | ★7 | **Archive retention is Extended**; v1 retention deletes | health-erasure | the design's `action` column kept; archive needs a second storage tier |
-| ★8 | **A nightly backup timer at 02:00** (before the 02:30 maintenance; `deploy/datalake-backup.{service,timer}`) and the restore drill into `<DB_NAME>_drill` made and dropped as postgres by the provision script — the writer's role never gets CREATEDB | health-erasure, lake-engine §6 | D11's backups, owned by the application |
+| ★8 | **A nightly backup timer at 02:00 and a monthly automatic restore drill (the first Sunday, 03:00 — the owner's choice)** (before the 02:30 maintenance; `deploy/datalake-backup.{service,timer}`) and the restore drill into `<DB_NAME>_drill` made and dropped as postgres by the provision script — the writer's role never gets CREATEDB | health-erasure, lake-engine §6 | D11's backups, owned by the application |
 | 9 | The query service compiles the policy itself from the caller's identity (callers never send a policy); only uid `www-data` may connect (SO_PEERCRED); one socket per worker instance (`/run/datalake/query-N.sock`), one request at a time, `busy` at once, the client rotates for 2 s | query-service §2 | the policy is never forged by a caller; the pool's limits are real |
 | 10 | Rate and concurrency admitted in PostgreSQL (`dl_query_admit`, advisory-lock slots — slice 3's migration) | query-service §2 | the limits hold across instances |
 | 11 | Running SQL is a read (the `/sql/run` door, the records tool `query_run`), never a registry action | query-service-editor, manifest | the Actions MCP is for changes |
@@ -71,6 +82,6 @@ database's own department filter). Slice 6: `DL_SECRETS_KEY` (`.env.example`, `m
 `deploy/datalake-backup.{service,timer}` in `maludb-os.json` `services`, `DL_DRILL_DB_DSN`, the drill database in `deploy/os-provision.sh`. Slice 9:
 `db/<next>_slice9_share_log.sql` (`dl_share_log()`), the API's rewrites in the vhost and `tests/dev_router.php`.
 
-## Still owed by others
-**K37** dataset feeds, **K38** run facts that say who asked (until then the fail-closed ceiling), **K39** the installer's one venv and template units
+## Still owed by others (K38 was built 2026-10-10)
+**K37** dataset feeds, **K39** the installer's one venv and template units
 (ROOT_STEPS works around) — design §12.

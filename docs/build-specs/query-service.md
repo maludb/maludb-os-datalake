@@ -60,7 +60,7 @@ service this spec describes**; slices 1, 2, 5, 7, 9 and 10 call it through the t
   threads, temp_mb}}`. `refused[].rule` ∈ `no_such_dataset`, `discover_only`, `not_readable`, `k38_pending`, `not_shared` (the app variant).
 - **The intersection** (D8): with `on_behalf_of`, each dataset's level is the lower of the agent's and the person's, both row filters apply
   (AND), masks are the lower level's — compiled in `dl_access_of` (db/008), nothing in Python.
-- **The fail-closed ceiling** until K38: with `ceiling = 'internal_unpersonal'` any dataset classified above `internal` or with a personal
+- **The fail-closed ceiling** on a kernel without K38 (built 2026-10-10; the fallback): with `ceiling = 'internal_unpersonal'` any dataset classified above `internal` or with a personal
   column is under `refused` with rule `k38_pending` ("readable once the kernel says who asked (K38)"). The MCP gate passes the ceiling
   for a `chat` run with no `requested_by_member_id` in its run facts; a `duty` run passes none (it reads as the agent).
 - **A key in the caller's SQL** that is under `refused` is refused with that rule and message; a key in neither map is `not_readable`.
@@ -75,7 +75,7 @@ Every refusal is `{"status": "refused", "refusal_rule": <rule>, "message": <one 
 | `catalog_reference`, `unknown_table`, `time_travel` | allowlist | a name that is not `<zone>.<dataset>`, or `AT (VERSION …)` in the SQL | "name a dataset" / "use the as-of option" |
 | `unbound_parameter` | allowlist | a `$name` with no value | the parameter's field marked |
 | `no_such_dataset`, `discover_only`, `not_readable`, `not_shared` | the policy | the key cannot be read by this caller | the message + **Request access** (`/access/requests/new?dataset=<key>`) — except `no_such_dataset` |
-| `k38_pending` | the policy | an agent's chat turn before K38 | the message; the expert says it may not read that dataset yet |
+| `k38_pending` | the policy | an agent's chat turn on a kernel without K38 | the message; the expert says it may not read that dataset yet |
 | `absent_as_of` | service | a granted dataset did not exist at the snapshot | "…did not exist then" |
 | `policy` | service | the compiled policy could not be honoured (a row filter with a forbidden node) — fail closed | "the lake refused this read (its policy)"; the admin is notified once a day |
 | `rate`, `concurrency` | service | an agent over `query_rate_agent_per_minute`; a person over `query_concurrency_person` running | "too many queries at once — try again in a moment" |

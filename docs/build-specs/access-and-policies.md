@@ -81,11 +81,11 @@ the open break-glasses and their expiry; nothing ends one early but its clock.
 ## 6. Agents
 - **Run tokens**: the records MCP's gate (mcp-and-api.md, the kit's `server_common`) and PHP's handler (an action token relayed by the
   kernel's actions server, `X-Action-Token` + `X-Action-Relay`) resolve the agent's member id and its run; both ask the run facts.
-- **K38 — who asked**: when the run facts carry `requested_by_member_id` for a `chat` run (or a dispatched run naming a person) and that
+- **K38 — who asked** (BUILT in the kernel 2026-10-10 — `docs/build-specs/kernel-run-facts-requester.md`): when the run facts carry `requested_by_member_id` (a `chat`, `manual` or `delegation` run) and that
   person holds this application, the gate sets `app.on_behalf_of` (transaction-local, as `app.member_id`) — `dl_level()` then answers the
   **intersection** for every view and function, and the query service is called with `on_behalf_of` (query-service.md §3). PHP sets the same
   setting in `dl_handler_begin()` for a relayed action, so an agent's write is gated by the person's level too (`require_level`).
-- **Until K38**: a `chat` run without `requested_by_member_id` reads the catalog as the agent but **its data reads carry
+- **On a kernel without K38** (the fallback, kept): a `chat` run without `requested_by_member_id` reads the catalog as the agent but **its data reads carry
   `ceiling: internal_unpersonal`** (`k38_pending` refusals for anything above internal or personal) and its writes on a confidential or personal
   dataset are refused in PHP with the same rule ("readable once the kernel says who asked (K38)") — **fail closed**. A `duty` run (the
   Steward's report) reads as the agent with its own grants.
@@ -137,7 +137,7 @@ expired), **payroll** `curated.payroll` (confidential; owner Ada; tagged finance
 Proved in slice 4 (`tests/phase3/slice4/run.sh`): every cell through `dataset-view` (200 / 403 with Request access / 404 / stub), through
 `mcp_datasets` as the read role, and through the query service (`preview`: rows, masked columns, the filter's effect); a request decided by
 Ada turns Priya's payroll cell to R with salary `***`; a revoked everyone grant turns revenue to D; the break-glass opens payroll to the
-super-admin for an hour and notifies Ada; the expert acting for Priya before K38 gets `k38_pending` on orders (confidential) and reads revenue.
+super-admin for an hour and notifies Ada; the expert acting for Priya on a kernel without K38 gets `k38_pending` on orders (confidential) and reads revenue.
 
 ## Decisions taken here (for the owner)
 1. Below `discover` the answer is **404, identical to a missing dataset** — a hidden dataset's existence is never confirmed; `discover`
@@ -145,7 +145,7 @@ super-admin for an hour and notifies Ada; the expert acting for Priya before K38
 2. A dataset with no owner sends its access requests to the holders of `grants.manage`.
 3. A row filter is validated **on save** by a dry run of the query service (`dry_run: true`, slice 4), so a filter that would refuse every
    query is caught by the granter, not by its readers.
-4. Until K38, an agent's **writes** on a confidential or personal dataset in a chat turn are refused in PHP with `k38_pending`, like its
+4. On a kernel without K38 (the fallback), an agent's **writes** on a confidential or personal dataset in a chat turn are refused in PHP with `k38_pending`, like its
    reads.
 5. The install grants the two shipped agents **no data** — an admin grants them (they discover through the catalog rules and the
    everyone grant like any insider).

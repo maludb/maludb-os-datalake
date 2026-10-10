@@ -68,9 +68,9 @@ Words used below (db/008, db/016, db/018; design §3):
    `dl_share_datasets_index()` and the query service's application policy (`dl_query_policy_app`, db/008).
 
 ### Who is asking — the intersection (design §3 rule 8, D8, K38)
-For an agent's run token the server reads the run facts' **`requested_by_member_id`** (K38). When the run is a `chat` turn (or a dispatched run
-that names a person) and that person holds this application, `app.on_behalf_of` is set to them and every read is the **intersection**: the views
-through `dl_level()` (db/008), the data through the query service with `on_behalf_of`. **Until K38 lands** (the run facts carry no requester), a
+For an agent's run token the server reads the run facts' **`requested_by_member_id`** (K38). K38 is BUILT (kernel, 2026-10-10: `requested_by_member_id`, `requested_by_kind`, `requested_by_holds` for a `chat`, `manual` or `delegation` run). When the run
+names a person and that person holds this application (`requested_by_holds`), `app.on_behalf_of` is set to them — a requester who does not hold it leaves the agent nothing of theirs and every read is the **intersection**: the views
+through `dl_level()` (db/008), the data through the query service with `on_behalf_of`. **On a kernel older than K38** (the run facts carry no requester), a
 `chat` turn's data reads run with `ceiling = "internal_unpersonal"`: the query service refuses (`rule: k38_pending`) any dataset whose
 classification is above `internal` or that has a personal column, and says why — **fail closed, never open**. A `duty` run reads as the agent.
 
