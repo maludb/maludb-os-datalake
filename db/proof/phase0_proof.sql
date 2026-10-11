@@ -336,6 +336,41 @@ SELECT pg_temp.check(NOT has_function_privilege('datalake_rw', 'dl_incident_open
 SELECT pg_temp.check((SELECT data_type FROM information_schema.columns WHERE table_name = 'loads' AND column_name = 'mapping') = 'jsonb', 'a load keeps its mapping (a replay reads the file the same way)');
 SELECT pg_temp.check(pg_get_functiondef('dl_job_enqueue(text, bigint, bigint, jsonb, smallint)'::regprocedure) LIKE '%pg_notify(''lake_jobs''%', 'enqueueing a job wakes the writer (pg_notify lake_jobs)');
 
+-- slice 3 (db/022): the admission (an agent's rate, a person's concurrency) in advisory slots; a hidden dataset never confirms itself to the
+-- query service either; the writer's sandbox_save kind; the admins told once a day of a policy the service could not honour
+SELECT pg_temp.check(dl_query_policy(29, NULL, ARRAY['curated.payroll', 'curated.no_such_thing'], 'screen') #>> '{refused,curated.payroll,rule}' = 'no_such_dataset'
+                     AND dl_query_policy(29, NULL, ARRAY['curated.no_such_thing'], 'screen') #>> '{refused,curated.no_such_thing,rule}' = 'no_such_dataset',
+                     'to an external a hidden dataset answers exactly as one that does not exist (no_such_dataset) — a key typed in the editor confirms nothing');
+SELECT pg_temp.check(dl_query_policy(27, NULL, ARRAY['sandbox.m26_my_upload'], 'screen') #>> '{refused,sandbox.m26_my_upload,rule}' = 'no_such_dataset',
+                     '…nor does another''s sandbox dataset to an insider (no stub there); a stub''s dataset answers not_readable (the policy above)');
+SET ROLE datalake_query;
+SELECT pg_temp.keep('s0', (dl_query_admit(26, 'screen', 'p-1') ->> 'slot')::bigint);
+SELECT pg_temp.keep('s1', (dl_query_admit(26, 'screen', 'p-2') ->> 'slot')::bigint);
+SELECT pg_temp.check(dl_query_admit(26, 'screen', 'p-3') ->> 'rule' = 'concurrency' AND pg_temp.i('s0') = 0 AND pg_temp.i('s1') = 1,
+                     'a person runs two queries at once (query_concurrency_person) — the third is refused `concurrency`');
+SELECT pg_temp.check(dl_query_release(26, 0) AND (dl_query_admit(26, 'screen', 'p-4') ->> 'slot') = '0', '…a slot released admits the next');
+SELECT dl_query_release(26, 0), dl_query_release(26, 1);
+RESET ROLE;
+UPDATE dl_settings SET query_rate_agent_per_minute = 1 WHERE id = 1;
+INSERT INTO query_runs (caller_member_id, source, sql_sha256, status) VALUES (40, 'agent', repeat('c', 64), 'ok');
+SET ROLE datalake_query;
+SELECT pg_temp.check(dl_query_admit(40, 'agent', 'a-1') ->> 'rule' = 'rate' AND (dl_query_admit(26, 'screen', 'p-5') ->> 'admitted')::boolean,
+                     'an agent over query_rate_agent_per_minute is refused `rate`; a person is not rated');
+SELECT dl_query_release(26, 0);
+SELECT pg_temp.keep('pf', dl_query_policy_fault('curated.sales_orders', 'row filter may not contain Anonymous'));
+SELECT dl_query_policy_fault('curated.sales_orders', 'again');
+RESET ROLE;
+UPDATE dl_settings SET query_rate_agent_per_minute = 30 WHERE id = 1;
+SELECT pg_temp.check(pg_temp.i('pf') >= 1 AND (SELECT count(*) FROM notifications WHERE kind = 'policy_fault' AND record_id = pg_temp.ds('curated.sales_orders'))
+                     = (SELECT count(*) FROM members WHERE status = 'active' AND member_kind = 'human' AND dl_member_has_right(id, 'settings.manage')),
+                     'a policy the service could not honour tells each Lake admin ONCE a day');
+SELECT pg_temp.check(NOT has_function_privilege('datalake_rw', 'dl_query_admit(bigint, text, text)', 'EXECUTE')
+                     AND has_function_privilege('datalake_query', 'dl_query_admit(bigint, text, text)', 'EXECUTE'), 'only the query service admits a run');
+SET ROLE datalake_rw;
+SELECT pg_temp.keep('ss', dl_job_enqueue('sandbox_save', pg_temp.ds('curated.sales_orders'), NULL, '{}'::jsonb));
+RESET ROLE;
+SELECT pg_temp.check((SELECT kind FROM lake_jobs WHERE id = pg_temp.i('ss')) = 'sandbox_save', 'a result saved as a sandbox dataset is a writer job (sandbox_save)');
+
 -- ================================================================ lineage (§6.6)
 SET ROLE datalake_lake;
 SELECT dl_lineage_edge(NULL, (SELECT id FROM sources WHERE name = 'GL balances'), pg_temp.ds('raw.crm_deals'), 'load');

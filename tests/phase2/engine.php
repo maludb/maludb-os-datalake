@@ -27,8 +27,8 @@ foreach ([1, 2] as $n) {
     $mode = file_exists($sock) ? substr(sprintf('%o', fileperms($sock)), -3) : 'none';
     ok(filetype($sock) === 'socket' && $mode === '660', "instance $n listens on its own Unix socket, mode 0660 ($mode)");
 }
-$a = json_decode($php('echo json_encode(lake_query(["kind" => "sql", "sql" => "SELECT 1"], 5));'), true) ?: [];
-ok(($a['status'] ?? '') === 'refused' && ($a['refusal_rule'] ?? '') === 'not_built' && ($a['message'] ?? '') === 'not built until slice 3', 'a kind its slice has not built is refused: not built until slice 3');
+$a = json_decode($php('echo json_encode(lake_query(["kind" => "check_row_filter", "dataset" => "curated.x", "caller_member_id" => 1], 5));'), true) ?: [];
+ok(($a['status'] ?? '') === 'refused' && ($a['refusal_rule'] ?? '') === 'not_built' && ($a['message'] ?? '') === 'not built until slice 4', 'a kind its slice has not built is refused: not built until slice 4 (check_row_filter — sql is slice 3\'s, built)');
 ok(trim($php('echo lake_refusal_message(lake_query(["kind" => "metric"], 5));')) === 'This is not built until slice 7.', '…said to a person in words (metric: slice 7 — preview is slice 2\'s, built)');
 $c = stream_socket_client("unix://$prefix-1.sock", $en, $es, 2);
 fwrite($c, json_encode(['v' => 9, 'kind' => 'sql', 'sql' => 'SELECT 1']) . "\n");
@@ -43,7 +43,7 @@ ok(($ans['refusal_rule'] ?? '') === 'too_long', 'a request over 1 MB is refused 
 
 echo "2. The writer works the queue — a kind no slice has built fails once, naming its slice\n";
 $jobs = [];
-foreach (['checks' => 'slice 5', 'export' => 'slice 3', 'promote' => 'slice 5', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {   // sniff/load/profile/rollback: slice 2's, built
+foreach (['checks' => 'slice 5', 'retention' => 'slice 8', 'promote' => 'slice 5', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {   // sniff/load/profile/rollback: slice 2's, export/sandbox_save: slice 3's — built
     $jobs[$kind] = [(int) trim($php('echo lake_enqueue(db(), ' . var_export($kind, true) . ', null, null, ["proof" => true]);')), $slice];
 }
 ok(count(array_filter($jobs, static fn ($j) => $j[0] > 0)) === 5, 'lake_enqueue() queued five jobs (dl_job_enqueue) as the application');

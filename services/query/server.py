@@ -10,7 +10,7 @@ is answered `busy` at once (never queued — the client tries the next instance)
 
 The kinds, by the slice that builds them (query-service §7): `ping` (Phase 2 — the health check and the shell's engine badge: {status ok,
 worker, version}, touches no catalog and answers even while the instance is busy) · `preview` (slice 2) · `sql`, `saved_query`, `cancel`,
-`dry_run` (slice 3) · `check_row_filter` (slice 4) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
+`dry_run` (slice 3 — `sql` with dry_run: true; a cancel is answered beside the running request, never `busy`) · `check_row_filter` (slice 4) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
 `not_built`. THE SERVICE COMPILES THE POLICY ITSELF from the caller's identity (query-service §3, decision 9) — a caller never sends one.
 
 THE PRODUCTION PATH (slice 2 — uploads-loads.md, THE FIRST EXEMPLAR): a line → `protocol.parse()` (the shape; `bad_request` / `too_long`)
@@ -20,7 +20,7 @@ lock, the watchdog), and writes the audit row with `identity.audit()` WHATEVER t
 adds copies `_preview`.
 
 `serve()` / `ask()` below are the Phase 0 PROTOTYPE the engine proof (tests/engine/proof_query.py) drives in-process with a policy it
-builds itself; they are never reachable from the command line or the unit, and slice 3 replaces them with the real request path.
+builds itself; they are never reachable from the command line or the unit — the real request path is `handle()` → BUILT (`_preview`, `_sql`).
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ import duckdb  # noqa: E402
 import time  # noqa: E402
 
 from lake.engine import LakeConfig  # noqa: E402
-from query import protocol, service  # noqa: E402
+from query import allowlist, protocol, service  # noqa: E402
 from query.identity import Identity  # noqa: E402
 
 MAX_REQUEST_BYTES = protocol.MAX_REQUEST_BYTES
@@ -88,7 +88,10 @@ class WorkerHandler(socketserver.StreamRequestHandler):
             self._send({"status": "refused", "refusal_rule": e.rule, "message": e.message})
             return
         if req.kind == "ping":                               # the health check: answered even while busy, no catalog touched
-            self._send({"status": "ok", "worker": srv.worker, "version": duckdb.__version__, "kinds": sorted(["ping", *BUILT])})
+            self._send({"status": "ok", "worker": srv.worker, "version": duckdb.__version__, "kinds": sorted(["ping", "cancel", *BUILT])})
+            return
+        if req.kind == "cancel":                             # slice 3: answered beside the running request it interrupts (never `busy`)
+            self._send(_cancel(srv, req))
             return
         if not srv.busy.acquire(blocking=False):
             self._send({"status": "refused", "refusal_rule": "busy", "message": "This instance is answering another request."})
@@ -121,6 +124,7 @@ class WorkerServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
         self.worker = worker
         self.cfg = cfg
         self.busy = threading.Lock()
+        self.running: dict[str, tuple[int | None, service.Control]] = {}     # request_id → (caller, its cancel) — one at a time, by design
         self.allowed_uids = _allowed_uids()
         self.identity = Identity(cfg, worker)
 
@@ -180,7 +184,94 @@ def _preview(srv, req) -> dict:
     return ans
 
 
-BUILT.update({"preview": _preview})
+ADMIT_WORDS = {"rate": "too many queries this minute — try again in a moment",
+               "concurrency": "too many queries at once — try again in a moment"}
+
+
+def _sql(srv, req) -> dict:
+    """`sql` and `saved_query` (slice 3 — query-service §7; THE SECOND EXEMPLAR): the caller's SQL as is, `params` bound as literals after
+    the parse, `dry_run` = parse, allow-list, policy and EXPLAIN only (the plan, no rows — saving a query learns its datasets so). The order:
+    the allow-list's first pass collects the keys (a refusal of the shape costs nothing and names no dataset) → the admission (an agent's rate,
+    a person's concurrency — db/022's advisory slots, held for the run) → the policy compiled for those keys → the first key under `refused`
+    answered in the policy's own words → the run under the watchdog, cancellable by the caller → the audit, whatever the outcome → the slot
+    released. A `saved_query` is run exactly as `sql`; its id rides into the audit (the service never reads saved_queries)."""
+    t0 = time.monotonic()
+    ident: Identity = srv.identity
+    sql = req.sql or ""
+    control = service.Control()
+    rid = req.request_id
+    if rid:
+        srv.running[rid] = (req.caller_member_id, control)
+    policy = None
+    keys: list[str] = []
+    admitted: dict = {"admitted": True, "slot": None}
+    try:
+        try:
+            keys = allowlist.keys_of(sql, table_functions=service._table_functions(srv.cfg), params=req.params)
+        except allowlist.Refusal as r:
+            ans = _refused(r.rule, r.message, r.dataset)
+        else:
+            admitted = ident.admit(req)
+            if not admitted.get("admitted"):
+                rule = admitted.get("rule") or "concurrency"
+                ans = _refused(rule, ADMIT_WORDS.get(rule, ADMIT_WORDS["concurrency"]))
+            else:
+                policy = ident.policy(req, keys)
+                refused = policy.get("refused") or {}
+                readable = policy.get("datasets") or {}
+                bad = next((k for k in keys if k in refused or k not in readable), None)
+                if bad is not None:
+                    r = refused.get(bad) or {"rule": "not_readable", "message": f"you may not read {bad} — request access"}
+                    ans = _refused(r.get("rule") or "not_readable", r.get("message") or "you may not read it — request access", bad)
+                else:
+                    as_of = ident.resolve_as_of(req.as_of)
+                    if as_of == -1:
+                        ans = _refused("absent_as_of", "The lake held no data at that time.", keys[0] if keys else None)
+                    else:
+                        ans = service.run(srv.cfg, policy, sql, as_of=as_of, params=req.params, explain=req.dry_run, control=control)
+                        if ans.get("refusal_rule") in ("not_granted", "unknown_table") and ans.get("datasets"):
+                            empty = ans["datasets"][0]
+                            if as_of is None:                  # granted, but nothing has landed in the lake yet: an answer, not a refusal
+                                ans = {"status": "ok", "refusal_rule": None, "message": f"{empty} has no data yet.", "columns": [], "rows": [],
+                                       "truncated": False, "masked_columns": [], "datasets": keys, "ms": ans.get("ms", 0), "plan": None}
+                            else:
+                                ans = _refused("absent_as_of", f"{empty} did not exist then.", empty)
+                        if ans.get("refusal_rule") == "policy":
+                            ident.policy_fault(keys[0] if keys else None, ans.get("message"))
+                            ans["message"] = "the lake refused this read (its policy) — the Lake admin has been told"
+                        ans["as_of_snapshot"] = as_of if as_of is not None else ident.current_snapshot()
+        if ans.get("status") != "ok" and not ans.get("datasets") and keys:
+            ans["datasets"] = [ans["dataset"]] if ans.get("dataset") else []
+        if req.dry_run and ans.get("status") == "ok":
+            ans["rows"], ans["columns"], ans["truncated"] = [], [], False
+            ans["datasets"] = ans.get("datasets") or keys
+        ans["ms"] = max(int(ans.get("ms") or 0), int((time.monotonic() - t0) * 1000))
+        audited = ans.get("datasets") or ([ans["dataset"]] if ans.get("dataset") else [])
+        ans["query_run_id"] = ident.audit(req, ans, sql=sql, datasets=audited, policy=policy)
+    finally:
+        if rid:
+            srv.running.pop(rid, None)
+        ident.release(req, admitted)
+    ans.setdefault("next_offset", None)
+    ans.setdefault("dataset", None)
+    return ans
+
+
+def _cancel(srv, req) -> dict:
+    """`cancel` (slice 3): the caller's own running request on THIS instance is interrupted (the watchdog's interrupt(), so the run ends
+    `cancelled` and is audited so); another caller's id answers `not_yours`; an id this instance is not running, `not_found` — the client
+    asks every instance and keeps the best answer."""
+    entry = srv.running.get(req.request_id or "")
+    if entry is None:
+        return {"status": "refused", "refusal_rule": "not_found", "message": "No request of yours with that id is running here.", "worker": srv.worker}
+    caller, control = entry
+    if caller != req.caller_member_id:
+        return {"status": "refused", "refusal_rule": "not_yours", "message": "That request is not yours to cancel.", "worker": srv.worker}
+    control.cancel()
+    return {"status": "ok", "cancelled": True, "worker": srv.worker}
+
+
+BUILT.update({"preview": _preview, "sql": _sql, "saved_query": _sql})
 
 
 def socket_path(prefix: str, worker: int) -> str:

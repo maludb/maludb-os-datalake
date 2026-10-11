@@ -139,3 +139,20 @@ def check(sql: str, granted: dict[str, str], *, table_functions: set[str] = froz
             ph.replace(exp.convert(v))
     out = tree.sql(dialect="duckdb")
     return Checked(sql=out, datasets=used)
+
+
+class _AnyKey(dict):
+    """The first pass before a policy exists: every ``<zone>.<name>`` stands for itself, so the shape is judged and the keys collected."""
+
+    def __contains__(self, key) -> bool:
+        return True
+
+    def __getitem__(self, key):
+        return key
+
+
+def keys_of(sql: str, *, table_functions: set[str] = frozenset(), params: dict | None = None) -> list[str]:
+    """The dataset keys a SQL reads, in first-use order — every refusal of the shape (one statement, SELECT only, functions, catalog
+    references, time travel, unbound parameters, the node budget) raised here, before the service asks for a policy (query-service §5.1)."""
+    return check(sql, _AnyKey(), table_functions=table_functions, params=params).datasets
+

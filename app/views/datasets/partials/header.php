@@ -21,6 +21,7 @@ $crumbs[] = [$d['key'], null];
 $back = back_link();
 $request = '/access/requests/new?' . http_build_query(['dataset' => $id, 'level' => 'read']);
 $queryBuilt = nav_built('/sql/index.php');
+$mayQuery = $queryBuilt && has_right('sql.editor') && dl_level_rank((string) ($d['my_level'] ?? 'none')) >= DL_LEVELS['read'];   // slice 3: the editor, prefilled
 $more = $may['describe'] || $may['deprecate'] || $may['retire'];
 ?>
 <?= view('shared/page-header.php', ['id' => 'dataset', 'title' => $d['title'], 'crumbs' => $crumbs, 'back' => $back]) ?>
@@ -49,9 +50,9 @@ $more = $may['describe'] || $may['deprecate'] || $may['retire'];
         </div>
     </div>
     <div class="d-flex flex-wrap gap-2" id="dataset-header-actions">
-        <?php if ($queryBuilt): ?>
+        <?php if ($mayQuery): ?>
             <?= hx_link('/sql?' . http_build_query(['dataset' => $d['key']]), '<i class="feather-terminal me-1"></i>Query this', 'btn btn-primary btn-touch', 'id="dataset-query-btn"') ?>
-        <?php else: ?>
+        <?php elseif (!$queryBuilt): ?>
             <span class="btn btn-light btn-touch disabled" id="dataset-query-btn" aria-disabled="true" title="The SQL editor is built by slice 3"><i class="feather-terminal me-1"></i>Query this</span>
         <?php endif; ?>
         <?php if ($may['request']): ?>

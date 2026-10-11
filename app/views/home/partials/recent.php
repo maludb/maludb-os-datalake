@@ -2,8 +2,8 @@
 <div class="card mb-3 home-tile" id="home-recent"><div class="card-header"><h5 class="card-title mb-0">Recent and followed</h5></div><div class="card-body">
 <?php if ($s['recent'] === null && $s['followed'] === null): ?>
     <div class="tile-pending" id="home-recent-pending">The datasets you query appear here once <?= e(HOME_TILE_SLICES['recent']) ?> is built, the ones you follow once <?= e(HOME_TILE_SLICES['followed']) ?> is.</div>
-<?php else: $rows = array_merge($s['followed'] ?? [], $s['recent'] ?? []); ?>
-    <?php if ($rows === []): ?><div class="fs-12 text-muted" id="home-recent-empty">Nothing yet — follow a dataset to keep it here.</div><?php endif; ?>
+<?php else: $rows = []; foreach (array_merge($s['recent'] ?? [], $s['followed'] ?? []) as $x) { $rows[(int) $x['dataset_id']] ??= $x; } ?>
+    <?php if ($rows === []): ?><div class="fs-12 text-muted" id="home-recent-empty">Nothing yet — query a dataset or follow one to keep it here.</div><?php endif; ?>
     <?php foreach (['recent', 'followed'] as $k): if ($s[$k] !== null) { continue; } ?>
         <div class="tile-pending" id="home-<?= e($k) ?>-pending"><?= $k === 'recent' ? 'The datasets you query' : 'The datasets you follow' ?> appear here once <?= e(HOME_TILE_SLICES[$k]) ?> is built.</div>
     <?php endforeach; ?>

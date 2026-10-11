@@ -121,8 +121,8 @@ ok(($d['pending'] ?? []) == $owed && isset($owed['products'], $owed['incidents']
 $h = page($who['member'], '/')['body'];
 ok(str_contains($h, 'id="home-popular"') && str_contains($h, 'id="home-popular-' . $orders . '"') && !str_contains($h, 'home-popular-' . $payroll) && str_contains($h, 'href="/datasets/curated.sales_orders?back=%2F"'),
     'the popular tile renders its cards, each a link carrying ?back= (click-around)');
-ok(str_contains($h, 'id="home-products-pending"') && str_contains($h, 'slice 7') && str_contains($h, 'id="home-incidents-pending"') && str_contains($h, 'id="home-recent-pending"'),
-    'the products, incidents and recent tiles say which slice builds them');
+ok(str_contains($h, 'id="home-products-pending"') && str_contains($h, 'slice 7') && str_contains($h, 'id="home-incidents-pending"') && !str_contains($h, 'id="home-recent-pending"'),
+    'the products and incidents tiles say which slice builds them (recent: slice 3\'s, built)');
 ok(str_contains($h, 'id="home-search-btn"') && str_contains($h, 'id="home-ask-btn"') && str_contains($h, 'formaction="/ask"'), 'the home\'s search box has its two buttons, Search and Ask');
 $d = body_json(page($who['engineer'], '/', $json))['data'] ?? [];
 ok(($d['engineer'] ?? null) === ['failed_loads' => null, 'late' => null, 'proposals' => null] && ($d['pending']['engineer'] ?? '') === 'slice 10' && $d['admin'] === null, 'an engineer\'s tile is there and says slice 10 builds it');

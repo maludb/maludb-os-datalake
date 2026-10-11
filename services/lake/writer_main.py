@@ -50,7 +50,7 @@ APPLICATION_NAME = "datalake-writer"
 # Who builds each kind (lake-engine §1's table; design §10). A kind here with no handler in DISPATCH fails at once, naming its slice.
 KIND_SLICE = {
     "sniff": "slice 2", "load": "slice 2", "profile": "slice 2", "rollback": "slice 2",
-    "export": "slice 3",
+    "export": "slice 3", "sandbox_save": "slice 3",
     "promote": "slice 5", "checks": "slice 5",
     "transform": "slice 7",
     "maintenance": "slice 8", "retention": "slice 8", "erasure": "slice 8", "backup_lock": "slice 8",

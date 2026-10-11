@@ -69,6 +69,29 @@ class Identity:
         p["salt_hex"] = self.salt_hex
         return p
 
+    def admit(self, req) -> dict:
+        """The rate and the concurrency (query-service §4, db/022): {admitted, slot} or {admitted: false, rule}. The slot is a SESSION
+        advisory lock on this instance's connection, held for the run — release() it after the audit, whatever the outcome."""
+        row = self._one("SELECT dl_query_admit(%s, %s, %s) AS a", (req.caller_member_id, req.source, req.request_id))
+        return dict(row["a"]) if row and row["a"] else {"admitted": True, "slot": None}
+
+    def release(self, req, admitted: dict) -> None:
+        if admitted.get("slot") is None:
+            return
+        try:
+            self._one("SELECT dl_query_release(%s, %s) AS r", (req.caller_member_id, int(admitted["slot"])))
+        except psycopg.Error:
+            self._pg = None                                    # a broken connection released every lock it held
+
+    def policy_fault(self, key: str | None, words: str | None) -> None:
+        """A compiled policy the service could not honour: the Lake admins hear of it once a day per dataset (db/022)."""
+        if not key:
+            return
+        try:
+            self._one("SELECT dl_query_policy_fault(%s, %s) AS n", (key, (words or "")[:200]))
+        except psycopg.Error:
+            pass
+
     def current_snapshot(self) -> int | None:
         row = self._one("SELECT max(snapshot_id) AS s FROM ducklake.ducklake_snapshot")
         return int(row["s"]) if row and row["s"] is not None else None
@@ -98,11 +121,11 @@ class Identity:
         payload = {
             "caller": req.caller_member_id, "on_behalf_of": req.on_behalf_of, "agent_run_id": req.agent_run_id, "request_id": req.request_id,
             "source": req.source, "consumer_app": req.consumer_app, "key_label": req.key_label,
-            "saved_query_id": req.raw.get("saved_query_id"), "metric_id": (req.raw.get("metric") or {}).get("id") if isinstance(req.raw.get("metric"), dict) else None,
+            "saved_query_id": req.saved_query_id, "metric_id": (req.raw.get("metric") or {}).get("id") if isinstance(req.raw.get("metric"), dict) else None,
             "sql_sha256": hashlib.sha256(sql.encode()).hexdigest(), "sql": sql, "as_of": None if req.as_of is None else str(req.as_of),
             "datasets": sorted(used), "masked_columns": masks, "row_filters": filters, "rows_returned": len(rows),
             "truncated": bool(answer.get("truncated")), "bytes_returned": len(json.dumps(rows, separators=(",", ":"), default=str)) if rows else 0,
-            "ms": int(answer.get("ms") or 0), "status": answer.get("status") if answer.get("status") in ("ok", "refused", "timeout", "error") else "error",
+            "ms": int(answer.get("ms") or 0), "status": answer.get("status") if answer.get("status") in ("ok", "refused", "timeout", "error", "cancelled") else "error",
             "refusal_rule": answer.get("refusal_rule"), "error": (answer.get("message") or None) if answer.get("status") in ("error", "timeout") else None,
             "worker": self.worker,
         }

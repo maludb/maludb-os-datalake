@@ -147,3 +147,19 @@ html.app-skin-dark .dataset-more-menu { background: #1b2431; border-color: rgba(
 .preview-records .preview-record { display: none; }
 .preview-records .preview-record:target { display: block; }
 .preview-records:not(:has(.preview-record:target)) .preview-record:first-child { display: block; }
+
+/* ===== slice 3 — the SQL editor (query-service-editor.md): completion under the textarea, the stats line in a header, the plan, the result's frame ===== */
+.sql-editor { min-height: 10rem; font-size: 13px; line-height: 1.5; tab-size: 4; }
+.sql-suggest { position: absolute; z-index: 30; left: 0; right: 0; top: 100%; max-height: 14rem; overflow-y: auto; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+.sql-suggest .list-group-item.active { color: #fff; }
+.sql-stats { text-transform: none; letter-spacing: normal; font-weight: 400; white-space: normal; max-width: 16rem; }
+.sql-plan { white-space: pre; overflow: auto; max-height: 24rem; }
+.sql-result-table-wrap { max-height: 70vh; overflow: auto; }
+.sql-result-table-wrap thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1; }
+.sql-catalog-list { max-height: 60vh; overflow-y: auto; }
+.sql-catalog-item summary { list-style: none; cursor: pointer; }
+.sql-catalog-item summary::-webkit-details-marker { display: none; }
+.sql-action > summary { list-style: none; display: inline-block; }
+.sql-action > summary::-webkit-details-marker { display: none; }
+.sql-readonly { white-space: pre-wrap; word-break: break-word; }
+.badge-outline-warning { border: 1px solid var(--bs-warning, #ffa21d); color: #b36b00; background: transparent; }

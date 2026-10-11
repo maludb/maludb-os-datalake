@@ -118,15 +118,17 @@ fi
 
 # ------------------------------------------------------------------------------------------------------------------
 # 6. THE MASKING SALT (idempotent: made once, never replaced — a new salt is a new dl_settings.mask_salt_id and old hashes stop joining).
-#    32 random bytes, root:datalake-query 0440: the query service alone reads it (design §3 rule 4).
+#    32 random bytes written as 64 HEX characters (the service refuses anything else — services/query/identity.py), root:datalake 0440:
+#    the query service and the writer read it (slice 3: exports and saved results run in the writer through the person's views, whose hash
+#    masks need it — query-service §1, phase1-consistency ★6); www-data is in neither group and never can (design §3 rule 4).
 echo "== 6. The masking salt $SALT"
 run install -d -o root -g root -m 755 "$(dirname "$SALT")"
 if [ ! -s "$SALT" ]; then
-  run bash -c "umask 077; head -c 32 /dev/urandom > '$SALT'"
+  run bash -c "umask 077; head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \\n' > '$SALT'"
 else
   echo "   $SALT exists — kept"
 fi
-run chown root:datalake-query "$SALT"
+run chown root:datalake "$SALT"
 run chmod 0440 "$SALT"
 envset DL_MASK_SALT_FILE "$SALT"
 

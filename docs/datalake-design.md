@@ -968,6 +968,18 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 3 THE QUERY SERVICE AND THE EDITOR (THE SECOND EXEMPLAR) BUILT and proven** (`tests/phase3/slice3/run.sh` **220 checks
+under php -S and under Apache**: the editor 27, the refusals 26, saved queries 24, verify 11, the sandbox 17, exports 24, the audit 14, JSON 24, the
+socket 16, the browser 37; the schema proof 197): every request kind of the one door (sql, saved_query, dry_run, explain, cancel answered beside a
+running request, check_row_filter, preview, ping), `dl_query_admit()` (db/022 — concurrency slots for everyone, the rate for agents), the watchdog,
+the editor with completion of my keys, run / explain / cancel, saved queries dry-run at save, my runs, exports and saved results as writer jobs
+(`jobs/query_results.py`: the person's SQL on a locked read-only connection streamed as Arrow, the policy frozen); a query through the door costs
+~0.6 s, a refusal ~0 ms, the watchdog answers at ~2.5 s of 2. Found: **`dl_query_policy()` answered `not_readable` for a dataset the caller cannot
+see — typing its key confirmed it existed; now `no_such_dataset`** (db/022 `dl_member_sees_stub()`); ROOT_STEPS wrote the masking salt as raw bytes
+the service refuses (a fresh install's query service would not start) — hex now, `root:datalake 0440` (the writer hashes for exports; www-data never
+reads it); an advisory slot was re-acquirable by the same session. 16 decisions in `query-service-editor.md` "Built and proven".
+**Next: slice 4, access and policies.**
+
 **2026-10-11 — SLICE 2 UPLOADS AND LOADS (THE FIRST EXEMPLAR) BUILT and proven** (`tests/phase3/slice2/run.sh` **262 checks under php -S and under
 Apache** against the real writer, query service and DuckLake: the writer's kinds in-process 26, upload 34, map 45, loads 41, drift 20, rejects 14,
 preview 23, JSON 17, the browser 42; the engine 157, the schema proof 189): resumable uploads in 8 MB parts, the sniff with header row / delimiter /

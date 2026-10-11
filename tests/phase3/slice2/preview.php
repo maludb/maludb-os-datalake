@@ -62,7 +62,7 @@ $a = qs(['kind' => 'preview', 'caller_member_id' => 27, 'dataset' => 'raw.nothin
 ok(($a['status'] ?? '') === 'refused' && ($a['refusal_rule'] ?? '') === 'no_such_dataset' && (int) ($a['query_run_id'] ?? 0) > 0, 'no such dataset: refused no_such_dataset — and audited (query_run_id)');
 $a = qs(['kind' => 'preview', 'caller_member_id' => 26, 'dataset' => $key, 'source' => 'preview', 'policy' => ['datasets' => [$key => ['level' => 'read_unmasked']]]]);
 ok(($a['rows'][0][2] ?? '') === 'a***@example.invalid', 'a policy sent by the caller is ignored — the service compiles its own (still masked for Priya)');
-ok((qs(['kind' => 'sql', 'caller_member_id' => 27, 'sql' => 'SELECT 1'])['message'] ?? '') === 'not built until slice 3', 'a kind not built yet: "not built until slice 3"');
+ok((qs(['kind' => 'check_row_filter', 'caller_member_id' => 27, 'dataset' => 'curated.x'])['message'] ?? '') === 'not built until slice 4', 'a kind not built yet: "not built until slice 4" (check_row_filter — sql is slice 3\'s)');
 
 echo "4. The engine away — \"The engine is not answering\" — and back\n";
 $state = need('DL_DEV_STATE');

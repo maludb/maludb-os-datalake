@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-10T23:59:24+00:00",
+    "generated_at": "2026-10-11T00:55:58+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -251,8 +251,8 @@
                 "saved_query",
                 "as_of"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "queries": {
             "screen": "queries",
@@ -265,8 +265,8 @@
                 "dataset",
                 "owner"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "query-view": {
             "screen": "query-view",
@@ -274,7 +274,7 @@
             "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
             "when": "one saved query: its question, SQL, parameters, the datasets it reads, verified by whom; Run shows the result only",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "query-edit": {
@@ -283,7 +283,7 @@
             "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
             "when": "to change a saved query's title, question, SQL, parameters, sharing",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "query-run-view": {
@@ -292,7 +292,7 @@
             "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
             "when": "one query run: the SQL (mine, or all for the audit), datasets, masks, row filters, rows, time, status",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "exports": {
@@ -301,7 +301,7 @@
             "section": "The query service, the SQL editor, saved queries and exports (slice 3 — THE SECOND EXEMPLAR)",
             "when": "my exports: ready, expired, the rows and whether some columns were masked",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "my-access": {
@@ -2009,7 +2009,7 @@
             "who": "queries.save",
             "agent": true,
             "record_id": "the saved query",
-            "built": false
+            "built": true
         },
         "saved_query_delete": {
             "action": "saved_query_delete",
@@ -2030,7 +2030,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the saved query",
-            "built": false
+            "built": true
         },
         "query_verify": {
             "action": "query_verify",
@@ -2057,7 +2057,7 @@
             "who": "queries.verify",
             "agent": true,
             "record_id": "the saved query",
-            "built": false
+            "built": true
         },
         "sandbox_save": {
             "action": "sandbox_save",
@@ -2096,7 +2096,7 @@
             "who": "sandbox.save",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "export_make": {
             "action": "export_make",
@@ -2141,7 +2141,7 @@
             "who": "export.own",
             "agent": true,
             "record_id": "the export",
-            "built": false
+            "built": true
         },
         "export_delete": {
             "action": "export_delete",
@@ -2162,7 +2162,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the export",
-            "built": false
+            "built": true
         },
         "access_request_create": {
             "action": "access_request_create",

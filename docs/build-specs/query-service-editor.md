@@ -134,3 +134,89 @@ agents' K38 intersection beyond what the policy function already does (access-an
 None — decisions taken in this spec: running SQL is a read door, not an action; saving a query dry-runs it; `sandbox_save` and `export` are writer jobs with the
 policy frozen at the request; the editor is a `<textarea>` with server-fed completion, no external library; the quick stats are computed on the shown rows; XLSX
 exports stop at Excel's row limit with `truncated`.
+
+## Built and proven (2026-10-11)
+The one door stands, used by people: **the SQL editor** at a desk — my readable datasets with their columns (a click inserts the key or the
+column), a `<textarea>` with completion of those keys and columns (`assets/js/sql-editor.js`, no library), Ctrl/⌘+Enter, **Run**, **Explain**
+(the dry run's plan), **Cancel** while running; the result with the display cap and "Showing the first 1,000 rows", each masked column marked
+"masked for you", quick stats under each header on the shown rows, the run linked; a refusal in the service's own words with its rule and
+Request access; my last 20 runs. **Saved queries** with typed parameters, shared or mine, verified by an engineer and unverified by themselves
+when their SQL changes, run from their page (the result only), copied, deleted. **A run's page** (the SQL to its caller, the person it acted
+for and the audit; "hidden" to a dataset's owner). **Save as dataset** and **exports** (CSV, XLSX, Parquet) as writer jobs with the policy frozen
+at the request. The query service answers `sql` (with `dry_run`), `saved_query` and `cancel`, admits a person's concurrency and an agent's rate in
+PostgreSQL, and audits everything it answers. The Usage tab, search's ranking and the home's Recent tile are fed. The registry reads **29 screens
+and 39 actions built** (6 + 6 here; 2 approvals in step).
+
+**Proven** by `tests/phase3/slice3/run.sh` (scratch `dl_dev3` with the engine real; the slice's lake written by the writer's own library —
+`seed.py`): **220 checks under php -S and the same 220 under a real Apache** — editor 27, refusals 26 (18 forbidden forms through the door, the
+policy's four refusals, Cancel, not_yours, the watchdog, `concurrency`, `rate`, `busy`, K38 through the saved-query door), saved 24, verify 11,
+sandbox 17, exports 24, audit 14, json 24, service 16 (the socket: dry_run, params as literals, saved_query's id, cancel, 32 forbidden forms, the
+export stream in Arrow batches, the lock), browser 37 (completion and Tab, Ctrl+Enter, a table at 1280 and records at 375, Explain, Cancel in the
+browser, the six screens stamped with no sideways scroll and no console error, and without JavaScript the editor's form posting back the whole
+screen; screenshots in `/tmp/dl-shots/slice3`) — plus the schema proof (**197** — db/022's eight checks added), the server and engine logs, and
+the registry `--check`. Re-run green: slices 2 and 1 and Phase 2 under both modes, the engine proof, Phase 0's kit, Phase 1's claims.
+
+**Timings on this VM** (the audit's own, `query_runs.ms`): a refusal of the shape answers in ~0 ms (no connection made); an `ok` read from the
+editor ~0.6 s at the median (p90 0.7 s) — almost all of it the fresh DuckDB, the READ-ONLY attach of DuckLake through PostgreSQL and the
+caller's views, built per request by design (query-service §5); an export of 1,500 rows ~0.7 s, 120,000 rows capped at 100,000 in ~1.5 s; Cancel
+stops a 14-billion-pair cross join in **< 0.3 s** after the click (proven < 2 s); the watchdog at a 2 s setting answers `timeout` at ~2.5 s.
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **The `export` kind is not a socket kind** (this spec's file list named one "streamed back as Arrow IPC"; query-service §1 and §7 say exports
+   run in the writer): `query.service.prepare()` — the allow-list, the person's views, the lock — is shared by the service's `run()` and the
+   writer's jobs, which stream `to_arrow_reader()` batches from that locked READ-ONLY connection into the lake (`sandbox_save`: `CREATE TABLE
+   … AS SELECT * FROM` the registered reader, one commit) or into a file. The person's SQL never runs on the writer's read-write connection.
+2. **`dl_query_admit(p_caller, p_source, p_request_id) → jsonb`** (this spec's shape; query-service §4 named a `text` variant): `{admitted,
+   slot}` | `{admitted: false, rule}` — the slot a SESSION advisory lock on the instance's connection, released after the audit
+   (`dl_query_release`). **A slot held by any session — this one included — is taken** (`pg_locks` first): advisory locks are reentrant within
+   a session, so a missed release can never stack. Concurrency applies to every caller (2 a person by default), the rate to agents only.
+3. **Cancel is answered beside the running request** (never `busy`): the client asks EVERY instance; the one running it interrupts it (the
+   run ends `cancelled` — query_runs admits it), another caller's id answers `not_yours`, an id not running here `not_found`. The editor's
+   request id is the page's (`sql-{me}-{hex}`, set by the script on submit; the server accepts only its own member's prefix), and **/sql/run
+   releases the PHP session before asking the lake**, so Cancel is never queued behind its run.
+4. **The policy decides the shape of a refusal; db/022 fixes one defect**: db/018's `dl_query_policy()` answered `not_readable` for a dataset
+   the caller may not even know exists, so a key typed in the editor confirmed it existed — now **`no_such_dataset`, identical to a missing
+   key, unless the caller sees its stub** (an insider holding a role; never an external, never another's sandbox). Request access is offered
+   for discover_only, not_readable and not_shared only.
+5. **A dataset granted but with no data yet** answers `ok`, no rows, "{key} has no data yet." (as the preview does) — never "you may not read".
+6. **A `policy` refusal** (a compiled policy the service cannot honour) tells every Lake admin once a day per dataset (`dl_query_policy_fault()`,
+   notification kind `policy_fault` — db/022 widens the check); the caller reads "the lake refused this read (its policy)".
+7. **Saving a query** dry-runs it with every parameter bound to its default or a typed placeholder: a SQL the ALLOW-LIST refuses is never saved
+   (it could never run — the sentence on `sql`); one the POLICY refuses today is saved, its refusal returned and the page's notice saying so
+   (the spec's "saved with its refusal shown, never silently"). `dataset_ids` from the parse. An update leaves out what it does not send.
+8. **Parameters** are `{name, type, default, required}` (types text, integer, number, date — `$name` in the SQL), coerced by PHP by type and
+   bound by the SERVICE as literals after the parse; a form sends rows, an agent JSON. A missing required value is a field error, nothing run.
+9. **`sandbox_save` and `export_make` compile the person's policy in PHP at the request** (`dl_query_policy(…, 'transform' | 'export',
+   ceiling)` as the application — the database compiles it, PHP only carries it) and freeze it in the job's params without the salt; the
+   writer adds the salt. **The salt is now `root:datalake 0440`** — readable by the writer and the query service (both in `datalake`), never
+   www-data (ROOT_STEPS step 6 and the query unit's comment changed; the writer's exports and saved results apply hash masks).
+10. **A saved result keeps its inputs' sensitivity**: the dataset's floor is the highest input classification, and an output column named as an
+    input column inherits that column's classification and personal kind (conservative — a mask applied at the save protects nobody who later
+    reads it unmasked); then slice 2's `job_profile` runs in the same job (★3's classifier). Saving my own name again replaces its rows.
+11. **Exports**: a whole dataset's export is `SELECT * FROM {key}` (provenance columns included); `masked` = some column of a dataset it read was
+    masked for the maker (conservative — the flag does not trace which columns the result used); XLSX stops at 1,048,575 rows; files are
+    written to `exports/{id}.{ext}.part` and renamed. **The writer owns `exports/`** (lake-engine §6's rule extended): delete removes the ROW
+    at once (the door 404s), expiry 404s at once, and an `export` job with `op: sweep` (queued by the delete and by the worker's `exports`
+    pass — one queued at a time) unlinks every file whose row is gone or expired and nulls `storage_path`. PHP never deletes there.
+12. **Usage**: `worker_pass_usage_rollup` runs once a day after 01:00 (a `worker.usage_rollup` row names the day), then `dl_query_runs_prune()`,
+    then **re-indexes every dataset whose `search_index.usage_30d` moved** — search ranks by it, and the rollup changes no dataset row, so no
+    trigger would. `--passes=usage_rollup` forces it (`$GLOBALS['__worker_only']`).
+13. **A run's page**: the masks and row filters are shown by NAME (the column, the dataset bounded) — never a filter's text, even to the caller.
+14. **Query this** shows on the dataset header to whoever holds `sql.editor` and may read the dataset (it was shown to everyone once built).
+15. The **home's Recent tile** reads the datasets of my last ok runs (`recent_datasets()`, through `mcp_query_runs` and `mcp_datasets`), merged
+    with my followed ones, each once.
+16. Files beyond the spec's list: `app/features/editor/write.php` (`sandbox_save`, `frozen_policy`, `dry_run_for_job` — writes live in
+    `write.php`), `app/features/runs/present.php` (as the list said), `app/features/{saved_queries,exports}/write.php`, `tests/phase3/slice3/seed.py`
+    (the slice's real tables). `FieldRefused` (slice 2's) is reused, not copied.
+
+**Schema defects found and fixed (db/022, additive):** the hidden-dataset leak above (decision 4); `lake_jobs.kind` and `lineage_runs.job_kind`
+lacked `sandbox_save`; `notifications.kind` lacked `policy_fault`. **Deploy defect:** ROOT_STEPS wrote the masking salt as 32 RAW bytes while
+the query service refuses anything but 32–128 hex characters — a fresh install's query service would not have started; it writes hex now.
+**Earlier proofs updated** (they follow what is built): Phase 2's engine proof and slice 2's preview proof now name `check_row_filter`
+(slice 4) as the unbuilt kind, and the writer's unbuilt kinds list drops `export`; Phase 2's gates expect the Recent tile built.
+
+**For later slices:** a screen that runs a person's SQL copies `run_sql()` → the result or refusal partial (`app/views/sql/partials/`); a job
+that writes from a person's query copies `services/lake/jobs/query_results.py` (the frozen policy, `_prepared()`, `_arrow_reader()`, the
+watchdog, `_audit()` with its source, lineage for a dataset it writes); a new query kind copies `server._sql` (keys first → admit → policy →
+run → audit → release in `finally`). Slice 4's `check_row_filter` adds its branch in `protocol._check` and a handler in `BUILT`; slice 7's
+metrics go through `lake_sql()`'s shape; slice 9's API SQL door calls `run_sql()` with `source: api`.

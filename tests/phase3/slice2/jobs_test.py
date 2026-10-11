@@ -128,13 +128,13 @@ j = run(enqueue("rollback", ds, load))
 ok(j["status"] == "done" and j["result"].get("removed") == 0, "rolled back again: nothing to do (idempotent)")
 
 print("the frame")
-j = run(enqueue("export", "NULL", "NULL"))
-ok(j["status"] == "failed" and j["error"] == "not built until slice 3", "a kind not built yet: failed at once, naming its slice")
+j = run(enqueue("promote", "NULL", "NULL"))
+ok(j["status"] == "failed" and j["error"] == "not built until slice 5", "a kind not built yet: failed at once, naming its slice (promote — export is slice 3's, built)")
 ok(frame.safe_error("IO Error: No files found that match the pattern \"/srv/lake/landing/ab/cd/x\" near 'ada@example.invalid'")
    == "IO Error: No files found that match the pattern \"<file>\" near '…'", "safe_error: no path, no quoted value")
 ok(frame.uuid7().version == 7, "lineage run ids are UUIDv7")
-ok(sorted(writer_main.DISPATCH) == ["load", "profile", "rollback", "sniff"] and getattr(writer_main.DISPATCH["sniff"], "needs_lake", True) is False,
-   "DISPATCH holds slice 2's four kinds; the sniff never opens the lake")
+ok({"load", "profile", "rollback", "sniff"} <= set(writer_main.DISPATCH) and getattr(writer_main.DISPATCH["sniff"], "needs_lake", True) is False,
+   "DISPATCH holds slice 2's four kinds (later slices add theirs); the sniff never opens the lake")
 
 pg(f"DELETE FROM lake_jobs WHERE status = 'queued'")
 print(f"all {PASSES} passed" if FAILS == 0 else f"{FAILS} FAILED ({PASSES} passed)")

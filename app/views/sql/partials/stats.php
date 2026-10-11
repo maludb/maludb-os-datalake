@@ -1,0 +1,2 @@
+<?php /** One column's quick stats on the shown rows (sql-stats-{column}). Data: name, s = [nulls, distinct, min, max] | null */ ?>
+<?php if ($s !== null): ?><div class="fw-normal text-muted fs-11 sql-stats" id="sql-stats-<?= e($name) ?>"><?= (int) $s['nulls'] ?> empty · <?= (int) $s['distinct'] ?> distinct<?php if ($s['min'] !== null): ?><br><?= e((string) $s['min']) ?> … <?= e((string) $s['max']) ?><?php endif; ?></div><?php endif; ?>

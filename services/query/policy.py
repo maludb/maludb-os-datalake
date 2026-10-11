@@ -25,7 +25,8 @@ MASKS = ("full", "partial_email", "partial", "hash", "null", "year_only")
 LEVELS = ("read", "read_unmasked")
 _FILTER_NODES = (exp.Column, exp.Identifier, exp.Literal, exp.Boolean, exp.Null, exp.And, exp.Or, exp.Not, exp.Paren,
                  exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Is, exp.In, exp.Between, exp.Like, exp.ILike,
-                 exp.Array, exp.Tuple, exp.Neg, exp.Cast, exp.DataType, exp.DataTypeParam)
+                 exp.Array, exp.Tuple, exp.Neg, exp.Cast, exp.DataType, exp.DataTypeParam,
+                 exp.Any)     # slice 3: db/008's bound department filter is `department_id = ANY(ARRAY[7]::BIGINT[])` (query-service §5)
 
 
 class PolicyError(Exception):

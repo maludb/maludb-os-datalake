@@ -52,6 +52,7 @@ if (!(bool) $pdo->query("SELECT pg_try_advisory_lock(hashtext('datalake_worker')
     exit(0);
 }
 $GLOBALS['__public_door'] = 'cron';                 // every row a pass writes is source cron, actor none
+$GLOBALS['__worker_only'] = $only;                   // a pass named by --passes runs whether or not it is due
 $started = microtime(true);
 $report = ['at' => $now->format(DATE_ATOM), 'ran' => [], 'errors' => []];
 foreach ($only === [] ? WORKER_PASSES : $only as $pass) {
@@ -156,14 +157,54 @@ function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): ar
 function worker_pass_freshness(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['warned' => 0, 'failed' => 0, 'resolved' => 0, 'stub' => true]; }
 /** SLICE 4 — grants and access requests past their expiry closed, logged grant.expire / access.expire, the holder notified. */
 function worker_pass_expiry(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['grants' => 0, 'requests' => 0, 'stub' => true]; }
-/** SLICE 3 — nightly: query_runs rolled into dataset_usage_daily and dataset_joins; a dataset unused for unused_after_days marked Tier "unused". */
-function worker_pass_usage_rollup(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['days' => 0, 'stub' => true]; }
+/**
+ * SLICE 3 — once a day after 01:00: yesterday's query_runs rolled into dataset_usage_daily and dataset_joins (dl_usage_rollup — a dataset unused
+ * for unused_after_days marked Tier "unused"), then dl_query_runs_prune() (the SQL text after query_text_days, the row after audit_keep_days).
+ * Done once per day: a `worker.usage_rollup` row names the day it rolled. The Usage tab, search's ranking (dl_usage_30d) and "popular" read it.
+ */
+function worker_pass_usage_rollup(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $day = $now->modify('-1 day')->format('Y-m-d');
+    if (!in_array('usage_rollup', $GLOBALS['__worker_only'] ?? [], true)) {
+        if ((int) $now->format('G') < 1) {
+            return ['days' => 0, 'due' => false];
+        }
+        if (db_bool($pdo, "SELECT EXISTS (SELECT 1 FROM activity_log WHERE action = 'worker.usage_rollup' AND after ->> 'day' = :d)", ['d' => $day])) {
+            return ['days' => 0, 'done' => $day];
+        }
+    }
+    $n = (int) one_value($pdo, 'SELECT dl_usage_rollup(CAST(:d AS date))', ['d' => $day]);
+    $pruned = (int) one_value($pdo, 'SELECT dl_query_runs_prune()');
+    // search ranks by the last 30 days' queries (search_index.usage_30d): a dataset whose count moved is indexed again
+    $st = $pdo->prepare("SELECT s.entity_id FROM search_index s WHERE s.entity_kind = 'dataset' AND s.usage_30d IS DISTINCT FROM dl_usage_30d(s.entity_id) LIMIT :n");
+    $st->bindValue('n', $limit, PDO::PARAM_INT);
+    $st->execute();
+    $reindexed = 0;
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $id) {
+        $pdo->prepare('SELECT dl_index_dataset(:id)')->execute(['id' => (int) $id]);
+        $reindexed++;
+    }
+    log_activity($pdo, 'worker.usage_rollup', null, null, ['source' => 'cron', 'actor_member_id' => null,
+        'after' => ['day' => $day, 'datasets' => $n, 'pruned' => $pruned, 'reindexed' => $reindexed]]);
+    return ['days' => 1, 'day' => $day, 'datasets' => $n, 'pruned' => $pruned, 'reindexed' => $reindexed];
+}
 /** SLICE 8 — nightly: the writer's retention job queued per policy; query_runs.sql nulled after query_text_days; audit, check results and profiles past their windows deleted. */
 function worker_pass_retention(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'nulled' => 0, 'deleted' => 0, 'stub' => true]; }
 /** SLICE 8 — at maintenance_hour:maintenance_minute the writer's maintenance job queued once a day (flush, merge, rewrite, expire, clean up). */
 function worker_pass_maintenance(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'stub' => true]; }
-/** SLICE 3 — export files past their expiry removed by the writer (it owns exports/), the row marked expired. */
-function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expired' => 0, 'stub' => true]; }
+/**
+ * SLICE 3 — export files past their expiry: the writer's sweep queued (an `export` job, op sweep — one queued at a time; it unlinks the files
+ * of expired and deleted exports and nulls storage_path; it owns exports/, PHP never deletes there). The download door already answers 404.
+ */
+function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $n = (int) one_value($pdo, 'SELECT count(*) FROM exports WHERE storage_path IS NOT NULL AND expires_at < CAST(:now AS timestamptz)', ['now' => $now->format(DATE_ATOM)]);
+    if ($n === 0) {
+        return ['expired' => 0];
+    }
+    $job = lake_enqueue($pdo, 'export', null, null, ['op' => 'sweep'], 7);
+    return ['expired' => $n, 'sweep_job' => $job];
+}
 /** SLICE 10 — the outbox: email through MaluMail (malumail_send), texts to members through the kernel (kernel_send_text), retries with backoff. */
 function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['sent' => 0, 'skipped' => 0, 'retried' => 0, 'failed' => 0, 'stub' => true]; }
 /** SLICE 10 — agent dispatches: a blocking check failed on a dataset → the Steward's chat turn to triage; at most three attempts. */

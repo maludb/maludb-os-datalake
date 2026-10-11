@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 MAX_REQUEST_BYTES = 1 << 20
 KINDS = ("ping", "preview", "sql", "saved_query", "metric", "product_rows", "cancel", "check_row_filter")
 SOURCES = ("screen", "preview", "mcp", "agent", "api", "k7", "export", "transform")
+PARAM_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
 KEY_RE = re.compile(r"^(raw|curated|product|sandbox|quarantine)\.[a-z][a-z0-9_]{0,62}$")
 
 
@@ -40,6 +41,8 @@ class Request:
     as_of: int | str | None = None
     sql: str | None = None
     params: dict = field(default_factory=dict)
+    dry_run: bool = False
+    saved_query_id: int | None = None
     raw: dict = field(default_factory=dict)
 
 
@@ -86,7 +89,8 @@ def parse(line: bytes) -> Request:
                   dataset=d.get("dataset") if isinstance(d.get("dataset"), str) else None,
                   as_of=(int(as_of) if isinstance(as_of, str) and as_of.isdigit() else (as_of or None)),
                   sql=d.get("sql") if isinstance(d.get("sql"), str) else None,
-                  params=d.get("params") if isinstance(d.get("params"), dict) else {}, raw=d)
+                  params=d.get("params") if isinstance(d.get("params"), dict) else {}, dry_run=d.get("dry_run") is True,
+                  saved_query_id=_int(d.get("saved_query_id"), "saved_query_id"), raw=d)
     _check(req)
     return req
 
@@ -98,3 +102,23 @@ def _check(req: Request) -> None:
             raise ProtocolError("bad_request", "Who asks: a preview names its caller_member_id.")
         if not req.dataset or not KEY_RE.fullmatch(req.dataset):
             raise ProtocolError("bad_request", "A preview names one dataset key: <zone>.<name>.")
+    elif req.kind in ("sql", "saved_query"):
+        if req.caller_member_id is None:
+            raise ProtocolError("bad_request", "Who asks: a query names its caller_member_id.")
+        if not isinstance(req.raw.get("sql"), str):
+            raise ProtocolError("bad_request", "A query carries its SQL (the allow-list judges it).")
+        if req.kind == "saved_query" and req.saved_query_id is None:
+            raise ProtocolError("bad_request", "A saved query's run names its saved_query_id (the caller read it under its own wall).")
+        if not isinstance(req.raw.get("params", {}), dict):
+            raise ProtocolError("bad_request", "params is an object of name → value.")
+        for name, value in req.params.items():
+            if not isinstance(name, str) or not PARAM_RE.fullmatch(name):
+                raise ProtocolError("bad_request", "A parameter's name is letters, digits and underscores.")
+            if value is not None and not isinstance(value, (str, int, float, bool)):
+                raise ProtocolError("bad_request", f"The parameter {name} is a text, a number, a yes/no or empty.")
+            if isinstance(value, str) and len(value) > 1000:
+                raise ProtocolError("bad_request", f"The parameter {name} is longer than 1,000 characters.")
+    elif req.kind == "cancel":
+        if req.caller_member_id is None or not req.request_id:
+            raise ProtocolError("bad_request", "A cancel names its caller_member_id and the request_id of the caller's own running request.")
+

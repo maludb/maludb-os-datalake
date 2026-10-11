@@ -115,4 +115,20 @@ return [
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => loads_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, "SELECT 'Load ' || l.load_id || ' — ' || d.key FROM mcp_loads l JOIN datasets d ON d.id = l.dataset_id WHERE l.load_id = :id", ['id' => $id])) === null ? null : (string) $v,
     ],
+    'saved_query' => [                                              // slice 3: a saved query I may see (mine, or shared and readable — the find_saved_queries resolver)
+        'title' => 'Saved queries', 'noun' => 'saved query', 'roles' => ['queries.run'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => saved_queries_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title FROM mcp_saved_queries WHERE saved_query_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
 ];
+
+/** The saved_query picker (slice 3): mcp_saved_queries' wall; the verified first; the badge as the row's. */
+function saved_queries_for_pick(PDO $pdo, string $q, array $params, int $page): array
+{
+    $where = $q === '' ? 'true' : '(title ILIKE :q OR question ILIKE :q)';
+    $args = $q === '' ? [] : ['q' => picker_like($q)];
+    return picker_page($pdo, "SELECT count(*) FROM mcp_saved_queries WHERE $where",
+        "SELECT saved_query_id AS id, title AS label, COALESCE(question, '') AS detail, CASE WHEN verified_at IS NOT NULL THEN 'Verified' END AS badge,
+                CASE WHEN verified_at IS NOT NULL THEN 'success' END AS color
+           FROM mcp_saved_queries WHERE $where ORDER BY verified_at IS NULL, title", $args, $page);
+}

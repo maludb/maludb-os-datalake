@@ -19,7 +19,8 @@ PartOf=datalake-query.target
 Type=simple
 User=datalake-query
 Group=datalake
-# its own group reads the installation's masking salt (DL_MASK_SALT_FILE, root:datalake-query 0440) — the writer never can
+# the group datalake reads the installation's masking salt (DL_MASK_SALT_FILE, root:datalake 0440) — the writer too since slice 3 (exports and
+# saved results run in the writer through the person's views); www-data never
 SupplementaryGroups=datalake-query
 WorkingDirectory={{APP_DIR}}
 EnvironmentFile={{APP_DIR}}/config/.env

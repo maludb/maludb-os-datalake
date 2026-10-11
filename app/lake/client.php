@@ -18,7 +18,13 @@ declare(strict_types=1);
  *                                     on each instance; the writer by its connection (application_name datalake-writer in pg_stat_activity
  *                                     — it has no socket). The health endpoint and the admin's engine tile read it.
  *   lake_preview($key, $asOf)         slice 2: the `preview` kind — 100 rows of a dataset as the caller may read them (source `preview`)
- * Slices 3, 7 and 9 add their wrappers here (lake_sql, lake_saved_query, lake_metric — query-service §8).
+ *   lake_sql($sql, $opts)             slice 3: the `sql` kind — the caller's SQL (params bound as literals by the service; dry_run = the plan and
+ *                                     the datasets it reads, no rows); opts: source, as_of, params, request_id, dry_run, saved_query_id
+ *   lake_saved_query($saved, $params) slice 3: the `saved_query` kind — a saved query the caller read under its own wall, run as `sql`
+ *   lake_cancel($requestId)           slice 3: the `cancel` kind on EVERY instance (the one running it answers ok; another caller's id not_yours)
+ *   lake_request_access($answer)      slice 3: the Request access link a refusal offers (the policy's rules), or null
+ *   lake_timeout($source)             the request's own limit in seconds (dl_settings — the read waits 5 s longer)
+ * Slices 7 and 9 add theirs here (lake_metric, lake_product_rows — query-service §8).
  */
 
 const LAKE_PROTOCOL = 1;
@@ -153,6 +159,10 @@ function lake_refusal_message(array $answer): string
         'too_long'           => 'The request is too long.',
         'peer'               => 'Only the web application may ask the query service.',
         'k38_pending'        => 'This is readable once the kernel says who asked (K38).',
+        'rate'               => 'Too many queries this minute — try again in a moment.',
+        'concurrency'        => 'Too many queries at once — try again in a moment.',
+        'timeout'            => 'Stopped at the time limit — narrow it.',
+        'cancelled'          => 'Cancelled.',
     ];
     $message = trim((string) ($answer['message'] ?? ''));
     if ($rule === 'not_built' && $message !== '') {
@@ -204,3 +214,85 @@ function lake_preview(string $key, int|string|null $asOf = null): array
     }
     return lake_query(['kind' => 'preview', 'dataset' => $key, 'as_of' => $asOf] + $caller, 30);
 }
+
+/** The rules a refusal may answer with Request access (query-service §4): the policy's — never no_such_dataset (a hidden dataset never confirms itself). */
+const LAKE_REQUESTABLE = ['discover_only', 'not_readable', 'not_shared'];
+
+/** The Request access link a refusal offers: /access/requests/new?dataset=<key>&level=read for the policy's rules, else null. */
+function lake_request_access(array $answer): ?string
+{
+    $key = (string) ($answer['dataset'] ?? '');
+    if ($key === '' || !in_array((string) ($answer['refusal_rule'] ?? ''), LAKE_REQUESTABLE, true)) {
+        return null;
+    }
+    return '/access/requests/new?' . http_build_query(['dataset' => $key, 'level' => 'read']);
+}
+
+/** The request's own limit in seconds for a source (dl_settings: the screen's 30 s, an agent's or the API's 60 s, an export's 300 s). */
+function lake_timeout(string $source): int
+{
+    static $cache = [];
+    $name = match (true) {
+        in_array($source, ['screen', 'preview'], true) => 'query_timeout_screen_s',
+        in_array($source, ['export', 'transform'], true) => 'query_timeout_export_s',
+        default => 'query_timeout_agent_s',
+    };
+    if (!isset($cache[$name])) {
+        try {
+            $cache[$name] = (int) (one_value(db(), 'SELECT dl_setting_int(:n)', ['n' => $name]) ?? 30);
+        } catch (Throwable $e) {
+            $cache[$name] = 30;
+        }
+    }
+    return max(1, $cache[$name]);
+}
+
+/**
+ * The caller's SQL through the one door (query-service §7 `sql`; query-service-editor.md, THE SECOND EXEMPLAR). $opts: source (screen by
+ * default; an agent's relayed call is `agent`), as_of, params (name → value, bound as literals by the service), request_id (the editor's
+ * own, so Cancel can name it), dry_run (the plan and the datasets, no rows), saved_query_id. The answer is the service's (query_run_id always).
+ */
+function lake_sql(string $sql, array $opts = []): array
+{
+    $caller = lake_caller();
+    $source = (string) ($opts['source'] ?? $caller['source']);
+    $req = ['kind' => isset($opts['saved_query_id']) ? 'saved_query' : 'sql', 'sql' => $sql, 'source' => $source,
+            'as_of' => $opts['as_of'] ?? null, 'params' => (object) ($opts['params'] ?? []), 'dry_run' => !empty($opts['dry_run'])];
+    if (isset($opts['saved_query_id'])) {
+        $req['saved_query_id'] = (int) $opts['saved_query_id'];
+    }
+    if (($opts['request_id'] ?? '') !== '') {
+        $req['request_id'] = (string) $opts['request_id'];
+    }
+    return lake_query($req + $caller, lake_timeout($source));
+}
+
+/** A saved query the caller read under its own wall (mcp_saved_queries), run as `sql` with its id in the audit. */
+function lake_saved_query(array $saved, array $params = [], array $opts = []): array
+{
+    return lake_sql((string) $saved['sql'], ['params' => $params, 'saved_query_id' => (int) $saved['saved_query_id']] + $opts);
+}
+
+/**
+ * Cancel the caller's own running request (query-service §7 `cancel`): asked of EVERY instance (the client cannot know which one runs it);
+ * the one running it answers ok. Returns ['cancelled' => bool, 'rule' => ok | not_yours | not_found | engine_unavailable].
+ */
+function lake_cancel(string $requestId): array
+{
+    $line = json_encode(['v' => LAKE_PROTOCOL, 'kind' => 'cancel', 'request_id' => $requestId] + array_intersect_key(lake_caller(), ['caller_member_id' => 1]),
+        JSON_UNESCAPED_SLASHES) . "\n";
+    $best = 'engine_unavailable';
+    foreach (lake_sockets() as $path) {
+        $a = lake_socket_call($path, $line, 3);
+        if ($a === null) {
+            continue;
+        }
+        if (($a['status'] ?? '') === 'ok') {
+            return ['cancelled' => true, 'rule' => 'ok'];
+        }
+        $rule = (string) ($a['refusal_rule'] ?? 'not_found');
+        $best = $rule === 'not_yours' || $best === 'engine_unavailable' ? $rule : $best;
+    }
+    return ['cancelled' => false, 'rule' => $best];
+}
+

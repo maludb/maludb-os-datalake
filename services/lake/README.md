@@ -19,11 +19,12 @@ records). Any other exception is a fault: its safe first line is the job's `erro
 | Slice | Module | Kinds it adds to `DISPATCH` |
 |---|---|---|
 | 2 (uploads and loads) — BUILT | `jobs/ingest.py` (+ `jobs/frame.py`) | `sniff`, `load`, `profile`, `rollback` — and the `pg_notify('lake_jobs', kind)` in `dl_job_enqueue` (db/021) |
-| 3 (the query service and exports) | `jobs/queries.py` | `export` |
+| 3 (the query service and exports) — BUILT | `jobs/query_results.py` (the spec's name) | `sandbox_save`, `export` (op `make`, op `sweep` — the writer owns `exports/`): a person's policy frozen at the request, the person's SQL run through `query.service.prepare()` on a READ-ONLY attach and streamed as Arrow batches |
 | 5 (contracts and quality) | `jobs/quality.py` | `promote`, `checks` |
 | 7 (transforms) | `jobs/transforms.py` | `transform` |
 | 8 (health and erasure) | `jobs/health.py` | `maintenance`, `retention`, `erasure`, `backup_lock` |
 
 The query service (`services/query/server.py --worker N`) is built the same way: `BUILT = {kind: handler}`, `ping` from Phase 2, `preview`
-from slice 2 (its request's shape in `protocol.py`, the policy and the audit through `identity.py`), the other kinds by the slices of
-query-service.md §7 — each copies `server._preview`.
+from slice 2 (its request's shape in `protocol.py`, the policy and the audit through `identity.py`), `sql` / `saved_query` / `cancel` from slice 3
+(`server._sql` — THE SECOND EXEMPLAR: keys → admission (db/022) → policy → run → audit → release), the other kinds by the slices of
+query-service.md §7 — each copies `server._sql`.
