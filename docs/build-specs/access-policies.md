@@ -127,3 +127,86 @@ confirms what the classifier proposed at load, slice 2); the agents' MCP side of
 ## Open questions
 None — decisions taken in this spec: the row filter is checked by a dry run before it is saved; zone and tag grants are the admin's, dataset grants also the owner's;
 personal data is confirmed by people only; a pending request expires after 30 days and a grant's expiry is announced 7 days ahead, once.
+
+## Built and proven (2026-10-11)
+Who sees what is operable by people. **My access** shows what I may read as cards — my level, through what ("a grant to Sales (your
+department)", "you own it", "you are its steward"), "Rows filtered", the columns masked for me, the end date — and my open requests.
+**Requests** has Mine · To decide · History; on a phone To decide comes first and each card carries the one-tap decision: Approve at a
+level (the asked one by default) with an optional end date, the impact line following the level ("Approving gives SMOKE Priya read (masked)
+on curated.payroll: 2 columns stay masked"), or Deny with a reason; an agent's draft is marked "Drafted by" it. **Grants** is a ledger
+(target, who, level, the row filter's template, expiry, granted by, reason; Revoke; revoked rows greyed in on request); **Add grant** takes
+a dataset (an owner's own only), a zone or a tag (the admin's), who (the kind, then the picker for it), the levels the database admits for
+the kind, the row filter with its tokens as buttons and **Check** — the dry run through the query service — an end date and a reason.
+**Groups** (custom, or mirroring a department and following the directory), **Masks** (fifteen rows with an example each), the
+**personal-data map** with Confirm / Reject for a person, **Break-glass** with the open windows, and the dataset page's **Access** tab: who
+reads it (the owner and grants.manage) or why I have what I have (everyone else, as sentences, Request access below read). The worker's
+`expiry` pass is real. The registry reads **41 screens and 54 actions built** (12 + 15 here; the six approvals in step).
+
+**Proven** by `tests/phase3/slice4/run.sh` (scratch `dl_dev4` with the engine real — the writer and the query service on their units' command
+lines, DuckLake on the scratch catalog; slice 3's lake plus `seed.py` here: products with an expired grant, crm_deals with a personal email by the
+classifier's rule and a phone proposed at 0.6, the finance tag read unmasked by a group, the `gl` share): **332 checks under php -S and the same
+332 under a real Apache** — the matrix 111 (ten callers + the Expert acting for Priya and for Ann × eight datasets, every cell through the page,
+mcp_datasets as the records server's read role and the query service's preview, all agreeing with dl_access_of(); the cells the design names;
+the K7 consumer `gl`; the fail-closed ceiling of a kernel without K38), requests 30 (with the worker's expiry pass), filters 17 (the Check door,
+K38 through a row filter), grants 25, groups 26 (a department mirror following the directory sync), masks 12, personal data 16, break-glass 14,
+JSON 34, the browser 47 (at 375 first — the owner's one-tap Approve with the impact line following the level —, the twelve screens and the Access
+tab at 375 and 1280, Check in the grant form, without JavaScript a plain-form Deny; screenshots in `/tmp/dl-shots/slice4`) — plus the schema proof
+(**204** — db/023's seven checks added), the server and engine logs, and the registry `--check`.
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **db/023** adds what the screens and the pass need to SAY who and why, never a rule: `dl_access_deciders(dataset)` (the owner, else every
+   holder of grants.manage — the one answer to "whom does a request go to"), `dl_members_with_right(right)` (the worker has no session, so a
+   function, not mcp_members), `dl_grant_via(grant)` (the words for what a grant reaches through, answered only to someone it reaches, the
+   dataset's owner or grants.manage — mcp_grants shows a Member none of the department grants that reach them), `dl_access_request_expire()`,
+   and the notification kind `grant_expiring`.
+2. **`check_row_filter`** (the query service): node by node (policy.check_row_filter, as at query time), then BOUND (`EXPLAIN`) and RUN
+   (`SELECT 1 … LIMIT 1` under a 5-second interrupt) on the locked READ-ONLY attach, so a cast that fails on the values (a text key compared
+   with a number) refuses at the granter's save. It answers only valid or not — no row, no count — so it is not audited (it is no read), and
+   the engine's words lose every quoted literal (`_no_values()`: DuckDB names the value a cast failed on). A dataset with no table yet is
+   checked against the catalog's column names. An engine that cannot answer means the grant is NOT saved (fail closed).
+3. **A row filter belongs to a grant on one dataset** (its columns), at read or read unmasked; the TEMPLATE is stored and bound per reader
+   (db/008). A zone or tag grant with a filter is refused on the field.
+4. **The same live grant twice is refused** ("That grant is already there"). An end date (a grant's, a decision's) is the end of that day in the
+   person's time zone.
+5. **Requests**: a stub's dataset is requestable (the form's picker is `any_dataset`); asking for a level one already holds is refused on the
+   level; To decide = pending, not mine, that mcp_access_requests shows me (my datasets', or all for grants.manage — the header's count too);
+   the requester is told of a decision with no dataset gate (they asked, so they know it exists); a request someone may not see is nothing to
+   them (404), the requester's own decision a 403 in the database's words.
+6. **Drafts are an agent's, for the person its run acts for** (K38's requester) — `for` may name only them; a duty drafts nothing (403); a
+   person asks with the form (403 on draft). The gate is the intersection: both must at least see the stub.
+7. **The break-glass tells the owner AND every other Lake admin** (holders of lake.admin_read) — never the opener; one open window per admin
+   and dataset (a second names when the first ends); people only for the screen and the action; logged with the reason's length only.
+8. **Groups**: the maker is not made a member (a group's grants never reach the admin by making it); a custom group's owners change its
+   members and words; archiving is grants.manage's; a mirror's members are the directory's (never added or removed here; "follows the
+   department"), its name the department's when left empty; a key is made from the name (a suffix when taken).
+9. **Who opens what**: Masks — policies.manage, and catalog.edit read-only; the personal-data map, Groups and Grants — insiders (an external
+   none); Confirm / Reject — a person who owns or stewards the dataset or holds catalog.edit (★15: `require_human()` — an agent's token 403).
+10. **`column_classify`** sets the classification and/or the kind as a person's, confirmed, clearing any proposal; `personal_kind` "none" clears
+    it; the database keeps a personal column at least confidential (a "public" asked becomes confidential) and re-derives the dataset.
+11. **The Access tab** is rendered with the page (two small reads: dl_access_list or dl_access_explain); the owner also sees their own reasons
+    under the list; the dataset page's JSON carries `access` (slice 1's view.php gained the key).
+12. **The expiry pass**: past-due grants are revoked at their `expires_at` (lake-engine §7 — a `grant.expire` row, the grantee told when a person
+    or an agent); pending requests past `wanted_until` or 30 days old expire (`access.expire`, the requester told); a grant ending within seven
+    days is announced to its grantee and the dataset's owner ONCE per grant and person (the pass dedupes on `grant_expiring` notices — dl_notify's
+    own dedupe holds ten minutes, and an unmailed kind leaves no outbox row).
+13. **The kit's `dl_guard()` maps `insufficient_privilege` (42501) to a 403** in the function's own words (dl_access_decide, dl_admin_read_open);
+    PostgreSQL's own "permission denied for …" (a grant missing) is said generically.
+14. **Files beyond the list**: `app/views/access/partials/{subnav,grant-who}.php` (the Access screens' tabs; the grant form's who-and-level,
+    fetched again when the kind changes — `/access/grants/new?fragment=who`); the requests screen answers `?impact={id}&level=` with the impact
+    line alone; `html/assets/js/tag-editor.js` gains `button[data-insert]` (the row filter's tokens and columns insert at the cursor — the form
+    works without it); `tests/phase3/slice4/seed.py`.
+
+**Found and fixed in slice 4:**
+- **The query service answered `policy` for a dataset registered and never loaded** (its policy has no columns, so `validate()` refused): the
+  preview and `sql` now answer "{key} has no data yet." — slice 3's decision 5, extended to a dataset with no column.
+- **The dev router took only one-segment canonical URLs** (`/x/new`, `/x/{id}`): `/access/requests/new` and `/access/grants/new` were 404 under
+  php -S while Apache's rules take any depth — the router now does too.
+- **An omitted required text field fell through to the database** (the kit's `dl_text()` keeps a field left out as it was): the request,
+  draft and break-glass handlers require their reason when it is missing, not only when it is empty.
+- Phase 2's engine proof and slice 2's preview proof named `check_row_filter` as the unbuilt kind; they now name `metric` (slice 7).
+
+**What later slices copy**: a query kind that answers a judgment, not rows — `server._check_row_filter` (no audit, `_no_values()` on the
+engine's words); a screen family with its own tabs — `access/partials/subnav.php`; a decision made inline on a card with a fragment that
+follows a select — `access/partials/{decide-inline,impact}.php` and the `?impact=` door; the proofs' `ref_level()` (the referee),
+`read_role_row()` (mcp_datasets as the read role), `agent_get()` / `agent_post()` (a run with K38's requester, a duty, or a kernel without K38),
+`last_notice()`.

@@ -296,3 +296,15 @@ function lake_cancel(string $requestId): array
     return ['cancelled' => false, 'rule' => $best];
 }
 
+
+/**
+ * A grant's row filter checked before it is saved (query-service §7 `check_row_filter`; access-policies.md divergence 1): $bound is the
+ * filter with its tokens bound for the GRANTER by the database (dl_bind_row_filter), $columns the catalog's live column names (the check's
+ * fallback when the lake holds no table yet). The answer: {status ok, valid, message?, row_filter?, checked_against} — or the service's
+ * refusal (engine_unavailable …), which a caller treats as "not checked", never as valid.
+ */
+function lake_check_row_filter(string $key, string $bound, array $columns): array
+{
+    $caller = array_intersect_key(lake_caller(), ['caller_member_id' => 1, 'request_id' => 1]);
+    return lake_query(['kind' => 'check_row_filter', 'dataset' => $key, 'row_filter' => $bound, 'columns' => array_values($columns)] + $caller, 15);
+}

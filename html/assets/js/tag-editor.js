@@ -2,7 +2,8 @@
    JavaScript). Delegated from document, so a screen swapped in by HTMX needs no re-binding.
    1. [data-tag-input] — a field that names a tag by its words: shows the slug it will use (#sales-emea), or that it is an existing tag (the
       field's <datalist> holds the vocabulary), in the element its data-tag-preview names.
-   2. [data-chips-input] — a comma-separated field (a term's synonyms): shows each value as a chip in the element its data-chips-preview names. */
+   2. [data-chips-input] — a comma-separated field (a term's synonyms): shows each value as a chip in the element its data-chips-preview names.
+   3. button[data-insert] (slice 4) — inserts its text at the cursor of the field its data-insert-into names (a grant's row-filter tokens). */
 (function () {
     'use strict';
     function slug(words) {
@@ -41,6 +42,18 @@
     function init(root) {
         (root || document).querySelectorAll('input[data-chips-input]').forEach(chips);
     }
+    // slice 4: a button[data-insert] puts its text at the cursor of the field data-insert-into names (the row filter's tokens and columns)
+    document.addEventListener('click', function (e) {
+        var b = e.target instanceof Element ? e.target.closest('button[data-insert]') : null;
+        if (!b) { return; }
+        var field = document.querySelector(b.getAttribute('data-insert-into') || '');
+        if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) { return; }
+        var text = b.getAttribute('data-insert') || '', at = field.selectionStart == null ? field.value.length : field.selectionStart;
+        var end = field.selectionEnd == null ? at : field.selectionEnd;
+        field.value = field.value.slice(0, at) + text + field.value.slice(end);
+        field.focus();
+        field.setSelectionRange(at + text.length, at + text.length);
+    });
     document.addEventListener('DOMContentLoaded', function () { init(document); });
     document.body && document.body.addEventListener('htmx:afterSwap', function (e) { init(e.target); });
 })();

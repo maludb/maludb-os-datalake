@@ -10,7 +10,7 @@ is answered `busy` at once (never queued — the client tries the next instance)
 
 The kinds, by the slice that builds them (query-service §7): `ping` (Phase 2 — the health check and the shell's engine badge: {status ok,
 worker, version}, touches no catalog and answers even while the instance is busy) · `preview` (slice 2) · `sql`, `saved_query`, `cancel`,
-`dry_run` (slice 3 — `sql` with dry_run: true; a cancel is answered beside the running request, never `busy`) · `check_row_filter` (slice 4) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
+`dry_run` (slice 3 — `sql` with dry_run: true; a cancel is answered beside the running request, never `busy`) · `check_row_filter` (slice 4 — a grant's filter checked before it is saved; reads no row) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
 `not_built`. THE SERVICE COMPILES THE POLICY ITSELF from the caller's identity (query-service §3, decision 9) — a caller never sends one.
 
 THE PRODUCTION PATH (slice 2 — uploads-loads.md, THE FIRST EXEMPLAR): a line → `protocol.parse()` (the shape; `bad_request` / `too_long`)
@@ -163,6 +163,9 @@ def _preview(srv, req) -> dict:
         ans = _refused(r.get("rule") or "not_readable", r.get("message") or "you may not read this dataset", key)
     elif key not in (policy.get("datasets") or {}):
         ans = _refused("not_readable", "you may not read this dataset — request access", key)
+    elif not (policy["datasets"][key].get("columns") or []):           # slice 4: registered, never loaded — no column yet: nothing to show, no refusal
+        ans = {"status": "ok", "refusal_rule": None, "message": f"{key} has no data yet.", "columns": [], "rows": [], "truncated": False,
+               "masked_columns": [], "datasets": [key], "ms": 0}
     else:
         as_of = ident.resolve_as_of(req.as_of)
         if as_of == -1:
@@ -220,9 +223,13 @@ def _sql(srv, req) -> dict:
                 refused = policy.get("refused") or {}
                 readable = policy.get("datasets") or {}
                 bad = next((k for k in keys if k in refused or k not in readable), None)
+                empty = next((k for k in keys if not ((readable.get(k) or {}).get("columns") or [])), None)
                 if bad is not None:
                     r = refused.get(bad) or {"rule": "not_readable", "message": f"you may not read {bad} — request access"}
                     ans = _refused(r.get("rule") or "not_readable", r.get("message") or "you may not read it — request access", bad)
+                elif empty is not None:                                    # slice 4: a dataset registered and never loaded has no column yet
+                    ans = {"status": "ok", "refusal_rule": None, "message": f"{empty} has no data yet.", "columns": [], "rows": [],
+                           "truncated": False, "masked_columns": [], "datasets": keys, "ms": 0, "plan": None}
                 else:
                     as_of = ident.resolve_as_of(req.as_of)
                     if as_of == -1:
@@ -271,7 +278,73 @@ def _cancel(srv, req) -> dict:
     return {"status": "ok", "cancelled": True, "worker": srv.worker}
 
 
-BUILT.update({"preview": _preview, "sql": _sql, "saved_query": _sql})
+def _no_values(e: Exception) -> str:
+    """An engine error in words without any quoted value: DuckDB names the value a cast failed on ('D-0001') — a value the granter may not read."""
+    import re
+    words = str(e).splitlines()[0].split(": ", 1)[-1]
+    return re.sub(r"'[^']*'|\"[^\"]*\"", "…", words)[:200]
+
+
+def _check_row_filter(srv, req) -> dict:
+    """`check_row_filter` (slice 4 — query-service §7; access-policies.md divergence 1): a grant's row filter, its tokens bound by the database
+    for the GRANTER (dl_bind_row_filter), validated node by node against the dataset's columns exactly as the views do at query time
+    (policy.check_row_filter: columns, literals, comparisons, IN / ANY / BETWEEN / LIKE, AND / OR / NOT, CAST — no function, no subquery, no
+    other table), then BOUND by DuckDB on the locked READ-ONLY attach (`EXPLAIN SELECT 1 FROM <table> WHERE <filter>` — a text column compared
+    with a number refuses here, at the granter's save, never at a reader's first query), then RUN with LIMIT 1 under a 5-second interrupt (a cast
+    that fails on the values refuses too); its answer is only valid or not — no row, no count leaves — so nothing is audited (it is no read);
+    a dataset with no table in the lake yet is checked against the catalog's column names the caller sends. Answers
+    {status: ok, valid, message?, row_filter?, checked_against: lake | catalog}."""
+    import duckdb as _duckdb
+    from lake.engine import columns_of, query_connection, split_key
+    from query.policy import PolicyError, check_row_filter
+    key = req.dataset or ""
+    pred = str(req.raw.get("row_filter") or "")
+    hint = {c for c in (req.raw.get("columns") or []) if isinstance(c, str)}
+    con = None
+    try:
+        con, alias = query_connection(srv.cfg, memory="256MB", threads=1, temp_max="256MB")
+        cols = columns_of(con, key, alias)
+        against = "lake" if cols else "catalog"
+        names = {c for c, _t in cols} or hint
+        out = {"status": "ok", "dataset": key, "checked_against": against}
+        if not names:
+            return out | {"valid": False, "rule": "row_filter", "message": f"{key} has no columns yet — a row filter needs the dataset's columns"}
+        try:
+            bound = check_row_filter(pred, names)
+        except PolicyError as e:
+            return out | {"valid": False, "rule": "row_filter", "message": str(e)[:300]}
+        if cols:
+            zone, name = split_key(key)
+            lake_dir = srv.cfg.data_path.rstrip("/") + "/"
+            con.execute(f"SET allowed_directories = ['{lake_dir}']")
+            con.execute("SET enable_external_access = false")
+            con.execute("SET lock_configuration = true")
+            try:
+                con.execute(f'EXPLAIN SELECT 1 FROM {alias}."{zone}"."{name}" WHERE {bound}').fetchall()
+            except _duckdb.Error as e:
+                return out | {"valid": False, "rule": "row_filter", "message": f"the filter does not fit the dataset's column types ({_no_values(e)})"}
+            # then RUN it, answering nothing but valid or not: a cast that fails on the data (a text key compared with a number) fails here,
+            # never at a reader's first query; LIMIT 1 stops at the first kept row, and a scan longer than 5 s is interrupted and counts as checked
+            timer = threading.Timer(5.0, con.interrupt)
+            timer.start()
+            try:
+                con.execute(f'SELECT 1 FROM {alias}."{zone}"."{name}" WHERE {bound} LIMIT 1').fetchall()
+            except _duckdb.InterruptException:
+                pass
+            except _duckdb.Error as e:
+                return out | {"valid": False, "rule": "row_filter", "message": f"the filter fails on the dataset's values ({_no_values(e)})"}
+            finally:
+                timer.cancel()
+        return out | {"valid": True, "row_filter": bound}
+    finally:
+        if con is not None:
+            try:
+                con.close()
+            except Exception:
+                pass
+
+
+BUILT.update({"preview": _preview, "sql": _sql, "saved_query": _sql, "check_row_filter": _check_row_filter})
 
 
 def socket_path(prefix: str, worker: int) -> str:

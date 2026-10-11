@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-11T00:55:58+00:00",
+    "generated_at": "2026-10-11T09:55:02+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -312,8 +312,8 @@
             "params": [
                 "level"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "requests": {
             "screen": "requests",
@@ -323,7 +323,7 @@
             "params": [
                 "box"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "request-add": {
@@ -335,7 +335,7 @@
                 "dataset",
                 "level"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "grants": {
@@ -349,7 +349,7 @@
                 "tag",
                 "principal"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "grant-add": {
@@ -362,7 +362,7 @@
                 "zone",
                 "tag"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "groups": {
@@ -371,7 +371,7 @@
             "section": "Access, policies, groups and personal data (slice 4)",
             "when": "groups as cards: custom and department mirrors",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "group-view": {
@@ -380,7 +380,7 @@
             "section": "Access, policies, groups and personal data (slice 4)",
             "when": "one group: members, owners, the grants it holds",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "group-add": {
@@ -389,7 +389,7 @@
             "section": "Access, policies, groups and personal data (slice 4)",
             "when": "to make a group: custom, or mirroring a department",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "group-edit": {
@@ -398,7 +398,7 @@
             "section": "Access, policies, groups and personal data (slice 4)",
             "when": "to rename a group or change its description",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "policies": {
@@ -407,7 +407,7 @@
             "section": "Access, policies, groups and personal data (slice 4)",
             "when": "the masks: each personal kind and classification and how it is masked below read_unmasked",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "personal-data": {
@@ -420,7 +420,7 @@
                 "confirmed",
                 "dataset"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-read": {
@@ -431,7 +431,7 @@
             "params": [
                 "dataset"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "quality": {
@@ -2201,7 +2201,7 @@
             "who": "access.request",
             "agent": false,
             "record_id": "the request",
-            "built": false
+            "built": true
         },
         "access_request_draft": {
             "action": "access_request_draft",
@@ -2240,7 +2240,7 @@
             "who": "access.request",
             "agent": true,
             "record_id": "the request",
-            "built": false
+            "built": true
         },
         "access_request_withdraw": {
             "action": "access_request_withdraw",
@@ -2261,7 +2261,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the request",
-            "built": false
+            "built": true
         },
         "access_decide": {
             "action": "access_decide",
@@ -2306,7 +2306,7 @@
             "who": "owner or grants.manage",
             "agent": true,
             "record_id": "the request",
-            "built": false
+            "built": true
         },
         "grant_set": {
             "action": "grant_set",
@@ -2381,7 +2381,7 @@
             "who": "owner (on their dataset) or grants.manage",
             "agent": true,
             "record_id": "the grant",
-            "built": false
+            "built": true
         },
         "grant_revoke": {
             "action": "grant_revoke",
@@ -2402,7 +2402,7 @@
             "who": "owner (on their dataset) or grants.manage",
             "agent": true,
             "record_id": "the grant",
-            "built": false
+            "built": true
         },
         "group_create": {
             "action": "group_create",
@@ -2447,7 +2447,7 @@
             "who": "grants.manage",
             "agent": true,
             "record_id": "the group",
-            "built": false
+            "built": true
         },
         "group_update": {
             "action": "group_update",
@@ -2480,7 +2480,7 @@
             "who": "grants.manage or a group owner",
             "agent": true,
             "record_id": "the group",
-            "built": false
+            "built": true
         },
         "group_archive": {
             "action": "group_archive",
@@ -2501,7 +2501,7 @@
             "who": "grants.manage",
             "agent": true,
             "record_id": "the group",
-            "built": false
+            "built": true
         },
         "group_member_add": {
             "action": "group_member_add",
@@ -2534,7 +2534,7 @@
             "who": "grants.manage or a group owner",
             "agent": true,
             "record_id": "the group",
-            "built": false
+            "built": true
         },
         "group_member_remove": {
             "action": "group_member_remove",
@@ -2561,7 +2561,7 @@
             "who": "grants.manage or a group owner",
             "agent": true,
             "record_id": "the group",
-            "built": false
+            "built": true
         },
         "policy_set": {
             "action": "policy_set",
@@ -2588,7 +2588,7 @@
             "who": "policies.manage",
             "agent": true,
             "record_id": "the policy",
-            "built": false
+            "built": true
         },
         "column_classify": {
             "action": "column_classify",
@@ -2627,7 +2627,7 @@
             "who": "catalog.edit",
             "agent": true,
             "record_id": "the column",
-            "built": false
+            "built": true
         },
         "personal_confirm": {
             "action": "personal_confirm",
@@ -2666,7 +2666,7 @@
             "who": "owner or steward or catalog.edit",
             "agent": false,
             "record_id": "the column",
-            "built": false
+            "built": true
         },
         "admin_read_open": {
             "action": "admin_read_open",
@@ -2693,7 +2693,7 @@
             "who": "lake.admin_read",
             "agent": false,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "contract_draft_save": {
             "action": "contract_draft_save",

@@ -968,6 +968,18 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 4 ACCESS AND POLICIES BUILT and proven** (`tests/phase3/slice4/run.sh` **332 checks under php -S and under Apache**: THE
+MATRIX 111 — ten callers plus the Expert acting for Priya and for Ann over eight datasets, every cell read through three doors (the dataset page,
+`mcp_datasets` as the records role, the query service's preview) and agreeing with `dl_access_of()`; requests 30, row filters 17, grants 25, groups
+26, masks 12, personal data 16, break-glass 14, JSON 34, the browser 47; the schema proof 204): grants on dataset / zone / tag to every kind of
+principal with expiry and row-filter templates checked by running them (`check_row_filter`: node by node, EXPLAIN, `LIMIT 1` under a 5 s interrupt),
+masks and classification, personal data confirmed by people, access requests decided inline with their impact, the break-glass, groups (a
+department mirror follows the directory), the Access tab, the worker's expiry pass; db/023. **K38 proven end to end: the Expert for Priya reads the
+lower of the two; the Expert for Ann (external, no holding) reads nothing, not even a name; a kernel without K38 → `k38_pending`.** Found: the
+row-filter check echoed a data value from DuckDB's cast error (the granter may not read it) — literals stripped; a registered dataset never loaded
+was refused as `policy` — now "no data yet". 14 decisions in `access-policies.md` "Built and proven". **Next: slice 5, contracts and quality (THE
+THIRD EXEMPLAR) — the last by the planning model.**
+
 **2026-10-11 — SLICE 3 THE QUERY SERVICE AND THE EDITOR (THE SECOND EXEMPLAR) BUILT and proven** (`tests/phase3/slice3/run.sh` **220 checks
 under php -S and under Apache**: the editor 27, the refusals 26, saved queries 24, verify 11, the sandbox 17, exports 24, the audit 14, JSON 24, the
 socket 16, the browser 37; the schema proof 197): every request kind of the one door (sql, saved_query, dry_run, explain, cancel answered beside a

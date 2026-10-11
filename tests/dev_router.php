@@ -32,10 +32,10 @@ elseif (preg_match('#^/upload/(start|part|finish)$#', $path, $m)) { $target = '/
 elseif (preg_match('#^/datasets/([0-9]+|(?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)/columns/([A-Za-z0-9_]+)(/edit)?/?$#', $path, $m)) { $set(['ref' => $m[1], 'column' => $m[2]]); $target = '/datasets/columns/' . (($m[3] ?? '') !== '' ? 'form' : 'view') . '.php'; }
 elseif (preg_match('#^/datasets/((?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)/edit/?$#', $path, $m)) { $set(['key' => $m[1]]); $target = '/datasets/form.php'; }
 elseif (preg_match('#^/datasets/((?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)(?:/([a-z_-]+))?$#', $path, $m)) { $set(['key' => $m[1]] + (($m[2] ?? '') !== '' ? ['tab' => $m[2]] : [])); $target = '/datasets/view.php'; }   // ?tab= kept, as Apache's QSA keeps it
-elseif (preg_match('#^/([a-z_-]+)/new$#', $path, $m)) { $target = '/' . $m[1] . '/form.php'; }
-elseif (preg_match('#^/([a-z_-]+)/([0-9]+)/edit$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/form.php'; }
-elseif (preg_match('#^/([a-z_-]+)/([0-9]+)$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/view.php'; }
-elseif (preg_match('#^/([a-z_-]+)/([0-9]+)/([a-z_-]+)$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/' . $m[3] . '.php'; }
+elseif (preg_match('#^/([a-z_-]+(?:/[a-z_-]+)*)/new$#', $path, $m)) { $target = '/' . $m[1] . '/form.php'; }
+elseif (preg_match('#^/([a-z_-]+(?:/[a-z_-]+)*)/([0-9]+)/edit$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/form.php'; }
+elseif (preg_match('#^/([a-z_-]+(?:/[a-z_-]+)*)/([0-9]+)$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/view.php'; }
+elseif (preg_match('#^/([a-z_-]+(?:/[a-z_-]+)*)/([0-9]+)/([a-z_-]+)$#', $path, $m)) { $set(['id' => $m[2]]); $target = '/' . $m[1] . '/' . $m[3] . '.php'; }
 elseif ($rel === '/') { $target = '/index.php'; }
 elseif (is_file($root . $rel . '.php')) { $target = $rel . '.php'; }
 elseif (is_file($root . $rel . '/index.php')) { $target = $rel . '/index.php'; }

@@ -156,7 +156,72 @@ function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): ar
 /** SLICE 5 — dl_freshness_due(): a dataset past freshness_warn_after / _error_after opens or escalates its freshness incident; a fresh one resolves it. */
 function worker_pass_freshness(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['warned' => 0, 'failed' => 0, 'resolved' => 0, 'stub' => true]; }
 /** SLICE 4 — grants and access requests past their expiry closed, logged grant.expire / access.expire, the holder notified. */
-function worker_pass_expiry(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['grants' => 0, 'requests' => 0, 'stub' => true]; }
+/**
+ * SLICE 4 — expiry (lake-engine §7; access-policies.md): grants past `expires_at` → revoked at their expiry (the trail by trigger; a person's or an
+ * agent's grant tells its grantee); pending requests past `wanted_until` or older than 30 days → expired (access.expire, the requester told);
+ * grants ending within seven days → ONE notice to the grantee (a person or an agent) and the dataset's owner, never twice (the pass dedupes per
+ * grant and person: notifications of kind grant_expiring for the grant).
+ */
+function worker_pass_expiry(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $at = $now->format(DATE_ATOM);
+    $out = ['revoked' => 0, 'expired_requests' => 0, 'announced' => 0];
+    $st = $pdo->prepare("UPDATE grants g SET revoked_at = g.expires_at
+                          WHERE g.id IN (SELECT id FROM grants WHERE revoked_at IS NULL AND expires_at IS NOT NULL AND expires_at <= CAST(:now AS timestamptz)
+                                          ORDER BY expires_at LIMIT $limit FOR UPDATE SKIP LOCKED)
+                      RETURNING g.id, g.principal_kind, g.principal_id, g.dataset_id, g.zone, g.tag_id, g.level,
+                                (SELECT d.key FROM datasets d WHERE d.id = g.dataset_id) AS dataset_key");
+    $st->execute(['now' => $at]);
+    foreach ($st->fetchAll() as $g) {
+        $out['revoked']++;
+        $target = $g['dataset_key'] ?? ($g['zone'] !== null ? 'the ' . $g['zone'] . ' zone' : 'a tag');
+        if (in_array($g['principal_kind'], ['member', 'agent'], true)) {
+            $pdo->prepare("SELECT dl_notify(:m, 'access_decided', :t, :b, 'grant', :g, NULL, NULL, :dd)")
+                ->execute(['m' => (int) $g['principal_id'], 't' => 'Your access to ' . $target . ' ended', 'b' => 'The grant (' . $g['level'] . ') reached its end date.',
+                           'g' => (int) $g['id'], 'dd' => 'grant_ended:' . (int) $g['id']]);
+        }
+        log_activity($pdo, 'grant.expire', 'grant', (int) $g['id'], ['source' => 'cron', 'actor_member_id' => null] + ($g['dataset_id'] === null ? [] : ['dataset_id' => (int) $g['dataset_id']])
+            + ['after' => ['principal_kind' => $g['principal_kind'], 'principal_id' => $g['principal_id'] === null ? null : (int) $g['principal_id'], 'level' => $g['level'], 'revoked' => true]]);
+    }
+    $st = $pdo->prepare('SELECT r.*, d.key FROM dl_access_request_expire(CAST(:now AS timestamptz), :lim) r JOIN datasets d ON d.id = r.dataset_id');
+    $st->execute(['now' => $at, 'lim' => $limit]);
+    foreach ($st->fetchAll() as $r) {
+        $out['expired_requests']++;
+        $pdo->prepare("SELECT dl_notify(:m, 'access_decided', :t, :b, 'access_request', :id, NULL, NULL, :dd)")
+            ->execute(['m' => (int) $r['requester_id'], 't' => 'Your request for ' . $r['key'] . ' expired',
+                       'b' => $r['why'] === 'wanted_until' ? 'Its wanted-until date passed before anyone decided.' : 'Nobody decided it in 30 days — ask again if you still need it.',
+                       'id' => (int) $r['request_id'], 'dd' => 'access_expired:' . (int) $r['request_id']]);
+        log_activity($pdo, 'access.expire', 'access_request', (int) $r['request_id'], ['source' => 'cron', 'actor_member_id' => null, 'dataset_id' => (int) $r['dataset_id'],
+            'before' => ['status' => 'pending'], 'after' => ['status' => 'expired', 'why' => $r['why'], 'level' => $r['level']]]);
+    }
+    $st = $pdo->prepare("SELECT g.id, g.principal_kind, g.principal_id, g.level, g.expires_at, g.dataset_id, d.key AS dataset_key, d.owner_member_id, g.zone
+                           FROM grants g LEFT JOIN datasets d ON d.id = g.dataset_id
+                          WHERE g.revoked_at IS NULL AND g.expires_at > CAST(:now AS timestamptz) AND g.expires_at <= CAST(:now2 AS timestamptz) + interval '7 days'
+                          ORDER BY g.expires_at LIMIT $limit");
+    $st->execute(['now' => $at, 'now2' => $at]);
+    foreach ($st->fetchAll() as $g) {
+        $who = [];
+        if (in_array($g['principal_kind'], ['member', 'agent'], true)) {
+            $who[] = (int) $g['principal_id'];
+        }
+        if ($g['owner_member_id'] !== null) {
+            $who[] = (int) $g['owner_member_id'];
+        }
+        $target = $g['dataset_key'] ?? ($g['zone'] !== null ? 'the ' . $g['zone'] . ' zone' : 'a tag');
+        foreach (array_unique($who) as $m) {
+            $told = db_bool($pdo, "SELECT EXISTS (SELECT 1 FROM notifications WHERE member_id = :m AND kind = 'grant_expiring' AND record_type = 'grant' AND record_id = :g)",
+                ['m' => $m, 'g' => (int) $g['id']]);
+            if ($told) {
+                continue;
+            }
+            $pdo->prepare("SELECT dl_notify(:m, 'grant_expiring', :t, :b, 'grant', :g, NULL, NULL, :dd)")
+                ->execute(['m' => $m, 't' => 'A grant on ' . $target . ' ends ' . substr((string) $g['expires_at'], 0, 10),
+                           'b' => 'A ' . $g['level'] . ' grant ends then. Its owner may renew it; the grantee may ask again.', 'g' => (int) $g['id'], 'dd' => 'grant_expiring:' . (int) $g['id'] . ':' . $m]);
+            $out['announced']++;
+        }
+    }
+    return $out;
+}
 /**
  * SLICE 3 — once a day after 01:00: yesterday's query_runs rolled into dataset_usage_daily and dataset_joins (dl_usage_rollup — a dataset unused
  * for unused_after_days marked Tier "unused"), then dl_query_runs_prune() (the SQL text after query_text_days, the row after audit_keep_days).

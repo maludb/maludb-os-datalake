@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * /datasets/{id|key}?tab= (screen `dataset-view`; catalog.md) — the dataset page: the header and the eight tabs by anchor (About, Columns,
- * Usage and History built here; Preview, Quality, Lineage and Access render "Built by slice N" until their slice replaces the partial),
+ * Usage and History built here; Preview by slice 2, Access by slice 4; Quality and Lineage render "Built by slice N" until their slice replaces the partial),
  * the notes panel. THE ONE CALLER of require_level() at `discover` that renders a STUB: a dataset the person may know exists but not open
  * shows its title, key, owner, department and Request access — nothing else; below that the same 404 as a dataset that does not exist.
  * Logs screen.view with dataset_id. JSON: present_dataset() and the tabs' data (whitelisted), or present_dataset_stub().
@@ -14,6 +14,8 @@ require_once dirname(__DIR__, 2) . '/app/features/history/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/history/present.php';
 require_once dirname(__DIR__, 2) . '/app/features/notes/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/tags/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/access/queries.php';      // slice 4: the Access tab
+require_once dirname(__DIR__, 2) . '/app/features/access/present.php';
 require_login();
 require_right('catalog.browse');
 $pdo = db();
@@ -56,7 +58,8 @@ if (wants_json()) {
     }
     respond_screen(['dataset' => present_dataset($d), 'tab' => $tab, 'tabs' => $tabs, 'columns' => array_map('present_column', $columns), 'usage' => $usage,
         'history' => ['page' => $historyPage, 'total' => $history['total'], 'rows' => array_map('present_history_row', $history['rows'])],
-        'notes' => array_map('present_note', $notes), 'follow' => present_follow($follow), 'may' => $may]);
+        'notes' => array_map('present_note', $notes), 'follow' => present_follow($follow), 'may' => $may,
+        'access' => present_access_tab(access_tab($pdo, $me, $id))]);                    // slice 4: the Access tab's data (who reads it, or my reasons)
 }
 $notices = ['created' => ['success', 'Registered. Describe it, and its columns appear when data first lands.'], 'updated' => ['success', 'Saved.'],
     'tagged' => ['success', 'Tagged.'], 'untagged' => ['success', 'Tag removed.'], 'deprecated' => ['warning', 'Deprecated — its followers have been told.'],

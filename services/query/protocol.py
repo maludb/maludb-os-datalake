@@ -118,6 +118,17 @@ def _check(req: Request) -> None:
                 raise ProtocolError("bad_request", f"The parameter {name} is a text, a number, a yes/no or empty.")
             if isinstance(value, str) and len(value) > 1000:
                 raise ProtocolError("bad_request", f"The parameter {name} is longer than 1,000 characters.")
+    elif req.kind == "check_row_filter":
+        if req.caller_member_id is None:
+            raise ProtocolError("bad_request", "Who asks: a row filter's check names its caller_member_id (the granter).")
+        if not req.dataset or not KEY_RE.fullmatch(req.dataset):
+            raise ProtocolError("bad_request", "A row filter's check names one dataset key: <zone>.<name>.")
+        rf = req.raw.get("row_filter")
+        if not isinstance(rf, str) or not 1 <= len(rf) <= 4000:
+            raise ProtocolError("bad_request", "A row filter's check carries the filter bound for the granter (1 to 4,000 characters).")
+        cols = req.raw.get("columns", [])
+        if not isinstance(cols, list) or len(cols) > 2000 or not all(isinstance(c, str) and PARAM_RE.fullmatch(c) for c in cols):
+            raise ProtocolError("bad_request", "columns is the catalog's list of the dataset's column names.")
     elif req.kind == "cancel":
         if req.caller_member_id is None or not req.request_id:
             raise ProtocolError("bad_request", "A cancel names its caller_member_id and the request_id of the caller's own running request.")

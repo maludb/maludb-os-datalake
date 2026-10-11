@@ -371,6 +371,33 @@ SELECT pg_temp.keep('ss', dl_job_enqueue('sandbox_save', pg_temp.ds('curated.sal
 RESET ROLE;
 SELECT pg_temp.check((SELECT kind FROM lake_jobs WHERE id = pg_temp.i('ss')) = 'sandbox_save', 'a result saved as a sandbox dataset is a writer job (sandbox_save)');
 
+-- slice 4 (db/023): whom a request goes to, the words for what a grant reaches through, a waiting request expiring, the grant_expiring notice
+SET ROLE datalake_rw; SELECT pg_temp.as_member(1);
+SELECT pg_temp.check(ARRAY(SELECT dl_access_deciders(pg_temp.ds('curated.payroll'))) = ARRAY[2]::bigint[], 'a request goes to the dataset''s owner (Ada owns payroll)');
+RESET ROLE;
+UPDATE datasets SET owner_member_id = NULL WHERE id = pg_temp.ds('curated.products');
+SET ROLE datalake_rw;
+SELECT pg_temp.check(ARRAY(SELECT dl_access_deciders(pg_temp.ds('curated.products'))) = ARRAY[1, 2]::bigint[],
+                     'a dataset with no owner sends its requests to every holder of grants.manage (the two Lake admins — never an external, never an agent)');
+SELECT pg_temp.as_member(26);
+SELECT pg_temp.check(dl_grant_via((SELECT id FROM grants WHERE principal_kind = 'department' AND principal_id = 7 AND dataset_id = pg_temp.ds('curated.sales_orders'))) = 'Sales (your department)',
+                     'My access names what a grant reaches through: Priya reads orders through "Sales (your department)"');
+SELECT pg_temp.as_member(30);
+SELECT pg_temp.check(dl_grant_via((SELECT id FROM grants WHERE principal_kind = 'department' AND principal_id = 7 AND dataset_id = pg_temp.ds('curated.sales_orders'))) IS NULL,
+                     '…and answers nothing about a grant to someone it does not reach');
+RESET ROLE;
+UPDATE datasets SET owner_member_id = 28 WHERE id = pg_temp.ds('curated.products');
+INSERT INTO access_requests (requester_id, dataset_id, level, reason, created_at) VALUES (27, pg_temp.ds('raw.crm_deals'), 'read', 'an old request nobody decided', now() - interval '31 days');
+SET ROLE datalake_rw;
+SELECT pg_temp.keep('xp', (SELECT count(*) FROM dl_access_request_expire(now(), 100) WHERE requester_id = 27 AND why = 'thirty_days'));
+SELECT pg_temp.check(pg_temp.i('xp') = 1 AND (SELECT status FROM access_requests WHERE requester_id = 27 AND dataset_id = pg_temp.ds('raw.crm_deals')) = 'expired',
+                     'a request nobody decided in 30 days expires (the worker''s expiry pass)');
+SELECT pg_temp.check(dl_notify(26, 'grant_expiring', 'A grant on curated.sales_orders ends soon', NULL, 'grant', 1) IS NOT NULL, 'a notice of kind grant_expiring is admitted (db/023)');
+RESET ROLE;
+SELECT pg_temp.check(has_function_privilege('datalake_rw', 'dl_access_deciders(bigint)', 'EXECUTE') AND NOT has_function_privilege('datalake_records_ro', 'dl_access_deciders(bigint)', 'EXECUTE')
+                     AND NOT has_function_privilege('datalake_query', 'dl_access_request_expire(timestamptz, integer)', 'EXECUTE'),
+                     'the application asks whom a request goes to and expires requests; the read roles and the query service do not');
+
 -- ================================================================ lineage (§6.6)
 SET ROLE datalake_lake;
 SELECT dl_lineage_edge(NULL, (SELECT id FROM sources WHERE name = 'GL balances'), pg_temp.ds('raw.crm_deals'), 'load');

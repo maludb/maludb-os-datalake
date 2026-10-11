@@ -11,7 +11,7 @@ declare(strict_types=1);
  * level, a kind, a classification) stays a <select>.
  *
  * Phase 2 (the shell) registers `member` and `department`. The slices add theirs (docs/build-specs/*.md):
- *   dataset, tag, term — slice 1 · template, upload — slice 2 · saved_query — slice 3 · group, grant — slice 4 · check, incident — slice 5 ·
+ *   dataset, tag, term — slice 1 · template, upload — slice 2 · saved_query — slice 3 · group, principal, any_dataset — slice 4 · check, incident — slice 5 ·
  *   source — slice 6 · transform, metric — slice 7 · erasure — slice 8
  */
 
@@ -42,6 +42,8 @@ require_once __DIR__ . '/features/tags/queries.php';         // slice 1: tags_fo
 require_once __DIR__ . '/features/uploads/queries.php';      // slice 2: raw_datasets_for_pick
 require_once __DIR__ . '/features/templates/queries.php';    // slice 2: templates_for_pick
 require_once __DIR__ . '/features/loads/queries.php';        // slice 2: loads_for_pick
+require_once __DIR__ . '/features/access/queries.php';       // slice 4: principals_for_pick, any_datasets_for_pick
+require_once __DIR__ . '/features/groups/queries.php';       // slice 4: groups_for_pick
 
 return [
     'member' => [
@@ -119,6 +121,21 @@ return [
         'title' => 'Saved queries', 'noun' => 'saved query', 'roles' => ['queries.run'], 'params' => [],
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => saved_queries_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title FROM mcp_saved_queries WHERE saved_query_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'group' => [                                                    // slice 4: a live group (the find_groups resolver)
+        'title' => 'Groups', 'noun' => 'group', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => groups_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_groups WHERE group_id = :id AND archived_at IS NULL', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'principal' => [                                                // slice 4: who a grant names — kind-aware (params.kind: member, agent, group, department)
+        'title' => 'Who', 'noun' => 'principal', 'roles' => ['catalog.browse'], 'params' => ['kind'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => principals_for_pick($pdo, $q, ['kind' => ['member', 'agent', 'group', 'department'][(int) ($params['kind'] ?? 0)] ?? 'member'], $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT display_name FROM mcp_members WHERE member_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'any_dataset' => [                                              // slice 4: every dataset I may name — stubs too (a request); the admin's every dataset (break-glass)
+        'title' => 'Datasets', 'noun' => 'dataset', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => any_datasets_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title || \' (\' || key || \')\' FROM mcp_datasets WHERE dataset_id = :id', ['id' => $id])) === null ? null : (string) $v,
     ],
 ];
 

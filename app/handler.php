@@ -155,7 +155,7 @@ function dl_ref(PDO $pdo, string $name, ?int $keep, string $sql, string $label, 
     return (int) $v;
 }
 
-/** Run a step: our own sentence (DomainException) or the database's refusal (P0001, 23514, 23503, 23505 → 422; P0002 → 404; db/DB_SENTENCE_CODES) answers with the schema's sentence. Anything else is a 500. */
+/** Run a step: our own sentence (DomainException) or the database's refusal (P0001, 23514, 23503, 23505 → 422; P0002 → 404; 42501 → 403 — slice 4; db/DB_SENTENCE_CODES) answers with the schema's sentence. Anything else is a 500. */
 function dl_guard(PDO $pdo, callable $step): mixed
 {
     try {
@@ -180,6 +180,13 @@ function dl_guard(PDO $pdo, callable $step): mixed
         }
         if ($e instanceof PDOException && (string) $e->getCode() === 'P0002') {
             refuse(404, db_message($e, 'Not found.'));
+        }
+        if ($e instanceof PDOException && (string) $e->getCode() === '42501') {
+            // a function's own refusal (insufficient_privilege — dl_access_decide, dl_admin_read_open: "Deciding access is the dataset's
+            // owner's or a Lake admin's") is a 403 in its words; PostgreSQL's own "permission denied for …" is a grant missing, said generically
+            error_log('db refusal: ' . $e->getMessage());
+            $m = trim((string) (preg_split('/\R|CONTEXT:|DETAIL:|HINT:/', substr($e->getMessage(), (int) strpos($e->getMessage(), 'ERROR:') + 6))[0] ?? ''));
+            refuse(403, $m === '' || str_starts_with($m, 'permission denied') ? 'That is not yours to do.' : $m);
         }
         throw $e;
     }
