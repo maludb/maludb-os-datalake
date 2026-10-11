@@ -47,6 +47,8 @@ require_once __DIR__ . '/features/groups/queries.php';       // slice 4: groups_
 require_once __DIR__ . '/features/incidents/queries.php';    // slice 5: checks_for_pick (checks/queries.php), incidents_for_pick
 require_once __DIR__ . '/features/contracts/queries.php';    // slice 5: raw_columns_for_pick
 require_once __DIR__ . '/features/sources/queries.php';      // slice 6: sources_for_pick
+require_once __DIR__ . '/features/transforms/queries.php';   // slice 7: transforms_for_pick, transform_outputs_for_pick
+require_once __DIR__ . '/features/metrics/queries.php';      // slice 7: metrics_for_pick, products_for_pick
 
 return [
     'member' => [
@@ -159,6 +161,26 @@ return [
         'title' => 'Sources', 'noun' => 'source', 'roles' => ['sources.manage'], 'params' => [],
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => sources_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_sources WHERE source_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'transform' => [                                                // slice 7: a transform I may see (the transform resolver)
+        'title' => 'Transforms', 'noun' => 'transform', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => transforms_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_transforms WHERE transform_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'transform_output' => [                                         // slice 7: the dataset a transform makes — curated or product I may write, or my own sandbox; params.except keeps the one being edited
+        'title' => 'Datasets a transform may make', 'noun' => 'dataset', 'roles' => ['transforms.manage', 'sandbox.transform'], 'params' => ['except'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => transform_outputs_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title || \' (\' || key || \')\' FROM mcp_datasets WHERE dataset_id = :id AND NOT is_stub', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'metric' => [                                                   // slice 7: a metric I may see (the metric resolver)
+        'title' => 'Metrics', 'noun' => 'metric', 'roles' => ['metrics.use'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => metrics_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title FROM mcp_metrics WHERE metric_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'product' => [                                                  // slice 7: a dataset of the product zone I may discover — what a metric is defined over
+        'title' => 'Products', 'noun' => 'product', 'roles' => ['metrics.manage'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => products_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, "SELECT title || ' (' || key || ')' FROM mcp_datasets WHERE dataset_id = :id AND zone = 'product' AND NOT is_stub", ['id' => $id])) === null ? null : (string) $v,
     ],
 ];
 

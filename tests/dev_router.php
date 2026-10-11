@@ -4,7 +4,7 @@
  * without Apache: /sso, /sso/logout, /api/v1/health and the token API (/api/v1/{name}[/{id|key}[/{do}]] → api/v1/{name}.php with id/key/do);
  * the uploads in parts /upload/{start|part|finish}; the picker /pick/; a column of a dataset /datasets/{id|key}/columns/{name}[/edit] →
  * datasets/columns/{view|form}.php (ref, column); slice 5's /datasets/{id|key}/{contract[.odcs.yaml]|contract/edit|checks[/new]|quarantine} and
- * /checks/{id}/edit; and a dataset's edit by its key /datasets/{zone.name}/edit → datasets/form.php (key) — slice 1;
+ * /checks/{id}/edit; slice 7's /datasets/{id|key}/lineage (the graph); and a dataset's edit by its key /datasets/{zone.name}/edit → datasets/form.php (key) — slice 1;
  * a dataset by its key /datasets/{zone.name}[/{tab}] → datasets/view.php (key, tab); a page of a record (/incidents/12/resolve) and the canonical URLs (/x/new, /x/{id}/edit, /x/{id}, /x → x.php or x/index.php);
  * and, under the scratch environment only, the proofs' fixture doors /__proof/<name>.php (tests/phase2/routes/).
  * A rewrite to a file its slice has not built yet answers 404, as Apache does. Anything that is a real file is served as it is.
@@ -36,6 +36,7 @@ elseif (preg_match('#^/datasets/([0-9]+|(?:raw|curated|product|sandbox)\.[a-z][a
                'checks/new' => '/quality/checks/form.php', 'checks' => '/quality/checks/index.php', 'quarantine' => '/quality/quarantine.php'][$m[2]];
 }
 elseif (preg_match('#^/checks/([0-9]+)/edit/?$#', $path, $m)) { $set(['id' => $m[1]]); $target = '/quality/checks/form.php'; }   // slice 5
+elseif (preg_match('#^/datasets/([0-9]+|(?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)/lineage/?$#', $path, $m)) { $set(['ref' => $m[1]]); $target = '/datasets/lineage.php'; }   // slice 7: the lineage graph
 elseif (preg_match('#^/datasets/([0-9]+|(?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)/columns/([A-Za-z0-9_]+)(/edit)?/?$#', $path, $m)) { $set(['ref' => $m[1], 'column' => $m[2]]); $target = '/datasets/columns/' . (($m[3] ?? '') !== '' ? 'form' : 'view') . '.php'; }
 elseif (preg_match('#^/datasets/((?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)/edit/?$#', $path, $m)) { $set(['key' => $m[1]]); $target = '/datasets/form.php'; }
 elseif (preg_match('#^/datasets/((?:raw|curated|product|sandbox)\.[a-z][a-z0-9_]*)(?:/([a-z_-]+))?$#', $path, $m)) { $set(['key' => $m[1]] + (($m[2] ?? '') !== '' ? ['tab' => $m[2]] : [])); $target = '/datasets/view.php'; }   // ?tab= kept, as Apache's QSA keeps it

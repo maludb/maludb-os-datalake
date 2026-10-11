@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-11T15:03:04+00:00",
+    "generated_at": "2026-10-11T18:40:34+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -575,8 +575,8 @@
             "section": "Transforms, products, metrics and lineage (slice 7)",
             "when": "the product gallery: certified products first, their owners, freshness and metrics",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "transform-list": {
             "screen": "transform-list",
@@ -587,8 +587,8 @@
                 "dataset",
                 "enabled"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "transform-view": {
             "screen": "transform-view",
@@ -596,7 +596,7 @@
             "section": "Transforms, products, metrics and lineage (slice 7)",
             "when": "one transform: the SQL, inputs and output, mode, schedule, the frozen level, the runs, the lineage it makes",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "transform-add": {
@@ -607,7 +607,7 @@
             "params": [
                 "output_dataset"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "transform-edit": {
@@ -616,7 +616,7 @@
             "section": "Transforms, products, metrics and lineage (slice 7)",
             "when": "to change a transform's SQL, mode or schedule (a new version)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "metric-list": {
@@ -628,8 +628,8 @@
                 "dataset",
                 "certified"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "metric-view": {
             "screen": "metric-view",
@@ -637,7 +637,7 @@
             "section": "Transforms, products, metrics and lineage (slice 7)",
             "when": "one metric: its definition, its value by month as a small chart, the dimensions to cut by",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "metric-add": {
@@ -648,7 +648,7 @@
             "params": [
                 "dataset"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "metric-edit": {
@@ -657,7 +657,7 @@
             "section": "Transforms, products, metrics and lineage (slice 7)",
             "when": "to change a metric's expression, time column, grains, dimensions, filters",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lineage-graph": {
@@ -668,7 +668,7 @@
             "params": [
                 "depth"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "retention": {
@@ -3589,7 +3589,7 @@
             "who": "transforms.manage (a sandbox output: sandbox.transform)",
             "agent": true,
             "record_id": "the transform",
-            "built": false
+            "built": true
         },
         "transform_run": {
             "action": "transform_run",
@@ -3610,7 +3610,7 @@
             "who": "transforms.manage or the owner",
             "agent": true,
             "record_id": "the transform",
-            "built": false
+            "built": true
         },
         "transform_enable": {
             "action": "transform_enable",
@@ -3637,7 +3637,7 @@
             "who": "transforms.manage or the owner",
             "agent": true,
             "record_id": "the transform",
-            "built": false
+            "built": true
         },
         "transform_delete": {
             "action": "transform_delete",
@@ -3658,7 +3658,7 @@
             "who": "transforms.manage or the owner",
             "agent": true,
             "record_id": "the transform",
-            "built": false
+            "built": true
         },
         "metric_save": {
             "action": "metric_save",
@@ -3745,7 +3745,7 @@
             "who": "metrics.manage",
             "agent": true,
             "record_id": "the metric",
-            "built": false
+            "built": true
         },
         "metric_certify": {
             "action": "metric_certify",
@@ -3772,7 +3772,7 @@
             "who": "metrics.manage",
             "agent": true,
             "record_id": "the metric",
-            "built": false
+            "built": true
         },
         "metric_retire": {
             "action": "metric_retire",
@@ -3793,7 +3793,7 @@
             "who": "metrics.manage",
             "agent": true,
             "record_id": "the metric",
-            "built": false
+            "built": true
         },
         "retention_set": {
             "action": "retention_set",

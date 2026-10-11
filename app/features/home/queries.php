@@ -5,7 +5,7 @@ declare(strict_types=1);
  * The home (screen `home`; sso-shell.md "Query functions"; design §9): the search box with Search and Ask, then tiles — each rendered
  * from its own partial and filled by the slice whose data it shows; until that slice lands its key is null and the partial says which
  * slice builds it. Phase 2 fills `popular` (dl_popular_datasets(30, NULL, 6), db/018), `first_run` and `decisions`.
- *   products   certified products as cards                                   slice 7
+ *   products   certified products as cards (certified_products — built)     slice 7
  *   recent     my recently queried datasets (recent_datasets — built)        slice 3
  *   followed   the datasets I follow (my_followed_datasets — built)          slice 1
  *   popular    popular this month (queries and people, the wall the function's)  Phase 2
@@ -18,7 +18,7 @@ declare(strict_types=1);
  */
 
 /** Which slice fills each tile — the partials print it while the key is null. */
-const HOME_TILE_SLICES = ['products' => 'slice 7', 'recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5', 'engineer' => 'slice 10', 'admin' => 'slice 10'];
+const HOME_TILE_SLICES = ['recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5', 'engineer' => 'slice 10', 'admin' => 'slice 10'];
 
 function home_summary(PDO $pdo, int $memberId): array
 {
@@ -29,7 +29,10 @@ function home_summary(PDO $pdo, int $memberId): array
     $engineer = has_right('catalog.edit') ? ['failed_loads' => null, 'late' => null, 'proposals' => null] : null;
     $admin = is_dl_admin() ? ['engine' => null, 'storage' => null, 'last_backup' => null] : null;
     return [
-        'products'  => null,
+        'products'  => (static function () use ($pdo): array {                         // slice 7: the lake's trusted surface
+            require_once dirname(__DIR__) . '/metrics/queries.php';
+            return certified_products($pdo, 6);
+        })(),
         'recent'    => recent_datasets($pdo, $memberId, 6),     // slice 3: the datasets my last ok runs read
         'followed'  => my_followed_datasets($pdo, 6),           // slice 1
         'popular'   => $popular,
@@ -62,7 +65,8 @@ function present_home(array $s): array
     }
     return [
         'first_run' => $s['first_run'],
-        'products'  => $s['products'],
+        'products'  => $s['products'] === null ? null : array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],
+            'certification' => $r['certification'], 'metrics' => (int) ($r['metric_count'] ?? 0), 'url' => '/datasets/' . $r['key']], $s['products']),
         'recent'    => $s['recent'] === null ? null : array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],
             'zone' => $r['zone'], 'certification' => $r['certification'], 'url' => '/datasets/' . $r['key']], $s['recent']),
         'followed'  => $s['followed'] === null ? null : array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],

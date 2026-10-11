@@ -24,7 +24,9 @@ declare(strict_types=1);
  *   lake_cancel($requestId)           slice 3: the `cancel` kind on EVERY instance (the one running it answers ok; another caller's id not_yours)
  *   lake_request_access($answer)      slice 3: the Request access link a refusal offers (the policy's rules), or null
  *   lake_timeout($source)             the request's own limit in seconds (dl_settings — the read waits 5 s longer)
- * Slices 7 and 9 add theirs here (lake_metric, lake_product_rows — query-service §8).
+ *   lake_metric($metric, $grain, …)   slice 7: the `metric` kind — a metric the caller read under its own wall (mcp_metrics) by grain and dimension over a period, compiled to one
+ *                                     SELECT by the service and run as `sql` (opts: source, request_id, dry_run); the answer is the service's plus period_column / grain / by
+ * Slice 9 adds lake_product_rows (query-service §8).
  */
 
 const LAKE_PROTOCOL = 1;
@@ -271,6 +273,26 @@ function lake_sql(string $sql, array $opts = []): array
 function lake_saved_query(array $saved, array $params = [], array $opts = []): array
 {
     return lake_sql((string) $saved['sql'], ['params' => $params, 'saved_query_id' => (int) $saved['saved_query_id']] + $opts);
+}
+
+/**
+ * A metric's value (query-service §7 `metric`; transforms-products-lineage.md): $metric is the definition the caller read under its own wall — {id, dataset (the
+ * product's key), expression, time_column, grains, dimensions, filters} — $grain one of its grains (null: its first), $from / $to the window (dates; the end
+ * exclusive), $by the dimensions to cut by, $where {dimension: value or [values]}. The service refuses a grain the metric does not allow and a dimension it does not
+ * have (`invalid_metric`, with `field`), compiles ONE SELECT and runs it through the caller's policy for the product — masks and row filters apply; the answer
+ * carries `columns` (period first when the metric has a time column, the cut dimensions, then value), `rows`, `masked_columns`, `query_run_id`. $opts: source,
+ * request_id, dry_run (bind it, run nothing — saving a metric validates it so).
+ */
+function lake_metric(array $metric, ?string $grain = null, ?string $from = null, ?string $to = null, array $by = [], array $where = [], array $opts = []): array
+{
+    $caller = lake_caller();
+    $source = (string) ($opts['source'] ?? $caller['source']);
+    $req = ['kind' => 'metric', 'source' => $source, 'metric' => $metric, 'grain' => $grain, 'from' => $from, 'to' => $to, 'by' => array_values($by),
+            'where' => (object) $where, 'dry_run' => !empty($opts['dry_run'])];
+    if (($opts['request_id'] ?? '') !== '') {
+        $req['request_id'] = (string) $opts['request_id'];
+    }
+    return lake_query($req + $caller, lake_timeout($source));
 }
 
 /**

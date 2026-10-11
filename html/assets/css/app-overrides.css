@@ -180,3 +180,44 @@ html.app-skin-dark .dataset-more-menu { background: #1b2431; border-color: rgba(
 .check-cell.empty { background: transparent; border: 1px dashed var(--bs-gray-300, #dee2e6); }
 .template-card { min-height: 44px; }
 .contract-table td, .contract-table th { white-space: nowrap; }
+
+/* ==========================================================================
+   Slice 7 — transforms, products, metrics and lineage (transforms-products-lineage.md). The lineage graph and the metric chart are SERVER-RENDERED
+   SVG (★32: no chart library): the colours are classes here so the dark skin follows. The graph scales by its viewBox — the card never scrolls the page
+   sideways; the hop lists under it carry the same facts as text.
+   ========================================================================== */
+.lineage-graph-wrap { overflow: hidden; }
+.lineage-graph-svg { display: block; width: 100%; height: auto; max-width: 100%; }
+.lineage-graph-svg .lg-node rect { fill: var(--bs-body-bg, #fff); stroke: var(--bs-border-color, #dee2e6); stroke-width: 1.5; }
+.lineage-graph-svg .lg-zone-raw rect { stroke: var(--bs-secondary, #6c757d); }
+.lineage-graph-svg .lg-zone-curated rect { stroke: var(--bs-primary, #3454d1); }
+.lineage-graph-svg .lg-zone-product rect { stroke: var(--bs-success, #198754); }
+.lineage-graph-svg .lg-zone-sandbox rect { stroke: var(--bs-gray-500, #adb5bd); stroke-dasharray: 4 3; }
+.lineage-graph-svg .lg-centre rect { stroke-width: 3; fill: var(--bs-primary-bg-subtle, #e7ecfb); }
+.lineage-graph-svg .lg-source rect { fill: var(--bs-gray-200, #e9ecef); stroke: var(--bs-gray-500, #adb5bd); }
+.lineage-graph-svg .lg-hidden rect { fill: transparent; stroke: var(--bs-gray-500, #adb5bd); stroke-dasharray: 5 4; }
+.lineage-graph-svg .lg-text { font: 600 12px var(--bs-font-monospace, monospace); fill: var(--bs-body-color, #212529); }
+.lineage-graph-svg .lg-sub { font: 11px var(--bs-font-sans-serif, sans-serif); fill: var(--bs-secondary-color, #6c757d); }
+.lineage-graph-svg .lg-col-head { font: 600 11px var(--bs-font-sans-serif, sans-serif); fill: var(--bs-secondary-color, #6c757d); text-anchor: middle; text-transform: uppercase; letter-spacing: .04em; }
+.lineage-graph-svg .lg-edge { stroke: var(--bs-gray-500, #adb5bd); stroke-width: 1.6; }
+.lineage-graph-svg .lg-edge-hidden { stroke-dasharray: 4 4; }
+.lineage-graph-svg .lg-via-transform { stroke: var(--bs-success, #198754); }
+.lineage-graph-svg .lg-via-promote { stroke: var(--bs-primary, #3454d1); }
+.lineage-graph-svg .lg-via-load { stroke: var(--bs-info, #3dc7be); }
+.lineage-graph-svg .lg-edge-label { font: 10px var(--bs-font-sans-serif, sans-serif); fill: var(--bs-secondary-color, #6c757d); }
+.lineage-graph-svg .lg-dot-certified { fill: var(--bs-success, #198754); }
+.lineage-graph-svg .lg-dot-promoted { fill: var(--bs-info, #3dc7be); }
+.lineage-graph-svg .lg-link { cursor: pointer; }
+.lineage-graph-svg a:focus-visible .lg-node rect, .lineage-graph-svg a:hover .lg-node rect { stroke-width: 3; }
+html.app-skin-dark .lineage-graph-svg .lg-node rect { fill: #1b2431; }
+html.app-skin-dark .lineage-graph-svg .lg-centre rect { fill: #24304a; }
+html.app-skin-dark .lineage-graph-svg .lg-source rect { fill: #263044; }
+.metric-chart-svg { display: block; width: 100%; height: auto; max-width: 100%; }
+.metric-chart-svg .metric-grid { stroke: var(--bs-border-color-translucent, rgba(0, 0, 0, .1)); stroke-width: 1; }
+.metric-chart-svg .metric-grid-base { stroke: var(--bs-gray-500, #adb5bd); }
+.metric-chart-svg .metric-axis { font: 11px var(--bs-font-sans-serif, sans-serif); fill: var(--bs-secondary-color, #6c757d); }
+.metric-chart-svg .metric-line { fill: none; stroke: var(--bs-primary, #3454d1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.metric-chart-svg .metric-point { fill: var(--bs-primary, #3454d1); stroke: var(--bs-body-bg, #fff); stroke-width: 2; }
+.metric-chart-svg .metric-hit { fill: transparent; }
+.metric-chart-svg .metric-hit:hover + .metric-last, .metric-chart-svg .metric-slot:hover .metric-point { r: 6; }
+.metric-chart-svg .metric-last { font: 600 12px var(--bs-font-sans-serif, sans-serif); fill: var(--bs-body-color, #212529); }

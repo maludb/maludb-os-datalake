@@ -77,22 +77,24 @@ def dataset_ref(key: str, version: int | None = None, facets: dict | None = None
 
 
 def lineage_start(pg, kind: str, name: str, job: dict, *, inputs: list | None = None, outputs: list | None = None,
-                  load_id: int | None = None) -> uuid.UUID:
+                  load_id: int | None = None, facets: dict | None = None, transform_run_id: int | None = None) -> uuid.UUID:
+    """`facets` (slice 7) are OpenLineage's run/job facets added to the job's own — a transform's `sql` (the SQLJobFacet); `transform_run_id` ties the
+    event to the application's transform_runs row (lineage_runs.transform_run_id)."""
     run = uuid7()
-    pg.execute("""INSERT INTO lineage_runs (run_uuid, job_kind, job_name, event, inputs, outputs, facets, actor_member_id, load_id)
-                  VALUES (%s, %s, %s, 'START', %s, %s, %s, %s, %s)""",
-               (run, kind, name[:200], Json(inputs or []), Json(outputs or []), Json({"job": {"id": job["id"], "kind": job["kind"]}}),
-                job.get("requested_by"), load_id))
+    pg.execute("""INSERT INTO lineage_runs (run_uuid, job_kind, job_name, event, inputs, outputs, facets, actor_member_id, load_id, transform_run_id)
+                  VALUES (%s, %s, %s, 'START', %s, %s, %s, %s, %s, %s)""",
+               (run, kind, name[:200], Json(inputs or []), Json(outputs or []), Json({"job": {"id": job["id"], "kind": job["kind"]}, **(facets or {})}),
+                job.get("requested_by"), load_id, transform_run_id))
     return run
 
 
 def lineage_end(pg, run: uuid.UUID, kind: str, name: str, job: dict, *, ok: bool, inputs: list | None = None, outputs: list | None = None,
-                facets: dict | None = None, load_id: int | None = None) -> None:
+                facets: dict | None = None, load_id: int | None = None, transform_run_id: int | None = None) -> None:
     f = dict(facets or {})
-    pg.execute("""INSERT INTO lineage_runs (run_uuid, job_kind, job_name, event, inputs, outputs, facets, actor_member_id, load_id)
-                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+    pg.execute("""INSERT INTO lineage_runs (run_uuid, job_kind, job_name, event, inputs, outputs, facets, actor_member_id, load_id, transform_run_id)
+                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                (run, kind, name[:200], "COMPLETE" if ok else "FAIL", Json(inputs or []), Json(outputs or []), Json(f),
-                job.get("requested_by"), load_id))
+                job.get("requested_by"), load_id, transform_run_id))
 
 
 def log(pg, job: dict, action: str, entity_type: str | None, entity_id: int | None, *, dataset_id: int | None = None,

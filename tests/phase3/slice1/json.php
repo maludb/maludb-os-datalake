@@ -31,7 +31,7 @@ $tabs = get_json(27, "/datasets/$orders")['json']['data']['tabs'] ?? [];
 ok(array_column($tabs, 'name') === ['about', 'columns', 'preview', 'quality', 'lineage', 'usage', 'access', 'history']
     && array_column($tabs, 'built') === array_map(static fn (string $t): bool => !str_contains((string) file_get_contents("app/views/datasets/partials/tab-$t.php"), "'datasets/partials/tab-pending.php'"),
         ['about', 'columns', 'preview', 'quality', 'lineage', 'usage', 'access', 'history'])
-    && array_column($tabs, 'built', 'name')['about'] === true && array_column($tabs, 'built', 'name')['lineage'] === false, 'the page\'s JSON names its eight tabs and which are built (as their partials say)');
+    && array_column($tabs, 'built', 'name')['about'] === true && array_column($tabs, 'built', 'name')['lineage'] === true, 'the page\'s JSON names its eight tabs and which are built (as their partials say)');
 $d = get_json(27, "/datasets/$orders")['json']['data']['dataset'] ?? [];
 ok(isset($d['owner']['name'], $d['health'], $d['certification_missing'], $d['tags'], $d['terms'], $d['my_level']) && !array_key_exists('ducklake_table_id', $d) && !array_key_exists('last_snapshot_id', $d),
     'get_dataset\'s shape: the owner by name, health, what certification lacks, tags, terms, my level — never the engine\'s ids');

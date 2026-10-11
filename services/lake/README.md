@@ -20,8 +20,8 @@ records). Any other exception is a fault: its safe first line is the job's `erro
 |---|---|---|
 | 2 (uploads and loads) — BUILT | `jobs/ingest.py` (+ `jobs/frame.py`) | `sniff`, `load`, `profile`, `rollback` — and the `pg_notify('lake_jobs', kind)` in `dl_job_enqueue` (db/021) |
 | 3 (the query service and exports) — BUILT | `jobs/query_results.py` (the spec's name) | `sandbox_save`, `export` (op `make`, op `sweep` — the writer owns `exports/`): a person's policy frozen at the request, the person's SQL run through `query.service.prepare()` on a READ-ONLY attach and streamed as Arrow batches |
-| 5 (contracts and quality) | `jobs/quality.py` | `promote`, `checks` |
-| 7 (transforms) | `jobs/transforms.py` | `transform` |
+| 5 (contracts and quality) — BUILT | `jobs/quality.py` | `promote`, `checks` |
+| 7 (transforms) — BUILT | `jobs/transform.py` | `transform`: the owner's frozen policy, `lake/transform.py`'s function wrapped (the run's row, the lineage START / COMPLETE / FAIL, the output's columns, the edges with the column map, the audit of the writer's read) |
 | 8 (health and erasure) | `jobs/health.py` | `maintenance`, `retention`, `erasure`, `backup_lock` |
 
 The query service (`services/query/server.py --worker N`) is built the same way: `BUILT = {kind: handler}`, `ping` from Phase 2, `preview`

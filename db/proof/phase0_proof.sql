@@ -692,6 +692,34 @@ SELECT pg_temp.check((SELECT source_id IS NULL AND pull_id IS NULL FROM loads WH
                      'the load stays (it loses its source and its pull) and so does the dataset it fed');
 SELECT pg_temp.refused($$SET ROLE datalake_rw; DELETE FROM source_pulls$$, 'permission denied', 'the application cannot delete a pull directly');
 
+-- ================================================================ slice 7 (db/026): a transform is deleted by the application's role (its runs go, its output stays); its stale edges are pruned; its failure is told once a day
+SELECT pg_temp.check(has_table_privilege('datalake_rw', 'transforms', 'DELETE') AND NOT has_table_privilege('datalake_rw', 'transform_runs', 'DELETE') AND NOT has_table_privilege('datalake_lake', 'transforms', 'DELETE'),
+                     'only the application deletes a transform — not a run directly, not the writer');
+INSERT INTO transforms (name, output_dataset_id, sql, owner_member_id) VALUES ('proof_s7', pg_temp.ds('curated.products'), 'SELECT 1 AS month', 28);
+SELECT id AS s7t FROM transforms WHERE name = 'proof_s7' \gset
+INSERT INTO transform_runs (transform_id, version, status) VALUES (:s7t, 1, 'failed');
+SELECT dl_lineage_edge(pg_temp.ds('curated.sales_orders'), NULL, pg_temp.ds('curated.products'), 'transform', :s7t);
+SELECT dl_lineage_edge(pg_temp.ds('curated.payroll'), NULL, pg_temp.ds('curated.products'), 'transform', :s7t);
+SELECT pg_temp.check((SELECT count(*) FROM lineage_edges WHERE transform_id = :s7t) = 2, 'two inputs, two edges made by the transform');
+SET ROLE datalake_lake;
+SELECT pg_temp.check(dl_lineage_edge_prune(:s7t, ARRAY[pg_temp.ds('curated.sales_orders')]) = 1, 'the writer prunes the edge of an input the SQL no longer reads');
+RESET ROLE;
+SELECT pg_temp.check((SELECT count(*) FROM lineage_edges WHERE transform_id = :s7t) = 1
+                     AND EXISTS (SELECT 1 FROM lineage_edges WHERE from_dataset_id = pg_temp.ds('curated.sales_orders') AND to_dataset_id = pg_temp.ds('curated.products') AND via = 'transform')
+                     AND EXISTS (SELECT 1 FROM lineage_edges WHERE from_dataset_id = pg_temp.ds('raw.crm_deals') AND to_dataset_id = pg_temp.ds('curated.sales_orders') AND via = 'promote'),
+                     'only that transform''s edges, only the ones it no longer reads — a promotion''s edge stays');
+SET ROLE datalake_lake;
+SELECT pg_temp.check(dl_transform_failed_notify(:s7t, 'incremental_needs_rowwise') = 1 AND dl_transform_failed_notify(:s7t, 'again') = 0, 'a failed transform tells its owner once a day');
+RESET ROLE;
+SELECT pg_temp.check((SELECT count(*) FROM notifications WHERE member_id = 28 AND kind = 'load_failed' AND record_type = 'transform' AND record_id = :s7t) = 1, 'one notice, naming the transform');
+SET ROLE datalake_rw;
+DELETE FROM transforms WHERE id = :s7t;
+RESET ROLE;
+SELECT pg_temp.check(NOT EXISTS (SELECT 1 FROM transform_runs WHERE transform_id = :s7t) AND EXISTS (SELECT 1 FROM datasets WHERE key = 'curated.products')
+                     AND (SELECT count(*) FROM lineage_edges WHERE from_dataset_id = pg_temp.ds('curated.sales_orders') AND to_dataset_id = pg_temp.ds('curated.products') AND transform_id IS NULL) = 1,
+                     'deleting a transform takes its runs; the output dataset stays, and its edge stays as history without the transform');
+SELECT pg_temp.refused($$SET ROLE datalake_rw; DELETE FROM transform_runs$$, 'permission denied', 'the application cannot delete a run directly');
+
 SET ROLE datalake_rw;
 SELECT pg_temp.check((SELECT count(*) FROM members) = 10 AND (SELECT count(*) FROM datasets) >= 9, 'the fixtures are there until the rollback');
 SELECT pg_temp.check((SELECT inline_flush_minutes FROM dl_settings) = 60, 'small loads are flushed out of the catalog hourly (FINDINGS §4)');

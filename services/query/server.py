@@ -10,7 +10,7 @@ is answered `busy` at once (never queued — the client tries the next instance)
 
 The kinds, by the slice that builds them (query-service §7): `ping` (Phase 2 — the health check and the shell's engine badge: {status ok,
 worker, version}, touches no catalog and answers even while the instance is busy) · `preview` (slice 2) · `sql`, `saved_query`, `cancel`,
-`dry_run` (slice 3 — `sql` with dry_run: true; a cancel is answered beside the running request, never `busy`) · `check_row_filter` (slice 4 — a grant's filter checked before it is saved; reads no row) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
+`dry_run` (slice 3 — `sql` with dry_run: true; a cancel is answered beside the running request, never `busy`) · `check_row_filter` (slice 4 — a grant's filter checked before it is saved; reads no row) · `metric` (slice 7 — compiled by metric.py, run as `sql`) · `product_rows` (slice 9). Until its slice lands a kind is refused
 `not_built`. THE SERVICE COMPILES THE POLICY ITSELF from the caller's identity (query-service §3, decision 9) — a caller never sends one.
 
 THE PRODUCTION PATH (slice 2 — uploads-loads.md, THE FIRST EXEMPLAR): a line → `protocol.parse()` (the shape; `bad_request` / `too_long`)
@@ -40,12 +40,14 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p or ".") != _HERE]
 sys.path.insert(0, os.path.dirname(_HERE))
 
+import dataclasses  # noqa: E402
+
 import duckdb  # noqa: E402
 
 import time  # noqa: E402
 
 from lake.engine import LakeConfig  # noqa: E402
-from query import allowlist, protocol, service  # noqa: E402
+from query import allowlist, metric, protocol, service  # noqa: E402
 from query.identity import Identity  # noqa: E402
 
 MAX_REQUEST_BYTES = protocol.MAX_REQUEST_BYTES
@@ -386,7 +388,32 @@ def _check_row_filter(srv, req) -> dict:
                 pass
 
 
-BUILT.update({"preview": _preview, "sql": _sql, "saved_query": _sql, "check_row_filter": _check_row_filter})
+def _metric(srv, req) -> dict:
+    """`metric` (slice 7 — query-service §7; transforms-products-lineage.md): the caller's definition of a metric and the cut it asks for, judged and
+    compiled by `metric.compile_metric` to ONE SELECT over the product (a grain the metric does not allow, a `by` or `where` key that is not one of its
+    dimensions, an expression that is not one aggregate → `invalid_metric`, audited like any refusal), then run EXACTLY as a `sql` request — `_sql`:
+    the allow-list, the caller's policy for the product, masks and row filters, the lock, the watchdog, the audit with the metric's id. `dry_run` binds
+    the SELECT and runs nothing (saving a metric validates it so). The answer is `_sql`'s plus `period_column` (the first column when the metric has a time
+    column) and `grain`."""
+    ident: Identity = srv.identity
+    m = req.raw.get("metric") or {}
+    try:
+        c = metric.compile_metric(m, req.raw.get("grain"), req.raw.get("from"), req.raw.get("to"), req.raw.get("by") or [], req.raw.get("where") or {})
+    except metric.MetricRefused as e:
+        ds = m.get("dataset") if isinstance(m.get("dataset"), str) else None
+        ans = _refused("invalid_metric", e.message, ds)
+        ans["field"] = e.field
+        label = f"metric {m.get('id') if isinstance(m.get('id'), int) else ''} refused: {e.field}"
+        ans["query_run_id"] = ident.audit(req, ans, sql=label, datasets=[ds] if ds else [], policy=None)
+        return ans
+    ans = _sql(srv, dataclasses.replace(req, kind="sql", sql=c.sql, params=c.params))
+    ans["grain"] = c.grain
+    ans["by"] = c.by
+    ans["period_column"] = c.time_column is not None
+    return ans
+
+
+BUILT.update({"preview": _preview, "sql": _sql, "saved_query": _sql, "check_row_filter": _check_row_filter, "metric": _metric})
 
 
 def socket_path(prefix: str, worker: int) -> str:

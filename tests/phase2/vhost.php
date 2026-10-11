@@ -34,8 +34,8 @@ if ($built && $orders > 0) {
     ok(page($j, '/datasets/1')['code'] === 404 && page($j, '/datasets/curated.sales_orders')['code'] === 404 && page($j, '/datasets/curated.sales_orders/quality')['code'] === 404,
         'a dataset by its id, by its key and with a tab: rewritten to datasets/view.php, which slice 1 builds — 404 until then');
 }
-ok(page($j, '/incidents/999999')['code'] === 404 && page($j, '/transforms/1')['code'] === 404 && page($j, '/transforms/1/run')['code'] === 404,
-   'a record that is not there (slice 5\'s incidents) and a record or a page of one not built yet (slice 7\'s transforms): 404');
+ok(page($j, '/incidents/999999')['code'] === 404 && page($j, '/transforms/1')['code'] === 404 && page($j, '/transforms/1/run')['code'] === 405 && page($j, '/datasets/999999/lineage')['code'] === 404,
+   'a record that is not there (slice 5\'s incidents, slice 7\'s transform and graph): 404; a handler answers a GET with 405 (/transforms/1/run → transforms/run.php)');
 if (is_file('html/upload/start.php')) {
     ok(req('POST', '/upload/start', ['jar' => $j])['code'] === 403 && req('POST', '/upload/part', ['jar' => $j])['code'] === 403, 'the upload parts are rewritten to their files (slice 2): without the CSRF token, 403 — never a 404');
 } else {

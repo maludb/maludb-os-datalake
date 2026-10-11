@@ -4,7 +4,7 @@
                               a line that is not a request names no caller)
 
 The kinds, by the slice that builds them (query-service §7): `ping` (Phase 2), `preview` (slice 2), `sql`, `saved_query`, `cancel` (slice 3),
-`check_row_filter` (slice 4), `metric` (slice 7), `product_rows` (slice 9). A kind a slice adds is a name in KINDS, its fields checked in
+`check_row_filter` (slice 4), `metric` (slice 7 — `metric.py` compiles it to the SELECT `sql` runs), `product_rows` (slice 9). A kind a slice adds is a name in KINDS, its fields checked in
 `_check`, and a handler in server.BUILT. THE CALLER NEVER SENDS A POLICY: identity.policy() compiles it from these fields.
 """
 from __future__ import annotations
@@ -130,6 +130,23 @@ def _check(req: Request) -> None:
                 raise ProtocolError("bad_request", f"The parameter {name} is a text, a number, a yes/no or empty.")
             if isinstance(value, str) and len(value) > 1000:
                 raise ProtocolError("bad_request", f"The parameter {name} is longer than 1,000 characters.")
+    elif req.kind == "metric":
+        # slice 7: the caller read the metric under its own wall and sends its definition; the SHAPE is checked here, the meaning (a grain the metric does
+        # not allow, a dimension it does not have, an expression that is not one aggregate) is the service's `invalid_metric` (query-service §7)
+        if req.caller_member_id is None:
+            raise ProtocolError("bad_request", "Who asks: a metric's value names its caller_member_id.")
+        if not isinstance(req.raw.get("metric"), dict):
+            raise ProtocolError("bad_request", "A metric request carries the metric's definition (the caller read it under its own wall).")
+        mid = req.raw["metric"].get("id")
+        if mid is not None and (isinstance(mid, bool) or not isinstance(mid, int)):
+            raise ProtocolError("bad_request", "The metric's id is a number.")
+        if req.raw.get("grain") is not None and not isinstance(req.raw.get("grain"), str):
+            raise ProtocolError("bad_request", "grain is a word: day, week, month, quarter or year.")
+        for k in ("from", "to"):
+            if req.raw.get(k) is not None and not isinstance(req.raw.get(k), str):
+                raise ProtocolError("bad_request", f"{k} is a date.")
+        if not isinstance(req.raw.get("by", []), list) or not isinstance(req.raw.get("where", {}), dict):
+            raise ProtocolError("bad_request", "by is a list of dimensions and where an object of dimension → value.")
     elif req.kind == "check_row_filter":
         if req.caller_member_id is None:
             raise ProtocolError("bad_request", "Who asks: a row filter's check names its caller_member_id (the granter).")

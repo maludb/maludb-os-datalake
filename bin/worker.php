@@ -16,7 +16,7 @@ declare(strict_types=1);
  *
  * PHASE 0: every pass but `key_usage_prune` is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in
  * (design §10): `search_catch_up` slice 1's (BUILT); `upload_sessions` slice 2's (BUILT); `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
- * `freshness` slice 5's; `schedules` slices 5–7's (checks and source pulls BUILT — slices 5 and 6; transforms slice 7); `retention`, `maintenance` slice 8's;
+ * `freshness` slice 5's; `schedules` slices 5–7's (checks, source pulls and transforms BUILT — slices 5, 6 and 7); `retention`, `maintenance` slice 8's;
  * `outbox`, `dispatches`, `engine_health` slice 10's. REAL from the kit: `key_usage_prune` (dl_prune_key_usage, db/005).
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
@@ -156,7 +156,9 @@ function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $no
  * every day are queued as ONE `checks` job (params.when) once per window — the hour, the day — never twice in a window (a job of that `when` for the
  * dataset made since the window began). Slice 6: the SOURCES — the postgres sources' weekly reconciliation (Sundays from 03:00 business time), the
  * pulls queued by a person's Pull now, then the sources due, within DL_WORKER_PULLS_BUDGET_SECONDS (default 300): the pulls are PHP's (a pull lands
- * each file once and queues the writer's `load`); the writer is never asked to fetch. Transforms due (slice 7) add their part here.
+ * each file once and queues the writer's `load`); the writer is never asked to fetch. Slice 7: the TRANSFORMS due — a cron schedule with a matching minute since the last run (business time
+ * zone, once per due minute) or `after_inputs` with an input newer than the snapshot the last run read — each a transform_runs row (queued) and the writer's `transform` job; a run
+ * still queued or running after six hours is abandoned (failed) first. `DL_WORKER_NOW` is the clock outside production.
  */
 function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array
 {
@@ -174,7 +176,34 @@ function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): ar
     }
     require_once dirname(__DIR__) . '/app/lake/fetch/pulls.php';
     require_once dirname(__DIR__) . '/app/features/sources/queries.php';
-    return ['checks_queued' => $queued, 'sources' => sources_run_due_pulls($pdo, $limit, $now), 'transforms' => 'slice 7'];
+    return ['checks_queued' => $queued, 'sources' => sources_run_due_pulls($pdo, $limit, $now), 'transforms' => worker_schedule_transforms($pdo, $limit, $now)];
+}
+/** The transforms part of the schedules pass (transforms-products-lineage.md divergence 3): abandon the stale, queue the due. Returns {queued, abandoned, which[]}. */
+function worker_schedule_transforms(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/transforms/queries.php';
+    $abandoned = $pdo->exec("UPDATE transform_runs SET status = 'failed', error = 'abandoned — the writer did not finish it', finished_at = now()
+                              WHERE status IN ('queued', 'running') AND created_at < now() - interval '6 hours'");
+    $which = [];
+    foreach (transforms_due($pdo, $now) as $t) {
+        if (count($which) >= $limit) {
+            break;
+        }
+        try {
+            $pdo->beginTransaction();
+            $q = transform_enqueue_run($pdo, (int) $t['id'], null);
+            $d = (int) one_value($pdo, 'SELECT output_dataset_id FROM transforms WHERE id = :id', ['id' => (int) $t['id']]);
+            log_activity($pdo, 'transform.run', 'transform', (int) $t['id'], ['dataset_id' => $d, 'after' => ['transform_run_id' => $q['run'], 'job_id' => $q['job'], 'new' => $q['new'], 'why' => $t['why']]]);
+            $pdo->commit();
+            $which[] = $t['name'] . ':' . $t['why'];
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('worker transforms ' . $t['name'] . ': ' . $e->getMessage());
+        }
+    }
+    return ['queued' => count($which), 'abandoned' => (int) $abandoned, 'which' => $which];
 }
 /**
  * freshness — SLICE 5 (contracts-quality.md divergence 3; lake-engine §4, §7): hourly. Every dataset with a freshness expectation

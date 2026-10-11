@@ -34,6 +34,7 @@ const CATEGORIES = ['money_out', 'external_send', 'deletion', 'other'];
 const RECORD_PAGES = [
     '/datasets/{id}/checks' => '/quality/checks/index.php', '/datasets/{id}/checks/new' => '/quality/checks/form.php', '/checks/{id}/edit' => '/quality/checks/form.php',
     '/datasets/{id}/contract' => '/quality/contracts/view.php', '/datasets/{id}/contract/edit' => '/quality/contracts/form.php', '/datasets/{id}/quarantine' => '/quality/quarantine.php',
+    '/datasets/{id}/lineage' => '/datasets/lineage.php',
 ];
 
 $checkOnly = in_array('--check', $argv, true);

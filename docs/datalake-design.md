@@ -968,6 +968,19 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 7 TRANSFORMS, PRODUCTS, METRICS AND LINEAGE BUILT and proven (a Sonnet 5.5 worker; the planning model verifies)** (`tests/phase3/slice7/run.sh` **349 checks under php -S and under Apache**: transforms 92,
+metrics 73, lineage 46, JSON 68, the browser 70; the schema proof 225): a transform is a named SQL over dataset keys that makes a curated, product or sandbox dataset; saving runs
+it through the one door as the saver (the inputs come from the parse, an input the saver may not read is refused with its key named, a cycle refused) and **freezes the saver's level** (new SQL is the next
+version, refrozen as whoever saved it); the writer's `transform` job (`services/lake/jobs/transform.py`, the fourth exemplar) wraps Phase 0's function — a run row, a lineage START / COMPLETE / FAIL, the
+output's columns (a column straight from a personal one keeps its kind), the edges with their column map (the edges of an input no longer read pruned), the writer's read audited — and refuses an aggregate in
+`incremental_merge` by name (`incremental_needs_rowwise`, never retried, the owner told once a day); the worker queues the due ones (cron in the business's time zone, once per due minute; `after_inputs`).
+**Metrics** are asked through the new `metric` kind (`services/query/metric.py` compiles it to one SELECT that `server._metric` runs as `sql`: the policy, the masks and the audit are the editor's; a grain the metric
+does not allow or a dimension it does not have is `invalid_metric` with the field), drawn as a server-rendered SVG with a grain picker and a "Cut by" picker that re-render in place; **lineage** is the dataset
+page's Lineage tab, the graph (`/datasets/{id|key}/lineage?depth=`, five columns by default, "n hidden" never named) and the impact of a change; the **product gallery** and the home's Certified products tile.
+The registry reads **64 screens and 86 actions built** (10 + 7; the three approvals in step). **db/026 (additive)**: the DELETE grant on `transforms`, `dl_lineage_edge_prune()`,
+`dl_transform_failed_notify()`. Found: three gaps the spec's "no migration" missed (above), a presenter name taken, a chart unreadable on a phone (drawn twice now). Phase 2's, slice 1's and the engine's proofs follow what
+is built (the home tile, the Lineage tab, `metric` and `transform` no longer "not built"). Next: slices 8–10 and Phase 4. `transforms-products-lineage.md` "Built and proven".
+
 **2026-10-11 — SLICE 6 SOURCES AND PULLS BUILT and proven (a Sonnet 5.5 worker; the planning model verifies)** (`tests/phase3/slice6/run.sh` **428 checks under php -S and
 under Apache**: sources 164, pulls 90, postgres 41, K7 51, JSON 36, the browser 46; the schema proof 217): the five v1 connectors — `upload` (a named
 shape), `http_file` (a conditional GET through the one polite client: honest user-agent, robots.txt, 1 request/s, https only, streamed to disk; a 304 lands nothing, the same

@@ -115,14 +115,14 @@ echo "4. Home — popular through the wall, each tile its slice's line, decision
 $d = body_json(page($who['member'], '/', $json))['data'] ?? [];
 $pop = array_column($d['popular'] ?? [], 'key');
 ok(($d['first_run'] ?? null) === false && $pop === ['curated.sales_orders', 'product.monthly_revenue'], 'Priya\'s home: popular this month, most queried first — and NOT the payroll (30 queries, but she may not discover it): ' . implode(', ', $pop));
-$owed = array_filter(['products' => 'slice 7', 'recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5'], static fn (string $k): bool => ($d[$k] ?? null) === null, ARRAY_FILTER_USE_KEY);
-ok(($d['pending'] ?? []) == $owed && isset($owed['products']) && $d['engineer'] === null && $d['admin'] === null,
-    'each tile not built yet is null and names its slice (' . implode(', ', array_keys($owed)) . '); a Member has no engineer or admin tile');
+$owed = array_filter(['recent' => 'slice 3', 'followed' => 'slice 1', 'incidents' => 'slice 5'], static fn (string $k): bool => ($d[$k] ?? null) === null, ARRAY_FILTER_USE_KEY);
+ok(($d['pending'] ?? []) == $owed && is_array($d['products'] ?? null) && !isset($d['pending']['products']) && $d['engineer'] === null && $d['admin'] === null,
+    'each tile not built yet is null and names its slice (' . (implode(', ', array_keys($owed)) ?: 'none') . '; the certified products tile is slice 7\'s, built); a Member has no engineer or admin tile');
 $h = page($who['member'], '/')['body'];
 ok(str_contains($h, 'id="home-popular"') && str_contains($h, 'id="home-popular-' . $orders . '"') && !str_contains($h, 'home-popular-' . $payroll) && str_contains($h, 'href="/datasets/curated.sales_orders?back=%2F"'),
     'the popular tile renders its cards, each a link carrying ?back= (click-around)');
-ok(str_contains($h, 'id="home-products-pending"') && str_contains($h, 'slice 7') && str_contains($h, 'id="home-incidents-pending"') === isset($owed['incidents']) && !str_contains($h, 'id="home-recent-pending"'),
-    'the products tile says which slice builds it; the incidents tile too until slice 5 ships it (recent: slice 3\'s, built)');
+ok(str_contains($h, 'id="home-products"') && !str_contains($h, 'id="home-products-pending"') && str_contains($h, 'id="home-incidents-pending"') === isset($owed['incidents']) && !str_contains($h, 'id="home-recent-pending"'),
+    'the certified products tile is built (slice 7\'s: no pending line); the incidents tile says which slice builds it until slice 5 ships it (recent: slice 3\'s, built)');
 ok(str_contains($h, 'id="home-search-btn"') && str_contains($h, 'id="home-ask-btn"') && str_contains($h, 'formaction="/ask"'), 'the home\'s search box has its two buttons, Search and Ask');
 $d = body_json(page($who['engineer'], '/', $json))['data'] ?? [];
 ok(($d['engineer'] ?? null) === ['failed_loads' => null, 'late' => null, 'proposals' => null] && ($d['pending']['engineer'] ?? '') === 'slice 10' && $d['admin'] === null, 'an engineer\'s tile is there and says slice 10 builds it');

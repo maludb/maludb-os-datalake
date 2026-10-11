@@ -124,7 +124,7 @@ console.log(`seeded the lake: the orders ${seed['curated.sales_orders']}, the re
   console.log('375 x 740 — a Member, the lake holds datasets');
   ok((await page.locator('#home-first-run').count()) === 0 && await shown(page, '#home-search') && await shown(page, '#home-search-btn') && await shown(page, '#home-ask-btn'), 'the first-run card is gone; the search box with Search and Ask leads the home');
   ok(await shown(page, '#home-popular') && (await page.locator('#home-popular .dataset-card').count()) === 2 && (await page.locator('#home-popular-' + seed['curated.payroll']).count()) === 0, 'popular this month: two datasets — not the payroll she may not see');
-  ok((await page.locator('#home-products-pending').innerText()).includes('slice 7') && await shown(page, '#home-incidents'), 'the tiles not built yet say which slice builds them (open incidents: slice 5\'s, built)');
+  ok(await shown(page, '#home-products') && (await page.locator('#home-products-pending').count()) === 0 && await shown(page, '#home-incidents'), 'the certified products tile is built (slice 7\'s, no pending line); open incidents: slice 5\'s, built');
   ok((await overflow(page)).sw === 375, 'no sideways scroll with the tiles');
   const cardW = (await page.locator('#home-popular').boundingBox()).width;
   ok(cardW >= 300 && cardW <= 375, `the popular tile takes the width of the phone (${Math.round(cardW)} px)`);
@@ -238,7 +238,7 @@ console.log(`seeded the lake: the orders ${seed['curated.sales_orders']}, the re
   const { ctx, page } = await session(urls.member, { width: 375, height: 740 }, { javaScriptEnabled: false });
   console.log('JavaScript off');
   const text = await page.locator('#page-content').innerText();
-  ok(text.includes('SMOKE Sales orders') && text.includes('Popular this month') && text.includes('slice 7'), 'popular this month and the tiles\' lines are in the server-rendered page');
+  ok(text.includes('SMOKE Sales orders') && text.includes('Popular this month') && text.includes('Certified products'), 'popular this month and the tiles\' lines are in the server-rendered page');
   ok((await page.locator('#tab-ask').getAttribute('href')) === '/ask' && (await page.locator('#tab-me').getAttribute('href')) === '/settings/', 'the tabs are plain links (Me opens My settings)');
   ok((await page.locator('a[href="/datasets/curated.sales_orders?back=%2F"]').count()) >= 1, 'a dataset is a plain link carrying ?back=');
   ok((await page.locator('#home-search').getAttribute('action')) === '/search' && (await page.locator('#home-ask-btn').getAttribute('formaction')) === '/ask', 'the search box is a plain GET form whose Ask button posts to /ask');
