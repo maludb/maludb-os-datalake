@@ -671,6 +671,27 @@ SELECT pg_temp.check((SELECT string_agg(column_name, ',' ORDER BY ordinal_positi
 SELECT pg_temp.check((SELECT string_agg(column_name, ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_name = 'blobs' AND ordinal_position <= 7)
                      = 'id,sha256,byte_size,storage_path,ref_count,created_at,deleted_at', 'blobs: DocCloud''s canonical columns, in order');
 
+-- ================================================================ slice 6 (db/025): a source is deleted by the application's role; its pulls, its credential and its lineage edge go with it; the dataset and its loads stay
+SELECT pg_temp.check(has_table_privilege('datalake_rw', 'sources', 'DELETE') AND NOT has_table_privilege('datalake_rw', 'source_pulls', 'DELETE') AND NOT has_table_privilege('datalake_lake', 'sources', 'DELETE'),
+                     'only the application deletes a source — not a pull directly, not the writer');
+INSERT INTO sources (name, connector, settings, schedule_minutes) VALUES ('Delete me', 'http_file', '{"url": "https://files.example.invalid/f.csv"}', 60);
+INSERT INTO source_credentials (source_id, kind, label, last4, ciphertext) SELECT id, 'bearer', 'proof', 'abcd', convert_to('v1.sealed', 'UTF8') FROM sources WHERE name = 'Delete me';
+UPDATE sources SET credential_id = (SELECT c.id FROM source_credentials c WHERE c.label = 'proof') WHERE name = 'Delete me';
+INSERT INTO source_pulls (source_id, kind, status, listings_seen, listings_new) SELECT id, 'manual', 'ok', 1, 1 FROM sources WHERE name = 'Delete me';
+INSERT INTO loads (dataset_id, source_id, pull_id, idempotency_key, status, rows_read, rows_loaded)
+SELECT pg_temp.ds('raw.crm_deals'), s.id, (SELECT p.id FROM source_pulls p WHERE p.source_id = s.id), 'proof:delete-me', 'loaded', 1, 1 FROM sources s WHERE s.name = 'Delete me';
+SELECT dl_lineage_edge(NULL, (SELECT id FROM sources WHERE name = 'Delete me'), pg_temp.ds('raw.crm_deals'), 'load');
+SELECT id AS delsrc FROM sources WHERE name = 'Delete me' \gset
+SELECT pg_temp.check((SELECT count(*) FROM lineage_edges WHERE from_source_id = :delsrc) = 1 AND (SELECT count(*) FROM source_pulls WHERE source_id = :delsrc) = 1, 'the source has a pull and a lineage edge');
+SET ROLE datalake_rw;
+DELETE FROM sources WHERE id = :delsrc;
+RESET ROLE;
+SELECT pg_temp.check(NOT EXISTS (SELECT 1 FROM sources WHERE id = :delsrc) AND NOT EXISTS (SELECT 1 FROM source_pulls WHERE source_id = :delsrc) AND NOT EXISTS (SELECT 1 FROM source_credentials WHERE source_id = :delsrc)
+                     AND NOT EXISTS (SELECT 1 FROM lineage_edges WHERE from_source_id = :delsrc), 'deleting a source takes its pulls, its sealed credential and its lineage edge with it');
+SELECT pg_temp.check((SELECT source_id IS NULL AND pull_id IS NULL FROM loads WHERE idempotency_key = 'proof:delete-me') AND EXISTS (SELECT 1 FROM datasets WHERE key = 'raw.crm_deals'),
+                     'the load stays (it loses its source and its pull) and so does the dataset it fed');
+SELECT pg_temp.refused($$SET ROLE datalake_rw; DELETE FROM source_pulls$$, 'permission denied', 'the application cannot delete a pull directly');
+
 SET ROLE datalake_rw;
 SELECT pg_temp.check((SELECT count(*) FROM members) = 10 AND (SELECT count(*) FROM datasets) >= 9, 'the fixtures are there until the rollback');
 SELECT pg_temp.check((SELECT inline_flush_minutes FROM dl_settings) = 60, 'small loads are flushed out of the catalog hourly (FINDINGS §4)');

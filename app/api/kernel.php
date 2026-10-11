@@ -130,12 +130,20 @@ function kernel_read(PDO $pdo, string $provider, string $tool, array $arguments)
     return ['status' => $status, 'result' => $result, 'error' => $code];
 }
 
-/** The rows of a provider's answer: the list itself, or its `rows`, `results` or `items`. */
+/**
+ * The rows of a provider's answer: the list itself, or its `rows`, `results` or `items` — or, for a DOCUMENT such as the shares of the General Ledger
+ * ({schema, as_of, accounts: […]}) or Inventory ({schema, totals: {…}, orders: […]}), the one top-level key that holds a list of rows (slice 6: the log of a
+ * read counts them; the k7 connector names its list itself, in the source's rows_path).
+ */
 function kernel_rows(?array $result): array
 {
     if ($result === null) {
         return [];
     }
-    $rows = array_is_list($result) ? $result : ($result['rows'] ?? $result['results'] ?? $result['items'] ?? []);
+    $rows = array_is_list($result) ? $result : ($result['rows'] ?? $result['results'] ?? $result['items'] ?? null);
+    if ($rows === null) {
+        $lists = array_values(array_filter($result, static fn ($v): bool => is_array($v) && $v !== [] && array_is_list($v) && is_array($v[0])));
+        $rows = count($lists) === 1 ? $lists[0] : [];
+    }
     return is_array($rows) ? array_values(array_filter($rows, 'is_array')) : [];
 }

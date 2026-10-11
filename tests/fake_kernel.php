@@ -10,6 +10,9 @@
  *                                         every request is appended to "<state file>.ledger" (the period asked, or "list")
  *   POST /api/v1/notify/sms.php         → K6, as state.sms says (mode = ok | no_sender | not_held | no_verified_phone | opted_out | rate_limited | server_error);
  *                                         every request body is appended to "<state file>.sms" (one JSON line each)
+ *   POST /api/v1/apps/read.php          → K7 (slice 6): state.reads["<provider>/<tool>"] = {mode: ok | no_connection | not_shared | provider_failed | invalid, doc: the provider's answer,
+ *                                         rows_key?: the list in doc a request's offset and limit page}; no entry answers 403 not_shared; every request ({provider, tool,
+ *                                         arguments}) is appended to "<state file>.reads" (one JSON line each)
  *   GET  /api/v1/apps/mine.php          → K31, the switcher's feed: state.apps (an os.my-applications/1 document) for the acting member, else 404 (no kernel to ask);
  *                                         the acting member is appended to "<state file>.apps"
  * Every call needs Authorization: Bearer $OS_APPLICATION_TOKEN (else 401), like the real one. Never a real kernel.
@@ -51,6 +54,20 @@ switch ($path) {
         $parts = explode('.', (string) ($input['token'] ?? ''));
         $run = $parts[2] ?? '';
         $out($state['facts'][$run] ?? ['valid' => false]);
+    case '/api/v1/apps/read.php':
+        $reads = $state['reads'] ?? [];
+        $provider = (string) ($input['provider'] ?? '');
+        $tool = (string) ($input['tool'] ?? '');
+        $args = (array) ($input['arguments'] ?? []);
+        file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.reads', json_encode(['provider' => $provider, 'tool' => $tool, 'arguments' => $args]) . "\n", FILE_APPEND);
+        $r = $reads[$provider . '/' . $tool] ?? ['mode' => 'not_shared'];
+        $codes = ['no_connection' => 403, 'not_shared' => 403, 'provider_failed' => 502, 'invalid' => 422];
+        if (isset($codes[$r['mode'] ?? 'ok'])) { $out(['error' => ['code' => $r['mode'], 'message' => 'Refused: ' . $r['mode']]], $codes[$r['mode']]); }
+        $doc = $r['doc'] ?? [];
+        if (isset($r['rows_key']) && isset($args['offset'])) {
+            $doc[$r['rows_key']] = array_slice($doc[$r['rows_key']] ?? [], (int) $args['offset'], isset($args['limit']) ? (int) $args['limit'] : null);
+        }
+        $out(['result' => $doc, 'provider' => $provider, 'tool' => $tool]);
     case '/api/v1/apps/mine.php':
         file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.apps', ($_SERVER['HTTP_X_ACTING_MEMBER'] ?? '') . "\n", FILE_APPEND);
         if (!isset($state['apps'])) { $out(['error' => ['code' => 'not_found', 'message' => 'No such internal endpoint.']], 404); }

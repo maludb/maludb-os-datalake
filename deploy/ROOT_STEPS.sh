@@ -132,6 +132,20 @@ run chown root:datalake "$SALT"
 run chmod 0440 "$SALT"
 envset DL_MASK_SALT_FILE "$SALT"
 
+# 6a. THE SECRETS KEY (slice 6; idempotent: made once, KEPT on a re-run, never printed, never replaced — a new key cannot open the credentials sealed under the
+#     old one). 32 random bytes as 64 hex characters in config/.env: libsodium seals a source's credential under it (app/lake/fetch/credentials.php). Without it
+#     source_credential_set answers secrets_key_missing and a source that needs a credential pauses.
+echo "== 6a. The secrets key (DL_SECRETS_KEY in config/.env)"
+if [ -n "$(envval DL_SECRETS_KEY)" ]; then
+  echo "   DL_SECRETS_KEY is set — kept"
+elif [ "$MODE" = apply ]; then
+  key=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  tmp=$(mktemp); grep -v '^DL_SECRETS_KEY=' "$ENVF" > "$tmp" || true; printf 'DL_SECRETS_KEY=%s\n' "$key" >> "$tmp"; cat "$tmp" > "$ENVF"; rm -f "$tmp"; unset key
+  echo "+ DL_SECRETS_KEY=<generated, not shown> → config/.env"
+else
+  echo "+ DL_SECRETS_KEY=<64 random hex characters> → config/.env"
+fi
+
 # ------------------------------------------------------------------------------------------------------------------
 # 6b. THE QUERY SERVICE'S POOL (idempotent; before step 7's apply). The kernel's installer enables every unit maludb-os.json lists with
 #    `systemctl enable --now`, which a TEMPLATE refuses (no instance) — so datalake-query@.service is rendered and installed HERE, and

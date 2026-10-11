@@ -968,6 +968,18 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 6 SOURCES AND PULLS BUILT and proven (a Sonnet 5.5 worker; the planning model verifies)** (`tests/phase3/slice6/run.sh` **428 checks under php -S and
+under Apache**: sources 164, pulls 90, postgres 41, K7 51, JSON 36, the browser 46; the schema proof 217): the five v1 connectors — `upload` (a named
+shape), `http_file` (a conditional GET through the one polite client: honest user-agent, robots.txt, 1 request/s, https only, streamed to disk; a 304 lands nothing, the same
+bytes under a new ETag are refused by the load's key), `sftp_file` (a directory through ssh2 / `curl sftp://` / `sftp`, proven through the transport seam), `k7` (the owner's
+five reads of the GL, Inventory and Sales CRM through the kernel — pages as NDJSON, `<yesterday>`, injected fields, a window that moves forward, `no_connection` pausing
+without a failure) and `postgres` (one table of an outside database: read-only cursor, pages, a watermark, the weekly count reconciliation and reload); the PHP worker's
+pass; credentials sealed under `DL_SECRETS_KEY` (libsodium; the last four only); the four screens and eight actions. **db/025 — `GRANT DELETE ON sources` (the spec planned no
+migration; `source_delete` could not have run).** Found: every page of a replacing pull must carry a per-pull marker, or the writer ("already loaded") and the load's own key
+(the pages that follow the first) would refuse them; the postgres guard is a name check an alias (`127.0.0.2`, the machine's own address) passes — **closed by the planning
+model's review**: `dl_fetch_host_refusal()` judges what a host resolves to (reserved addresses and every address of this machine) for http_file at every hop and for
+sftp_file and postgres at the saving and at every connect. Decisions in `sources-pulls.md` "Built and proven". **Next: slices 7–10 and Phase 4.**
+
 **2026-10-11 — SLICE 5 CONTRACTS AND QUALITY (THE THIRD EXEMPLAR) BUILT and proven — THE HANDOFF POINT** (`tests/phase3/slice5/run.sh`
 **310 checks under php -S and under Apache**: the writer's jobs in-process 20, contracts 33, promotion 29, checks 43, incidents 28, certification 23,
 drift 15, freshness 10, ODCS 14, the walls 28, JSON 31, the browser 36; the schema proof 212): contracts in ODCS v3.2.0's words with versions and a

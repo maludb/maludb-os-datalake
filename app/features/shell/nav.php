@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 
 /** The slice that builds each menu item not built yet, in words — the placeholders and the registry read it (design §10). */
 const NAV_SLICES = ['browse' => 'slice 1', 'glossary' => 'slice 1', 'upload' => 'slice 2', 'sandbox' => 'slice 2', 'loads' => 'slice 2',
-    'sql' => 'slice 3', 'queries' => 'slice 3', 'access' => 'slice 4', 'quality' => 'slice 5', 'sources' => 'slice 6', 'products' => 'slice 7',
+    'sql' => 'slice 3', 'queries' => 'slice 3', 'access' => 'slice 4', 'quality' => 'slice 5', 'products' => 'slice 7',
     'metrics' => 'slice 7', 'transforms' => 'slice 7', 'ask' => 'slice 10', 'steward' => 'slice 10', 'admin' => 'slice 10'];
 
 /** The groups as the sidebar shows them (the first group has no caption). */

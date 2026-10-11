@@ -77,6 +77,8 @@ DL_EXTENSION_DIR=$ROOT/services/.duckdb_extensions
 DL_LAKE_DB_DSN=
 DL_QUERY_DB_DSN=
 DL_MASK_SALT_FILE=$PASSDIR/mask_salt
+DL_SECRETS_KEY=$(openssl rand -hex 32)
+DL_FETCH_ALLOW_INSECURE=1
 ENV
 ( umask 077; head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$PASSDIR/mask_salt" )
 if [ "${DL_DEV_ENGINE:-0}" = 1 ]; then

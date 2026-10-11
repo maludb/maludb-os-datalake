@@ -16,7 +16,7 @@ declare(strict_types=1);
  *
  * PHASE 0: every pass but `key_usage_prune` is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in
  * (design §10): `search_catch_up` slice 1's (BUILT); `upload_sessions` slice 2's (BUILT); `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
- * `freshness` slice 5's; `schedules` slices 5–7's (checks, source pulls, transforms); `retention`, `maintenance` slice 8's;
+ * `freshness` slice 5's; `schedules` slices 5–7's (checks and source pulls BUILT — slices 5 and 6; transforms slice 7); `retention`, `maintenance` slice 8's;
  * `outbox`, `dispatches`, `engine_health` slice 10's. REAL from the kit: `key_usage_prune` (dl_prune_key_usage, db/005).
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
@@ -151,11 +151,12 @@ function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $no
     }
     return ['indexed' => count($datasets), 'terms' => count($terms)];
 }
-/** SLICES 5–7 — what is due becomes a writer job (lake_jobs): a source's next pull (slice 6), a transform's schedule or its inputs' new snapshots (slice 7), a check's `hourly`/`daily` run (slice 5). Never runs the work itself. */
 /**
- * schedules — SLICE 5's part (contracts-quality.md "Files"; lake-engine §7): a dataset's checks that run every hour or every day are queued as
- * ONE `checks` job (params.when) once per window — the hour, the day — never twice in a window (a job of that `when` for the dataset made since
- * the window began). Sources due (slice 6) and transforms due (slice 7) add their parts here.
+ * schedules — SLICE 5's and SLICE 6's parts (contracts-quality.md, sources-pulls.md; lake-engine §7). Slice 5: a dataset's checks that run every hour or
+ * every day are queued as ONE `checks` job (params.when) once per window — the hour, the day — never twice in a window (a job of that `when` for the
+ * dataset made since the window began). Slice 6: the SOURCES — the postgres sources' weekly reconciliation (Sundays from 03:00 business time), the
+ * pulls queued by a person's Pull now, then the sources due, within DL_WORKER_PULLS_BUDGET_SECONDS (default 300): the pulls are PHP's (a pull lands
+ * each file once and queues the writer's `load`); the writer is never asked to fetch. Transforms due (slice 7) add their part here.
  */
 function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array
 {
@@ -171,7 +172,9 @@ function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): ar
         lake_enqueue($pdo, 'checks', (int) $r['dataset_id'], null, ['when' => (string) $r['run_when']], 6);
         $queued++;
     }
-    return ['checks_queued' => $queued, 'sources' => 'slice 6', 'transforms' => 'slice 7'];
+    require_once dirname(__DIR__) . '/app/lake/fetch/pulls.php';
+    require_once dirname(__DIR__) . '/app/features/sources/queries.php';
+    return ['checks_queued' => $queued, 'sources' => sources_run_due_pulls($pdo, $limit, $now), 'transforms' => 'slice 7'];
 }
 /**
  * freshness — SLICE 5 (contracts-quality.md divergence 3; lake-engine §4, §7): hourly. Every dataset with a freshness expectation

@@ -139,3 +139,88 @@ JSON mode on every action; 375 and 1280; `php bin/build_action_registry.php --ch
 ## Open questions
 None — decisions taken: one source one target (§ Divergences 1); NDJSON landing of K7 pages with the document's keys in the pull's policy (2); postgres pulls in
 PHP with weekly count reconciliation (3); `DL_SECRETS_KEY` added by this slice to the env example, the manifest and ROOT_STEPS (4); the default user-agent (5).
+
+What the worker found the spec silent on (taken by the worker — the reading closest to the exemplars; each is argued under "Built and proven"):
+- taken by the worker: **a migration after all, db/025** — `GRANT DELETE ON sources TO datalake_rw` (db/009 gave SELECT, INSERT, UPDATE; `source_delete` needs it).
+- taken by the worker: the K7 proof's fake kernel is the existing one on :9002 (extended with `/api/v1/apps/read.php`), not a second server on :9005.
+- taken by the worker: the fetch client refuses a non-https address and any loopback / link-local / unspecified address; `DL_FETCH_ALLOW_INSECURE=1` lifts both outside production
+  (the fixtures server); a URL's query string is redacted everywhere it is shown or logged.
+- taken by the worker: a pull that REPLACES the dataset carries a per-pull marker (whitespace) on its first page, or the writer would call it "already loaded".
+- taken by the worker: blocked (robots.txt, 403/429, a bot wall, `no_connection`, a missing credential or secrets key) pauses the source at once with the reason and counts no
+  failure; any other failure climbs the ladder (back-off 2^n minutes, at most a day; the fifth pauses and tells the creator and every `sources.manage` holder).
+- taken by the worker: credential kinds by connector (http_file bearer · api_key · basic, sftp_file sftp_password · sftp_key, postgres database_password); the secret
+  alone is sealed; the log holds the credential's id, kind and label — not its last four.
+- taken by the worker: `target_dataset` takes an id, a key or a name (a new one needs `loads.manage`); a source made through the API with no schedule is manual.
+
+## Built and proven (2026-10-11)
+A source reads ONE thing into ONE raw dataset, and the PHP worker — never the writer — pulls it. **The connectors** (`app/lake/fetch/connectors/`, Inventory's
+`Connector.php` ported, `inv_` → `dl_`, plus `validate()` per connector): `upload` (a named shape; Pull now answers `manual_only`), `http_file` (a conditional GET
+through the one polite client — an honest user-agent, robots.txt honoured, one request a second, https only; the file STREAMS to the work directory; a 304 is `ok`
+and lands nothing; the same bytes under a new ETag are refused by the load's key), `sftp_file` (a directory: every new file matching the pattern lands once, oldest
+first, over ssh2, `curl sftp://` with a netrc file or the `sftp` command — the password on no command line), `k7` (a sibling's share through the kernel: pages as
+NDJSON of their rows, `<yesterday>` arguments, `inject`ed fields, a date window that moves forward, `no_connection` pausing the source without a failure) and
+`postgres` (one table of an outside database: a READ-ONLY REPEATABLE READ transaction, a server-side cursor, pages of 50,000 rows, incremental by a watermark, a weekly
+reconciliation). **The pull** (`app/lake/fetch/pulls.php`): `dl_run_pull()` starts a `source_pulls` row, builds the `$source` (the ONE place a credential is opened),
+lands each emitted file with slice 2's `dl_landing_store()`, makes the `loads` row (the key `'<dataset>:<sha256>'`, the `mapping` the writer reads a pulled file by) and
+queues the writer's `load`; the failure ladder, the pause, the notice and the lineage edge are PHP's (the spec planned no SQL for them). **The screens**: the list as
+cards, a source's page with Settings / Pulls (polling itself while a pull runs) / Feeds, the credential form (sealed, last four only), Add (five connector cards, then
+the form with the record picker) and Edit. The registry reads **54 screens and 79 actions built** (4 + 8 here; the approvals unchanged by this slice: 29 in all).
+
+**Proven** by `tests/phase3/slice6/run.sh` (scratch `dl_dev6`, the engine real, the fixtures server on :9004, an outside database `dl_dev6_outside`): **428 checks under
+php -S and the same under a real Apache** — sources 164, pulls 90, postgres 41, k7 51, JSON 36, the browser 46 (375 and 1280, screenshots in
+`/tmp/dl-shots/slice6`; the HTMX flows; without JavaScript the add form, Test and Pause as plain forms) — plus the schema proof (**217** — db/025's five checks) and
+the registry `--check`. Re-run green: slices 5 (310), 4 (332), 3 (220), 2 (262), 1 (229) and Phase 2 (331 / 336), the engine proof (157), Phase 0's schema and kit, Phase 1's claims.
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **db/025 — the one migration the spec said it would not need**: `GRANT DELETE ON sources TO datalake_rw`. db/009 gave the application SELECT, INSERT and UPDATE on
+   `sources` and DELETE only on `source_credentials`; `source_delete` could not have run. The pulls, the credential and the lineage edges go with the row by foreign key,
+   the datasets and their loads stay (their `source_id` and `pull_id` are set null). The application still cannot delete a pull; the writer never deletes a source.
+2. **The K7 shares are served by the existing fake kernel on :9002** (extended with `POST /api/v1/apps/read.php`, state-driven, every request logged), not a second server
+   on :9005 — the application's kernel URL is already wired to :9002.
+3. **`DL_FETCH_ALLOW_INSECURE=1` (outside production only) lets the fetch client reach `http://` and loopback** — the proofs' fixtures server is plain http on 127.0.0.1.
+   Without it (and always in production) the URL must be https and must not resolve to a loopback, link-local (the cloud metadata address) or unspecified address; a
+   business's private LAN address is allowed. A URL with `user:password@` is refused; a URL's query string is replaced by `?…` in every page, JSON answer and log row.
+   A redirect to another host drops the Authorization header.
+4. **Replace needs a marker — on every page.** A load that REPLACES the dataset (a postgres source with no watermark, the weekly reload) would be answered "already
+   loaded" by the writer when its first page's bytes match an earlier landing — the delete would never run — and the load's own key (`'<dataset>:<sha256>'`) would refuse
+   the pages that FOLLOW the first, whose bytes are last time's (found by the proof: the dataset would end with the first page only). Every page of such a pull is
+   therefore preceded by a line of spaces and tabs spelling the pull's number in binary (`dl_pull_marker()`): invisible to a JSON reader, different bytes every
+   pull, the same rows. Only the first page's mode is `replace`; the rest `append`.
+5. **The writer's JSON reader types before it casts back to text** (DuckDB's `read_json_auto`): every scalar of a postgres row is written as a JSON string, so a
+   `numeric(12,2)` keeps its zero and a code its leading ones; a string the reader takes for an ISO-8601 date or timestamp (`2026-09-01T10:00:00`) comes back in
+   DuckDB's spelling (`2026-09-01 10:00:00`) — PostgreSQL's own `2026-09-01 00:01:00+00` is left as printed. The landing blob keeps the original. Nested arrays land as JSON text.
+6. **Blocked means blocked**: robots.txt forbidding the path, a 403 or 429, a bot wall, a K7 `no_connection` / `not_shared`, a missing or unopenable credential or secrets
+   key — the pull is `blocked`, the source PAUSES at once with the reason beside it (`robots.txt disallows …`, `no_connection`, `credential: …`) and no failure is counted;
+   `source_resume` retries (and sealing a credential resumes a source paused for want of one). Every other failure climbs the ladder: back-off 2^n minutes (at most a day),
+   the fifth in a row pauses and tells the creator and every holder of `sources.manage` (`dl_notify` kind `load_failed`, once a day for a source).
+7. **A failed load of bytes the key already knows is queued again** by the next pull of them (the writer answers "already loaded" if the rows are in the lake).
+8. **Credential kinds by connector**: http_file bearer · api_key (header `X-API-Key`, or `api_key_header`) · basic (the user name is a setting); sftp_file sftp_password ·
+   sftp_key; postgres database_password; k7 and upload none. Only the secret is sealed; for an `sftp_key` the form's textarea (`secret_key`) carries it and its "last four"
+   is a fingerprint prefix. The log holds the credential's id, kind, label and whether it replaced one — not even its last four.
+9. **`mcp_sources` leaves out `rate_per_second` and `user_agent`**; `find_source()` reads those two (not secret) from the base table once the view has admitted the source.
+10. **The weekly reconciliation** (Sundays from 03:00 business time, once a week per source, before the queued pulls so a reload runs in the same pass) compares the table's
+    `count(*)` with the dataset's `row_count`, skips a source whose loads are in flight or that never loaded, and queues a pull with `policy.reload`. An updated row is
+    a second row in raw (raw is history), so a table that is updated differs every week and is reloaded every week — the cost of the spec's design; a source with a
+    watermark column the table does not bump on update should have none.
+11. **State is kept in the pull's policy**: `policy.state` (the ETag and Last-Modified, the window's end, the watermark, the SFTP files seen) of the last good pull, valid only
+    for the settings it was kept under (a fingerprint) — a source whose address changed starts again. A pull still `running` after six hours is abandoned by the next one.
+12. **Test's answer** is the notice on the source page (`?notice=test_ok|test_blocked|test_misconfigured&said=…`, the sentence ≤ 240 characters — no secret, no row); JSON
+    gets `state`, `message` and `facts`. A source's page polls its Pulls table through `GET /sources/{id}?tab=pulls&partial=pulls` (HTMX only; `html/sources/view.php`).
+13. **`target_dataset`** is an id, a key (`raw.x`) or a bare name (made when new, which needs `loads.manage`); the form's `target_name` is the same for a new one. A dataset
+    the person may not even discover is "not here" (the gate's rule); one they may only discover, "you may not change …". A new dataset takes the postgres source's `key[]` (or
+    the seed's) as its `dedupe_key` and its `source_id`.
+14. **Defaults**: a source made through the API with no `schedule_minutes` is manual (0); the form offers daily. The postgres guard in SQL is a name check — `localhost`,
+    `127.0.0.1`, `::1` and a socket are refused, an alias such as `127.0.0.2` or the machine's own address is not. **Closed by the planning model's review:**
+    `dl_fetch_host_refusal()` (`app/lake/fetch/http.php`) resolves a host and refuses a reserved address (loopback, link-local with the metadata address, unspecified)
+    or ANY of this machine's own addresses (`net_get_interfaces()` and the host name's) — for http_file at every hop (through `dl_fetch_url_refusal()`), for sftp_file and
+    postgres at the source's saving and again at every connect (a name may come to resolve to this server). `DL_FETCH_ALLOW_INSECURE=1` lifts it outside production
+    only, which is how the proofs still reach their outside database as `127.0.0.2`; `sources.php` proves the refusal with the switch off (127.0.0.2, `localhost`, the
+    machine's own address, the metadata address — and a server elsewhere accepted).
+
+15. **`kernel_rows()`** (app/api/kernel.php — the log of a K7 read counts its rows) learned the shape of the shares that answer a DOCUMENT: `{schema, as_of, accounts: […]}` has
+    one top-level list of rows, and `share.read` now says `rows: 2` instead of 0. Nothing else of the kit changed.
+16. **Not proven against a real server**: the SFTP transports (`ssh2` is not installed here; `curl sftp://` and `sftp` exist but no sshd runs in the proofs) — the plan each
+    builds, the netrc and the argv are proven through the seam, and the `ls -l` parser against a canned listing; a first real pull is the owner's check.
+
+**Found and fixed in slice 6:** a replacing pull's later pages refused by the load's key (decision 4); nothing in the writer; the schema lacked the DELETE grant (db/025); a `~`-delimited regular expression containing `~` in the SFTP path
+rule; `datasets.dedupe_key` is NOT NULL (`'{}'`); `servers.sh start` kills every `*.pid` in the state directory, so the fixtures server starts after it.

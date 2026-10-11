@@ -46,6 +46,7 @@ require_once __DIR__ . '/features/access/queries.php';       // slice 4: princip
 require_once __DIR__ . '/features/groups/queries.php';       // slice 4: groups_for_pick
 require_once __DIR__ . '/features/incidents/queries.php';    // slice 5: checks_for_pick (checks/queries.php), incidents_for_pick
 require_once __DIR__ . '/features/contracts/queries.php';    // slice 5: raw_columns_for_pick
+require_once __DIR__ . '/features/sources/queries.php';      // slice 6: sources_for_pick
 
 return [
     'member' => [
@@ -153,6 +154,11 @@ return [
         'title' => 'Raw columns', 'noun' => 'column', 'roles' => ['contracts.manage'], 'params' => ['dataset'],
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => raw_columns_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_dataset_columns WHERE column_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'source' => [                                                   // slice 6: a source I may manage (the source resolver)
+        'title' => 'Sources', 'noun' => 'source', 'roles' => ['sources.manage'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => sources_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_sources WHERE source_id = :id', ['id' => $id])) === null ? null : (string) $v,
     ],
 ];
 

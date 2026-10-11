@@ -62,6 +62,7 @@
             "DL_LAKE_DB_DSN",
             "DL_QUERY_DB_DSN",
             "DL_MASK_SALT_FILE",
+            "DL_SECRETS_KEY",
             "API_CORS_ORIGINS"
         ]
     },
