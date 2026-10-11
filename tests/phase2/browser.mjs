@@ -124,7 +124,7 @@ console.log(`seeded the lake: the orders ${seed['curated.sales_orders']}, the re
   console.log('375 x 740 — a Member, the lake holds datasets');
   ok((await page.locator('#home-first-run').count()) === 0 && await shown(page, '#home-search') && await shown(page, '#home-search-btn') && await shown(page, '#home-ask-btn'), 'the first-run card is gone; the search box with Search and Ask leads the home');
   ok(await shown(page, '#home-popular') && (await page.locator('#home-popular .dataset-card').count()) === 2 && (await page.locator('#home-popular-' + seed['curated.payroll']).count()) === 0, 'popular this month: two datasets — not the payroll she may not see');
-  ok((await page.locator('#home-products-pending').innerText()).includes('slice 7') && await shown(page, '#home-incidents-pending'), 'the tiles not built yet say which slice builds them');
+  ok((await page.locator('#home-products-pending').innerText()).includes('slice 7') && await shown(page, '#home-incidents'), 'the tiles not built yet say which slice builds them (open incidents: slice 5\'s, built)');
   ok((await overflow(page)).sw === 375, 'no sideways scroll with the tiles');
   const cardW = (await page.locator('#home-popular').boundingBox()).width;
   ok(cardW >= 300 && cardW <= 375, `the popular tile takes the width of the phone (${Math.round(cardW)} px)`);
@@ -172,8 +172,8 @@ console.log(`seeded the lake: the orders ${seed['curated.sales_orders']}, the re
   await page.screenshot({ path: `${SHOTS}/desktop-search.png` });
   await page.click('#nav-quality .nxl-link');
   await page.waitForURL(BASE + '/quality');
-  await page.waitForSelector('#quality-coming');
-  ok((await page.title()).startsWith('Quality') && (await page.locator('#quality-coming').innerText()).includes('Slice 5'), 'HTMX navigation: /quality pushed, the placeholder names slice 5');
+  await page.waitForSelector('#quality-content');
+  ok((await page.title()).startsWith('Quality') && await shown(page, '#quality-failing') && await shown(page, '#quality-incidents'), 'HTMX navigation: /quality pushed — slice 5\'s quality home (failing checks, late datasets, open incidents)');
   ok(await page.evaluate(() => document.querySelector('#nav-quality .nxl-link').classList.contains('active') && !document.querySelector('#nav-home .nxl-link').classList.contains('active')), 'the sidebar highlights the screen, not Home');
   await page.goBack();
   await page.waitForURL(/\/search\?q=revenue/);
@@ -264,6 +264,34 @@ console.log(`seeded the lake: the orders ${seed['curated.sales_orders']}, the re
   const html = await page.content();
   ok(html.includes('name="theme-color"') && html.includes('rel="apple-touch-icon"') && html.includes('name="viewport"'), 'theme-color, apple-touch-icon and viewport are set');
   await ctx.close();
+}
+
+// The fixed bars never cover a control (slice 5 found the cause slice 4 met): the page reserves room at its foot for the command bar (and the
+// tab bar on a phone), and html's scroll-padding tells every scroll-into-view what the bars cover — so at 375 and 1280, with JavaScript on and
+// off, (a) scrolled to the bottom, the last control of My settings ends above the command bar, and (b) from the top, the browser's own
+// scroll-into-view (a click's, a Tab's) brings that control out from under the bar — the click is not intercepted.
+console.log('The command bar and the tab bar never cover a control (375 and 1280, JavaScript on and off)');
+for (const js of [true, false]) {
+  for (const vp of [{ width: 375, height: 740 }, { width: 1280, height: 800 }]) {
+    const { ctx, page } = await session(urls.engineer, vp, { javaScriptEnabled: js });
+    await page.goto(BASE + '/settings/', { waitUntil: 'load' });
+    const lastSel = await page.evaluate(() => {
+      const els = [...document.querySelectorAll('main a[href], main button, main input:not([type=hidden]), main select, main textarea')]
+        .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; });
+      const last = els.reduce((a, e) => (!a || e.getBoundingClientRect().bottom + scrollY > a.getBoundingClientRect().bottom + scrollY ? e : a), null);
+      if (!last) return null;
+      if (!last.id) last.id = 'cover-probe-last';
+      return '#' + CSS.escape(last.id);
+    });
+    let trialOk = false;
+    try { await page.locator(lastSel).click({ trial: true, timeout: 4000 }); trialOk = true; } catch (e) { trialOk = false; }
+    ok(trialOk, `${vp.width} px, JavaScript ${js ? 'on' : 'off'}: scrolled into view by the browser, the last control (${lastSel}) is not under the command bar`);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const m = await page.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); const bar = document.getElementById('assistant-bar').getBoundingClientRect();
+      return { bottom: Math.round(r.bottom), barTop: Math.round(bar.top) }; }, lastSel);
+    ok(m.bottom <= m.barTop, `${vp.width} px, JavaScript ${js ? 'on' : 'off'}: scrolled to the bottom, the last control ends above the command bar (${m.bottom} <= ${m.barTop})`);
+    await ctx.close();
+  }
 }
 
 await browser.close();

@@ -11,8 +11,8 @@ For the raw rows that arrived since ``since_snapshot`` (the change feed — ``du
   a row already quarantined from the same load and row is not quarantined twice) → the rest are deduplicated by the key
   (latest wins by the ordering, then load, then row) and MERGEd into ``curated.<name>``, carrying ``_dl_load_id``,
   ``_dl_row`` and ``_dl_loaded_at`` so a rollback or an erasure can follow a row.
-Returns {rows_in, rows_promoted, rows_quarantined, warnings (non-blocking failures by check), raw_snapshot (to remember as
-the next since), snapshot_id}.
+Returns {rows_in, rows_promoted, rows_quarantined, warnings (non-blocking failures by check), reasons (the rows held back by each
+reason — a row may carry several), raw_snapshot (to remember as the next since), snapshot_id}.
 """
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def promote(con: duckdb.DuckDBPyConnection, *, raw_key: str, curated_key: str, c
     if full or since_snapshot is None:
         source_sql = f"SELECT * FROM {raw_ref}"
     elif since_snapshot >= raw_snap:
-        return {"status": "nothing_new", "rows_in": 0, "rows_promoted": 0, "rows_quarantined": 0, "warnings": {},
+        return {"status": "nothing_new", "rows_in": 0, "rows_promoted": 0, "rows_quarantined": 0, "warnings": {}, "reasons": {},
                 "raw_snapshot": raw_snap, "snapshot_id": raw_snap, "ms": int((time.monotonic() - t0) * 1000)}
     else:
         source_sql = (f"SELECT * FROM ducklake_table_insertions('{alias}', '{rz}', '{rname}', {int(since_snapshot) + 1}, "
@@ -108,6 +108,12 @@ def promote(con: duckdb.DuckDBPyConnection, *, raw_key: str, curated_key: str, c
                _dl_load_id, _dl_row, _dl_loaded_at, {reasons} AS _reasons
         FROM ({source_sql}) s""")
     rows_in = con.execute("SELECT count(*) FROM _dl_promote").fetchone()[0]
+    if rows_in == 0 and not full and table_exists(con, curated_key, alias):
+        # the change feed holds nothing for this table (the lake's snapshot moved for another table, or for the last promotion itself):
+        # nothing to write — no empty commit, the same answer as "nothing new" (slice 5)
+        con.execute("DROP TABLE IF EXISTS _dl_promote")
+        return {"status": "nothing_new", "rows_in": 0, "rows_promoted": 0, "rows_quarantined": 0, "warnings": {}, "reasons": {},
+                "raw_snapshot": raw_snap, "snapshot_id": raw_snap, "ms": int((time.monotonic() - t0) * 1000)}
     warnings = {}
     for label, expr in warn_parts:
         e = expr
@@ -151,7 +157,10 @@ def promote(con: duckdb.DuckDBPyConnection, *, raw_key: str, curated_key: str, c
                 WHEN MATCHED AND (s.{oc} >= t.{oc} OR t.{oc} IS NULL) THEN UPDATE SET {', '.join(f'{qi(n)} = s.{qi(n)}' for n in names)}
                 WHEN NOT MATCHED THEN INSERT ({', '.join(qi(n) for n in names)}) VALUES ({', '.join('s.' + qi(n) for n in names)})"""
                                    ).fetchone()[0]
+    # the rows held back by each reason (a row may carry several — slice 5's results per row-level check read this)
+    reasons = {str(r): int(n) for r, n in con.execute(
+        "SELECT r, count(*) FROM (SELECT unnest(_reasons) AS r FROM _dl_promote) GROUP BY r").fetchall()}
     con.execute("DROP TABLE IF EXISTS _dl_promote")
-    return {"status": "promoted", "rows_in": int(rows_in), "rows_promoted": int(promoted), "rows_quarantined": int(quarantined),
+    return {"status": "promoted", "reasons": reasons, "rows_in": int(rows_in), "rows_promoted": int(promoted), "rows_quarantined": int(quarantined),
             "warnings": warnings, "raw_snapshot": raw_snap, "snapshot_id": current_snapshot(con, alias),
             "ms": int((time.monotonic() - t0) * 1000)}

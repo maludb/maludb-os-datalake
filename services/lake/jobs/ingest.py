@@ -173,6 +173,9 @@ def job_load(con, pg, job: dict) -> dict:
                                "dataset", dataset_id, job.get("requested_by"), dedupe=f"schema:{dataset_id}:{changed}",
                                also=[L["owner_member_id"]] if L["owner_member_id"] else None)
     pg.execute("SELECT dl_job_enqueue('profile', %s, %s, %s::jsonb, 6::smallint)", (dataset_id, load_id, Json({"load_id": load_id})))
+    if pg.execute("SELECT EXISTS (SELECT 1 FROM checks WHERE dataset_id = %s AND enabled AND run_when = 'on_load') AS x", (dataset_id,)).fetchone()["x"]:
+        # slice 5: the dataset's own checks that run on every load (a curated dataset's run in its promotion instead)
+        pg.execute("SELECT dl_job_enqueue('checks', %s, NULL, %s::jsonb, 5::smallint)", (dataset_id, Json({"when": "on_load", "load_id": load_id})))
     frame.lineage_end(pg, run, "load", name, job, ok=True, inputs=in_ref, outputs=[frame.dataset_ref(key, snap)],
                       facets={"outputStatistics": {"rowCount": r["rows_loaded"]}}, load_id=load_id)
     return {"status": "loaded", "rows_read": r["rows_read"], "rows_loaded": r["rows_loaded"], "rows_rejected": r["rows_rejected"],

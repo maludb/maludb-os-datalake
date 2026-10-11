@@ -21,6 +21,11 @@ html.app-skin-dark ::-webkit-scrollbar-thumb:hover { background-color: #7286b2 !
    On a desktop it starts where the sidebar ends. The Send button shows only while the bar is in use.
    ========================================================================== */
 .app-has-assistant-bar { padding-bottom: 84px; }
+/* The viewport is told what the fixed bars cover (slice 5 found it, slice 4 met it): the page reserves room at its foot, but a browser's own
+   "scroll into view" — a Tab to the next control, a find in the page, a test driver's click — took the strip under the command bar (and under
+   the fixed header) for visible, and left a control at the page's foot behind the bar until scrolled by hand. scroll-padding makes every
+   scroll-into-view stop above the bar and below the header. */
+html { scroll-padding-top: 88px; scroll-padding-bottom: 92px; }
 #assistant-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; padding: 10px 16px; background: var(--bs-body-bg, #fff);
     border-top: 1px solid rgba(0,0,0,.08); box-shadow: 0 -2px 10px rgba(0,0,0,.04); }
 @media (min-width: 992px) { #assistant-bar { left: 280px; } html.minimenu #assistant-bar { left: 100px; } }
@@ -57,7 +62,7 @@ html.app-header-dark .nxl-navigation .m-header .logo-lg, .nxl-navigation .m-head
 .app-tabbar .app-tab i { font-size: 18px; }
 .app-tabbar .app-tab.active { color: var(--bs-primary, #3454d1); }
 html.app-skin-dark .app-tabbar { background: #1b2431; border-top-color: rgba(255,255,255,.1); }
-@media (max-width: 991.98px) { #assistant-bar { bottom: 56px; padding: 8px 12px; } .app-has-tabbar { padding-bottom: 140px; } }
+@media (max-width: 991.98px) { #assistant-bar { bottom: 56px; padding: 8px 12px; } .app-has-tabbar { padding-bottom: 140px; } html { scroll-padding-bottom: 148px; } }
 
 /* The header: the business name, the badge, the search box (Search · Ask), the bell — they share the row with the hamburger and the avatar on a phone. */
 .header-role { min-width: 0; max-width: 44vw; }
@@ -163,3 +168,15 @@ html.app-skin-dark .dataset-more-menu { background: #1b2431; border-color: rgba(
 .sql-action > summary::-webkit-details-marker { display: none; }
 .sql-readonly { white-space: pre-wrap; word-break: break-word; }
 .badge-outline-warning { border: 1px solid var(--bs-warning, #ffa21d); color: #b36b00; background: transparent; }
+
+/* ==========================================================================
+   Slice 5 — contracts and quality: the 7-cell strip (contracts-quality.md "Status vocabulary": seven 10 px cells green/red/grey).
+   ========================================================================== */
+.check-strip { display: inline-flex; gap: 2px; vertical-align: middle; }
+.check-cell { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--bs-gray-300, #dee2e6); }
+.check-cell.passed { background: var(--bs-success, #198754); }
+.check-cell.failed { background: var(--bs-danger, #dc3545); }
+.check-cell.error { background: var(--bs-gray-500, #adb5bd); }
+.check-cell.empty { background: transparent; border: 1px dashed var(--bs-gray-300, #dee2e6); }
+.template-card { min-height: 44px; }
+.contract-table td, .contract-table th { white-space: nowrap; }

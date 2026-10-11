@@ -9,7 +9,7 @@ declare(strict_types=1);
  *   recent     my recently queried datasets (recent_datasets — built)        slice 3
  *   followed   the datasets I follow (my_followed_datasets — built)          slice 1
  *   popular    popular this month (queries and people, the wall the function's)  Phase 2
- *   incidents  open incidents on datasets I use                              slice 5
+ *   incidents  open incidents on datasets I use (my_open_incidents — built)  slice 5
  *   decisions  access requests I decide, the Steward's proposals on mine     Phase 2 (counted; slices 4 and 10 make them)
  *   engineer   for catalog.edit: failed loads in 24 h, late datasets, the Steward's pending proposals — slice 10 fills each (null until then)
  *   admin      for the Lake admin: the engine, storage, the last backup and drill — slice 10 fills each (null until then)
@@ -33,7 +33,10 @@ function home_summary(PDO $pdo, int $memberId): array
         'recent'    => recent_datasets($pdo, $memberId, 6),     // slice 3: the datasets my last ok runs read
         'followed'  => my_followed_datasets($pdo, 6),           // slice 1
         'popular'   => $popular,
-        'incidents' => null,
+        'incidents' => (static function () use ($pdo, $memberId): array {             // slice 5: open incidents on the datasets I use
+            require_once dirname(__DIR__) . '/quality/queries.php';
+            return my_open_incidents($pdo, $memberId, 6);
+        })(),
         'decisions' => decisions($pdo, $memberId),
         'engineer'  => $engineer,
         'admin'     => $admin,
@@ -66,7 +69,8 @@ function present_home(array $s): array
             'zone' => $r['zone'], 'certification' => $r['certification'], 'url' => '/datasets/' . $r['key']], $s['followed']),
         'popular'   => array_map(static fn (array $r): array => ['dataset_id' => (int) $r['dataset_id'], 'key' => $r['key'], 'title' => $r['title'],
             'certification' => $r['certification'], 'queries' => (int) $r['queries'], 'people' => (int) $r['people'], 'url' => '/datasets/' . $r['key']], $s['popular']),
-        'incidents' => $s['incidents'],
+        'incidents' => $s['incidents'] === null ? null : array_map(static fn (array $i): array => ['incident_id' => (int) $i['incident_id'], 'title' => $i['title'],
+            'severity' => $i['severity'], 'status' => $i['status'], 'dataset' => $i['key'], 'url' => '/incidents/' . (int) $i['incident_id']], $s['incidents']),
         'decisions' => $s['decisions'],
         'engineer'  => $s['engineer'],
         'admin'     => $s['admin'],

@@ -140,3 +140,121 @@ scheduling their loads (6), retention (8).
 ## Open questions
 None — decisions taken in this spec: a contract names its one raw input through each column's `source`; accepting drift drafts the next version; freshness is a
 worker-kept check made the first time it is due; the quarantine is read through the query service at `write` level; the ODCS YAML is written by our own small writer.
+
+## Built and proven (2026-10-11)
+Trust is computed, and the database decides it. **A contract** is drafted from its raw input's columns (the open draft, else the active contract
+bumped a patch, else the raw dataset's live columns typed by the last load's confirmed mapping, the personal kind and classification carried),
+saved one draft at a time, published by `dl_contract_publish` (a breaking change only as a new major — the live list and the publish are ONE rule,
+`dl_contract_breaking_preview`, db/024), downloaded as ODCS v3.2.0 YAML and read back by the form's Import. **Promotion** raw → curated is the
+writer's `promote` job (`services/lake/jobs/quality.py`): typed by the active contract, the bad rows quarantined with their reasons, the
+duplicates collapsed latest-wins, incremental over the change feed or rebuilt whole, the contract's words carried onto the catalog's columns.
+**Checks** from ten templates, their params in words, run on every promotion, on schedule (`checks` jobs, once a window) and on demand; **every
+result through `dl_check_result_record()`**, which opens one incident per check, keeps it on a second failure, resolves it on a pass, rechecks
+certification (lost by itself, the followers told) — the writer only mirrors what it did into the activity log. **Incidents** acknowledged,
+assigned (the assignee told), noted (the Steward's triage first), resolved and dismissed by people. **Certification** says what it lacks wherever
+it appears; an engineer certifies when nothing is missing. The quality home, the incident list and page (phone-first), the checks with their
+7-cell strips, the contract, its draft, the quarantine through the query service, and the dataset page's **Quality** tab. The registry reads **50
+screens and 71 actions built** (9 + 17 here; the three approvals — contract_publish, check_delete, certify — in step).
+
+**Proven** by `tests/phase3/slice5/run.sh` (scratch `dl_dev5` with the engine real; raw.orders loaded by Marco through the real upload door):
+**310 checks under php -S and the same 310 under a real Apache** — the writer's kinds in-process 20 (`quality_test.py`), contracts 33, promote 29,
+checks 43, incidents 28, certify 23, drift 15, freshness 10, ODCS 14, walls 28 (the ten callers on the quarantine against the referee), JSON 31,
+the browser 36 (the incident page at 375 first — Acknowledge with one tap —, the nine screens and the Quality tab at 375 and 1280, a template card
+opening the form, Promote now polled to its words, the breaking change listed live, a reason chip filtering the quarantine, and without
+JavaScript the draft and a note as plain forms; screenshots in `/tmp/dl-shots/slice5`) — plus the schema proof (**212** — db/024's eight checks),
+the server and engine logs and the registry `--check`. Re-run green under php -S AND Apache: slice 4 (332 — its no-JavaScript Deny clicked again),
+slices 3 (220), 2 (262) and 1 (229), Phase 2 (**332 / 337** — the eight new checks that the bars never cover a control); the engine proof (157),
+Phase 0's schema (212) and kit (83 — the worker's schedules pass is no longer a stub), Phase 1's claims; the installer's `plan` reads clean (58 steps).
+
+**Timings on this VM** (the slice's own runs): a promotion of the fixture's rows takes **0.23–0.63 s** in the engine (`promote.ms`: typing,
+quarantine, dedupe, the INSERT or MERGE, its commit) and **1.3–3.0 s** as a whole writer job (claimed → finished: the lake attached, the row checks'
+results and the on_load table checks recorded, the catalog refreshed, the profile queued); a `checks` job over the dataset's checks **0.7–1.9 s**; a
+quarantine read through the query service **1.3–2.4 s** (`query_runs.ms` — the policy compiled by the database, a fresh DuckDB with the READ-ONLY
+attach, two statements: the page and the count per reason). The fixed ~5 s FINDINGS measured per small dataset is the profile and the catalog
+around a promotion, not the promotion.
+
+**Decisions taken in the build** (the spec left them open, or the code showed better):
+1. **Routing**: the record pages (`/datasets/{id|key}/contract[/edit]`, `/contract.odcs.yaml`, `/checks[/new]`, `/quarantine`, `/checks/{id}/edit`) are
+   explicit vhost rules to the spec's controllers under `html/quality/` — placed BEFORE the dataset-key rule, which would take
+   `/datasets/curated.orders/checks` for a tab; the dev router mirrors them; `bin/build_action_registry.php` maps them (`RECORD_PAGES`).
+2. **db/024** (additive): `dl_contract_breaking_preview(dataset, schema, key)` — the breaking rule over a schema not saved yet;
+   `dl_contract_breaking_changes(draft)` now answers through it. `dl_quarantine_policy(caller, on_behalf_of, curated key, ceiling)` — the
+   quarantine's policy (decision 3). `mcp_incidents` appends the results that opened and resolved an incident. `GRANT DELETE ON checks` (check_delete).
+3. **The quarantine's policy** is compiled by the database for `quarantine.<name>`: `write` on the curated dataset (the intersection under K38; the
+   ceiling refuses it `k38_pending` — curated.orders holds personal data), the ACTIVE contract's source columns plus the reason and the provenance,
+   each source masked as the curated column it feeds is masked for the caller (`dl_masks_for` — nothing at write and above), a caller whose rows
+   are filtered refused (a filter names typed curated columns; the quarantine holds rows that did not type), no active contract refused
+   `no_contract`. The read is audited under the curated key AND its quarantine (who-read-X sees it).
+4. **Row-level checks in a promotion**: every BLOCKING row check (it gates rows) and every non-blocking one that runs `on_load` are evaluated on
+   the rows the promotion reads; the result is the count of input rows failing it (a blocking one's are quarantined, a warning's promoted). A value
+   that did not type is NULL, so it fails `not_null` too (`cast:x` and `not_null:x` both). A non-blocking row check kept for the hour or the day
+   waits for its schedule. Table-level checks run after the promotion (`on_load`) and in `checks` jobs; **`blocking` on a table-level check marks
+   it critical** (certification asks for one) — **the promotion is not held** (v1).
+5. **A rebuild re-reads every raw row**: a row once refused is refused again — even when a later load brought its key fixed — and counts in the
+   row check's result, so a rebuild can reopen the incident; that is raw's honest state (dismiss it, or erase the bad rows — slice 8).
+6. **Promotion and the contract's shape**: an empty change feed answers `nothing_new` WITHOUT a commit (`promote.py` — the lake's snapshot moves
+   for any table, so "since < current" was not "something new"); a column the contract added is `ALTER`-added (old rows NULL until a rebuild); a
+   removed or retyped one rebuilds the table whole (dropped in its own commit, then a full promotion — `rebuilt_for_shape`); the quarantine gains
+   the new source columns. A rebuild while a promotion is queued is refused ("rebuild once it has run" — the queue keeps one job a kind per dataset).
+7. **The contract reaches the catalog** at each promotion (`_apply_contract`): the key, required, critical, the logical type, the description where
+   none is written, the personal kind and the classification carried from the contract (itself prefilled from raw) — never over a person's
+   confirmation; the curated table's email is personal from its first promotion. A profile job follows a promotion that changed data.
+8. **Contracts**: one draft at a time (saving again changes it); the version above the active one; every `source` a live column of ONE raw
+   dataset the drafter may see ("A curated dataset promotes from one raw dataset — two inputs are a transform"); a key required (the columns ticked
+   Key when `key[]` is not sent); the SLA as ISO 8601 durations. A published contract's edit is refused by the PHP door and the trigger.
+9. **Drift** (divergence 2): `dataset` is the curated dataset, `schema_version` a pending change of the raw dataset it promotes from. Accepting
+   writes into the open draft (or a new one): an added column becomes a VARCHAR column reading it (a minor), a removed one drops the curated column
+   that read it (a major). **A RESCUED column is refused** with what to do — the raw dataset keeps new columns aside by default (`_dl_rescued`): set
+   it to add new columns, replay the load, accept what that load reports.
+10. **ODCS**: `apiVersion: v3.2.0`; every scalar written as JSON (a JSON string is a YAML double-quoted scalar, a JSON array a flow sequence — any
+    YAML parser reads it; PyYAML proves it); the raw column as `transformSourceObjects` + `transformLogic`, the key as `primaryKeyPosition`, the
+    ordering column and a personal kind as `customProperties`, the SLA as `slaProperties` (value + unit), the enabled checks as `quality` (library
+    metrics where ODCS has one). **The import is the contract form's** (POST `odcs` → the form filled, nothing saved) — no manifest change.
+11. **Freshness** (divergence 3): the worker-kept check runs `on_load` too, so fresh data passes it at once; its severity follows the error interval
+    (changed when the interval is); the pass is hourly (a `worker.freshness` row this hour), forced by `--passes=freshness`.
+12. **Schedules**: hourly and daily checks queued as one `checks` job per dataset and `when`, once per window (a job of that `when` made since the
+    window began).
+13. **Who**: `check_create` is `checks.manage`'s or an agent's whose run the kernel relayed the action for (source `agent`; a blocking one refused by
+    `dl_checks_guard` — 403 in its words); `incident_ack` also the Steward agent; `incident_resolve`, `incident_dismiss` and `drift_decide` are
+    `require_human()`; `promoted` (the lighter badge) is the owner's. A required text field LEFT OUT is refused on its field like an emptied one
+    (the kit's `dl_text` refuses only an emptied field) — the dismissal's reason, the resolution, a note's body, the removal's reason.
+14. **The quality home's failing checks** are those whose latest result failed (not "today"), with `since` = the first failure after the last pass.
+15. **The Quality tab** polls the latest promotion through `GET /quality/promote.php?dataset=` (a door; the POST is the action), 2 s while queued
+    or running, then its words ("Promoted 6 rows (1 held back, 1 duplicates collapsed) — contract 1.0.0.").
+16. **Small things**: the amber health word is the spec's "Needs a look" (slice 1 had "Attention"); `severity_badge()` lives with the checks (both
+    screens use it); the home's incidents tile is `my_open_incidents()` (mine, stewarded, assigned, followed, or read in 30 days); downloading the
+    ODCS document logs `contract.download`.
+
+**Found and fixed in slice 5:**
+- **The writer's call to `dl_check_result_record`** failed to resolve: psycopg sends Python ints as `smallint` and `None` as `unknown` — the
+  arguments are cast explicitly.
+- **`promote.py`** answered an empty change feed with an empty commit labelled `promoted` (above, decision 6).
+- **The command bar covered a control** (slice 4 met it without JavaScript): the page reserves room at its foot (`padding-bottom` 84 px, 140 px on
+  a phone), so a person scrolling by hand reaches the last control — but nothing told the BROWSER what the fixed bars cover, so its own
+  scroll-into-view (a Tab to the next control, a find in the page, a test driver's click) took the strip under the command bar (and under the
+  80 px header) for visible and stopped there: slice 4's Deny button sat at 713–760 px under a bar whose top is 733 px and was never scrolled.
+  The fix is CSS: `html { scroll-padding-top: 88px; scroll-padding-bottom: 92px }` (148 px under 992 px). Phase 2's browser proof now checks the
+  last control of My settings at 375 and 1280 with JavaScript on and off (a trial click not intercepted; scrolled to the bottom, it ends above the
+  bar); slice 4's no-JavaScript proof clicks Deny again (the Enter workaround removed). The slice 5 browser proof runs with `reducedMotion` —
+  Bootstrap's smooth scrolling otherwise moves a control while the driver clicks it ("not stable").
+- **Earlier proofs follow what is built**: Phase 2's gates, vhost, engine and browser (the incidents tile, the quality home, the unbuilt kinds now
+  `retention`/`transform`/`maintenance`), slice 1's JSON (Quality built), slice 2's jobs proof (`transform` is the kind not built yet).
+
+**What a worker copies for slices 6–10** (by file):
+- **A workflow the database decides** (slices 7's badges, 8's erasure states, 10's proposals): a state change is ONE SQL function; PHP renders and
+  calls; the writer measures and hands the result over, then MIRRORS what the database did by reading the rows it wrote — `record()` in
+  `services/lake/jobs/quality.py`. A badge says what it lacks in words wherever it shows — `tab-quality.php`'s certification block,
+  `html/quality/{certify,uncertify}.php`.
+- **A writer kind that writes a table** (6, 7): `job_promote` — the contract read, the shape check (added → ALTER, removed/retyped → rebuild),
+  `lineage_start`/`_end`, `frame.log` with counts, `refresh_dataset`/`sync_columns`, the follow-up jobs; and `quarantine` as a lake table that carries
+  `_dl_load_id`/`_dl_row` (a rollback and an erasure reach it).
+- **A scheduled job** (6's sources, 7's transforms): `worker_pass_schedules` — once per window, by a job of that `when` made since the window began;
+  an hourly pass: `worker_pass_freshness` (a marker row this hour; `--passes=` forces it).
+- **A non-standard read through the one door** (8, 9): `server._quarantine` + `identity.quarantine_policy` + `dl_quarantine_policy` — a policy the
+  database compiles for a key of its own, refusals in its words, the audit under every key it touches.
+- **A download door** (9's API, 8's exports): `html/datasets/contract-odcs.php` — the dataset's gate, an attachment, JSON mode answering the text.
+- **People and agents** (10): `require_human()` on what a person decides; an agent through the kernel's relay for what it was granted
+  (`is_action_authed()`); the database refusing what an agent may never do (`dl_checks_guard`); a dispatch made by a trigger on insert
+  (`dl_incidents_dispatch`); the Steward's notes as `incident_note` kind `triage`, shown first.
+- **The proof**: `tests/phase3/slice5/lib.php` (`load_orders()` through the real upload door, `contract_as`, `promote_as`, `check_id`, `open_incident`),
+  `run.sh` (the queue drained, the writer paused for the in-process proof, restarted after), `quality_test.py`, `browser.mjs` (`reducedMotion`).

@@ -135,7 +135,7 @@ function health_dot(string $health): array
 {
     return match ($health) {
         'red'   => ['bg-danger', 'Failing'],
-        'amber' => ['bg-warning', 'Attention'],
+        'amber' => ['bg-warning', 'Needs a look'],      // slice 5: the spec's word (contracts-quality "Status vocabulary")
         default => ['bg-success', 'Healthy'],
     };
 }

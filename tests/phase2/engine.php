@@ -43,10 +43,10 @@ ok(($ans['refusal_rule'] ?? '') === 'too_long', 'a request over 1 MB is refused 
 
 echo "2. The writer works the queue — a kind no slice has built fails once, naming its slice\n";
 $jobs = [];
-foreach (['checks' => 'slice 5', 'retention' => 'slice 8', 'promote' => 'slice 5', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {   // sniff/load/profile/rollback: slice 2's, export/sandbox_save: slice 3's — built
+foreach (['retention' => 'slice 8', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {   // sniff/load/profile/rollback: slice 2's, export/sandbox_save: slice 3's, promote/checks: slice 5's — built
     $jobs[$kind] = [(int) trim($php('echo lake_enqueue(db(), ' . var_export($kind, true) . ', null, null, ["proof" => true]);')), $slice];
 }
-ok(count(array_filter($jobs, static fn ($j) => $j[0] > 0)) === 5, 'lake_enqueue() queued five jobs (dl_job_enqueue) as the application');
+ok(count(array_filter($jobs, static fn ($j) => $j[0] > 0)) === count($jobs), 'lake_enqueue() queued a job of each kind not built yet (dl_job_enqueue) as the application');
 $deadline = time() + 15;
 do { usleep(300000); $left = (int) one("SELECT count(*) FROM lake_jobs WHERE status IN ('queued', 'running') AND id = ANY (CAST(:ids AS bigint[]))", ['ids' => '{' . implode(',', array_column($jobs, 0)) . '}']); } while ($left > 0 && time() < $deadline);
 $bad = [];

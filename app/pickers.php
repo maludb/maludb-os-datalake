@@ -44,6 +44,8 @@ require_once __DIR__ . '/features/templates/queries.php';    // slice 2: templat
 require_once __DIR__ . '/features/loads/queries.php';        // slice 2: loads_for_pick
 require_once __DIR__ . '/features/access/queries.php';       // slice 4: principals_for_pick, any_datasets_for_pick
 require_once __DIR__ . '/features/groups/queries.php';       // slice 4: groups_for_pick
+require_once __DIR__ . '/features/incidents/queries.php';    // slice 5: checks_for_pick (checks/queries.php), incidents_for_pick
+require_once __DIR__ . '/features/contracts/queries.php';    // slice 5: raw_columns_for_pick
 
 return [
     'member' => [
@@ -136,6 +138,21 @@ return [
         'title' => 'Datasets', 'noun' => 'dataset', 'roles' => ['catalog.browse'], 'params' => [],
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => any_datasets_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title || \' (\' || key || \')\' FROM mcp_datasets WHERE dataset_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'check' => [                                                    // slice 5: a check I may discover (the check resolver); params.dataset narrows it
+        'title' => 'Checks', 'noun' => 'check', 'roles' => ['catalog.browse'], 'params' => ['dataset'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => checks_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($c = find_check($pdo, $id)) === null ? null : $c['key'] . ': ' . check_words($c),
+    ],
+    'incident' => [                                                 // slice 5: an open incident I may discover (the incident resolver)
+        'title' => 'Open incidents', 'noun' => 'incident', 'roles' => ['catalog.browse'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => incidents_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT title FROM mcp_incidents WHERE incident_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'raw_column' => [                                               // slice 5: a live column of a raw dataset (params.dataset) — a contract's source
+        'title' => 'Raw columns', 'noun' => 'column', 'roles' => ['contracts.manage'], 'params' => ['dataset'],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => raw_columns_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_dataset_columns WHERE column_id = :id', ['id' => $id])) === null ? null : (string) $v,
     ],
 ];
 

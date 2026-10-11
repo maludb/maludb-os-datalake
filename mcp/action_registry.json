@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-11T09:55:02+00:00",
+    "generated_at": "2026-10-11T11:47:46+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -443,8 +443,8 @@
                 "severity",
                 "department"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "incident-list": {
             "screen": "incident-list",
@@ -457,7 +457,7 @@
                 "assignee",
                 "dataset"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "incident-view": {
@@ -466,7 +466,7 @@
             "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
             "when": "one incident: its check and the result that opened it, the Steward's triage, the notes, what it reaches downstream; acknowledge, assign, note, resolve",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "checks": {
@@ -475,7 +475,7 @@
             "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
             "when": "a dataset's checks with their last results and the 7-day strip",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "check-add": {
@@ -487,7 +487,7 @@
                 "kind",
                 "column"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "check-edit": {
@@ -496,7 +496,7 @@
             "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
             "when": "to change a check's parameters, severity, blocking, schedule",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "contract-view": {
@@ -507,7 +507,7 @@
             "params": [
                 "version"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "contract-edit": {
@@ -516,7 +516,7 @@
             "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
             "when": "to draft the next version: columns and types, required, unique, the key, the ordering column, the SLA — breaking changes shown, with their impact",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "quarantine": {
@@ -525,7 +525,7 @@
             "section": "Contracts, promotion, checks, incidents and certification (slice 5 — THE THIRD EXEMPLAR)",
             "when": "the rows promotion held back, with their reasons (at write level; masked below)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "source-list": {
@@ -2750,7 +2750,7 @@
             "who": "contracts.manage",
             "agent": true,
             "record_id": "the contract",
-            "built": false
+            "built": true
         },
         "contract_publish": {
             "action": "contract_publish",
@@ -2771,7 +2771,7 @@
             "who": "contracts.manage",
             "agent": true,
             "record_id": "the contract",
-            "built": false
+            "built": true
         },
         "promote_run": {
             "action": "promote_run",
@@ -2792,7 +2792,7 @@
             "who": "promote.run and write",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "promote_rebuild": {
             "action": "promote_rebuild",
@@ -2813,7 +2813,7 @@
             "who": "promote.run and write",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "drift_decide": {
             "action": "drift_decide",
@@ -2846,7 +2846,7 @@
             "who": "contracts.manage",
             "agent": false,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "check_create": {
             "action": "check_create",
@@ -2915,7 +2915,7 @@
             "who": "checks.manage (an agent: its grant of this action)",
             "agent": true,
             "record_id": "the check",
-            "built": false
+            "built": true
         },
         "check_update": {
             "action": "check_update",
@@ -2990,7 +2990,7 @@
             "who": "checks.manage",
             "agent": true,
             "record_id": "the check",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "check_disable": {
@@ -3018,7 +3018,7 @@
             "who": "checks.manage",
             "agent": true,
             "record_id": "the check",
-            "built": false
+            "built": true
         },
         "check_delete": {
             "action": "check_delete",
@@ -3039,7 +3039,7 @@
             "who": "checks.manage",
             "agent": true,
             "record_id": "the check",
-            "built": false
+            "built": true
         },
         "check_run": {
             "action": "check_run",
@@ -3066,7 +3066,7 @@
             "who": "checks.manage or steward",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "incident_ack": {
             "action": "incident_ack",
@@ -3087,7 +3087,7 @@
             "who": "incidents.manage or steward or owner",
             "agent": true,
             "record_id": "the incident",
-            "built": false
+            "built": true
         },
         "incident_assign": {
             "action": "incident_assign",
@@ -3114,7 +3114,7 @@
             "who": "incidents.manage or owner",
             "agent": true,
             "record_id": "the incident",
-            "built": false
+            "built": true
         },
         "incident_note": {
             "action": "incident_note",
@@ -3147,7 +3147,7 @@
             "who": "discover",
             "agent": true,
             "record_id": "the incident",
-            "built": false
+            "built": true
         },
         "incident_resolve": {
             "action": "incident_resolve",
@@ -3180,7 +3180,7 @@
             "who": "incidents.manage or owner",
             "agent": false,
             "record_id": "the incident",
-            "built": false
+            "built": true
         },
         "incident_dismiss": {
             "action": "incident_dismiss",
@@ -3207,7 +3207,7 @@
             "who": "incidents.manage",
             "agent": false,
             "record_id": "the incident",
-            "built": false
+            "built": true
         },
         "certify": {
             "action": "certify",
@@ -3234,7 +3234,7 @@
             "who": "checks.manage (promoted: owner)",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "certify_remove": {
             "action": "certify_remove",
@@ -3261,7 +3261,7 @@
             "who": "checks.manage or owner",
             "agent": true,
             "record_id": "the dataset",
-            "built": false
+            "built": true
         },
         "source_create": {
             "action": "source_create",

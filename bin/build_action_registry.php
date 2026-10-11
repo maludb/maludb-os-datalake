@@ -30,6 +30,11 @@ const REGISTRY = __DIR__ . '/../mcp/action_registry.json';
 const APP_MANIFEST = __DIR__ . '/../maludb-os.json';
 const WEB_ROOT = __DIR__ . '/../html';
 const CATEGORIES = ['money_out', 'external_send', 'deletion', 'other'];
+/** Pages of a record a slice routes to a controller of its own (the vhost's explicit rules; slice 5's contract, checks and quarantine). */
+const RECORD_PAGES = [
+    '/datasets/{id}/checks' => '/quality/checks/index.php', '/datasets/{id}/checks/new' => '/quality/checks/form.php', '/checks/{id}/edit' => '/quality/checks/form.php',
+    '/datasets/{id}/contract' => '/quality/contracts/view.php', '/datasets/{id}/contract/edit' => '/quality/contracts/form.php', '/datasets/{id}/quarantine' => '/quality/quarantine.php',
+];
 
 $checkOnly = in_array('--check', $argv, true);
 $writeApprovals = in_array('--approvals', $argv, true);
@@ -223,10 +228,14 @@ function is_stub(string $controllerPath): bool
     return $source !== false && (str_contains($source, 'render_module_stub(') || str_contains($source, 'render_nav_stub('));       // the placeholder helpers are gone (slice 7); a controller that named one would be a stub
 }
 
+
 /** The controller answering a screen's canonical URL, or null when nothing does. */
 function screen_controller(string $url): ?string
 {
     $path = parse_url($url, PHP_URL_PATH) ?: $url;
+    if (isset(RECORD_PAGES[$path])) {
+        return is_file(WEB_ROOT . RECORD_PAGES[$path]) ? WEB_ROOT . RECORD_PAGES[$path] : null;
+    }
     $path = '/' . ltrim($path, '/');
     $path = preg_replace('/\{[a-z_]+\}/', '1', $path);          // /pages/{id} → /pages/1
     if (str_ends_with($path, '/')) {

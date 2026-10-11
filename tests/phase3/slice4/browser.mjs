@@ -29,7 +29,8 @@ const ok = (c, l) => { if (c) passed++; else failed++; console.log((c ? '  ok   
 
 const browser = await chromium.launch();
 async function session(member, viewport, opts = {}) {
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, isMobile: viewport.width < 600, hasTouch: viewport.width < 600, ...opts });
+  // reducedMotion (slice 5): Bootstrap scrolls smoothly otherwise, and a click the driver scrolls into view lands while the page still moves
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, isMobile: viewport.width < 600, hasTouch: viewport.width < 600, reducedMotion: 'reduce', ...opts });
   const page = await ctx.newPage();
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -117,7 +118,7 @@ const req2 = sql(`SELECT max(id) FROM access_requests WHERE requester_id = 30 AN
   await page.goto(BASE + '/access/requests?box=to_decide', { waitUntil: 'load' });
   ok(await page.locator(`#request-${req2}-deny-form`).count() === 1, 'To decide renders the forms');
   await page.fill(`#request-${req2}-note`, 'HR keeps the reviews.');
-  await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), page.press(`#request-${req2}-note`, 'Enter')]);   // implicit submission: the form's own Deny
+  await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), page.click(`#request-${req2}-deny`)]);   // the button itself: html's scroll-padding keeps it out from under the command bar (slice 5)
   ok(sql(`SELECT status FROM access_requests WHERE id = ${req2}`) === 'denied' && page.url().includes('notice=denied'), 'Deny posts as a plain form and lands back with the notice');
   await page.screenshot({ path: `${SHOTS}/denied-nojs.png`, fullPage: true });
   ok(errors.length === 0, 'no console error');

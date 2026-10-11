@@ -102,6 +102,18 @@ def _check(req: Request) -> None:
             raise ProtocolError("bad_request", "Who asks: a preview names its caller_member_id.")
         if not req.dataset or not KEY_RE.fullmatch(req.dataset):
             raise ProtocolError("bad_request", "A preview names one dataset key: <zone>.<name>.")
+        q = req.raw.get("quarantine", False)
+        if not isinstance(q, bool):
+            raise ProtocolError("bad_request", "quarantine is true or false.")
+        if q:                                                     # slice 5: a curated dataset's quarantine (contracts-quality divergence 4)
+            if not req.dataset.startswith("curated."):
+                raise ProtocolError("bad_request", "A quarantine is a curated dataset's: name curated.<name>.")
+            reason = req.raw.get("reason")
+            if reason is not None and (not isinstance(reason, str) or not 1 <= len(reason) <= 200):
+                raise ProtocolError("bad_request", "reason is up to 200 characters.")
+            offset = req.raw.get("offset", 0)
+            if isinstance(offset, bool) or not isinstance(offset, int) or not 0 <= offset <= 1_000_000:
+                raise ProtocolError("bad_request", "offset is a number of rows from 0.")
     elif req.kind in ("sql", "saved_query"):
         if req.caller_member_id is None:
             raise ProtocolError("bad_request", "Who asks: a query names its caller_member_id.")

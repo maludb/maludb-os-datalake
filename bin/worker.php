@@ -152,9 +152,69 @@ function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $no
     return ['indexed' => count($datasets), 'terms' => count($terms)];
 }
 /** SLICES 5–7 — what is due becomes a writer job (lake_jobs): a source's next pull (slice 6), a transform's schedule or its inputs' new snapshots (slice 7), a check's `hourly`/`daily` run (slice 5). Never runs the work itself. */
-function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['queued' => 0, 'stub' => true]; }
-/** SLICE 5 — dl_freshness_due(): a dataset past freshness_warn_after / _error_after opens or escalates its freshness incident; a fresh one resolves it. */
-function worker_pass_freshness(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['warned' => 0, 'failed' => 0, 'resolved' => 0, 'stub' => true]; }
+/**
+ * schedules — SLICE 5's part (contracts-quality.md "Files"; lake-engine §7): a dataset's checks that run every hour or every day are queued as
+ * ONE `checks` job (params.when) once per window — the hour, the day — never twice in a window (a job of that `when` for the dataset made since
+ * the window began). Sources due (slice 6) and transforms due (slice 7) add their parts here.
+ */
+function worker_pass_schedules(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $st = $pdo->prepare("SELECT DISTINCT k.dataset_id, k.run_when FROM checks k JOIN datasets d ON d.id = k.dataset_id
+                          WHERE k.enabled AND k.run_when IN ('hourly', 'daily') AND d.status IN ('active', 'deprecated')
+                            AND NOT EXISTS (SELECT 1 FROM lake_jobs j WHERE j.kind = 'checks' AND j.dataset_id = k.dataset_id AND j.params ->> 'when' = k.run_when
+                                               AND j.created_at >= date_trunc(CASE k.run_when WHEN 'hourly' THEN 'hour' ELSE 'day' END, now()))
+                          ORDER BY k.dataset_id LIMIT :n");
+    $st->bindValue('n', $limit, PDO::PARAM_INT);
+    $st->execute();
+    $queued = 0;
+    foreach ($st->fetchAll() as $r) {
+        lake_enqueue($pdo, 'checks', (int) $r['dataset_id'], null, ['when' => (string) $r['run_when']], 6);
+        $queued++;
+    }
+    return ['checks_queued' => $queued, 'sources' => 'slice 6', 'transforms' => 'slice 7'];
+}
+/**
+ * freshness — SLICE 5 (contracts-quality.md divergence 3; lake-engine §4, §7): hourly. Every dataset with a freshness expectation
+ * (freshness_warn_after) gets ONE `freshness` check the first time — source `contract`, never blocking, severity `error` when an error interval is
+ * set, else `warn`, run on every load too (fresh data passes it at once) — and a result every hour through dl_check_result_record(): the hours
+ * since "data updated" against the warning (passed when no longer due — dl_freshness_due()). The database opens the incident, resolves it on
+ * a pass, rechecks certification.
+ */
+function worker_pass_freshness(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    if (!in_array('freshness', $GLOBALS['__worker_only'] ?? [], true)
+        && db_bool($pdo, "SELECT EXISTS (SELECT 1 FROM activity_log WHERE action = 'worker.freshness' AND created_at >= date_trunc('hour', now()))")) {
+        return ['due' => false];
+    }
+    $made = $failed = $passed = 0;
+    $st = $pdo->prepare("SELECT d.id, d.key, extract(epoch FROM d.freshness_warn_after) / 3600.0 AS warn_h, d.freshness_error_after IS NOT NULL AS has_error,
+                                CASE WHEN d.data_updated_at IS NULL THEN NULL ELSE extract(epoch FROM now() - d.data_updated_at) / 3600.0 END AS age_h,
+                                EXISTS (SELECT 1 FROM dl_freshness_due() f WHERE f.dataset_id = d.id) AS due
+                           FROM datasets d WHERE d.freshness_warn_after IS NOT NULL AND d.status IN ('active', 'deprecated') ORDER BY d.id LIMIT :n");
+    $st->bindValue('n', $limit, PDO::PARAM_INT);
+    $st->execute();
+    foreach ($st->fetchAll() as $d) {
+        $severity = $d['has_error'] ? 'error' : 'warn';
+        $check = one_row($pdo, "SELECT id, severity FROM checks WHERE dataset_id = :d AND kind = 'freshness' AND source = 'contract' ORDER BY id LIMIT 1", ['d' => (int) $d['id']]);
+        if ($check === null) {
+            $id = (int) one_value($pdo, "INSERT INTO checks (dataset_id, kind, params, dimension, severity, blocking, run_when, description, source)
+                                          VALUES (:d, 'freshness', '{}'::jsonb, 'timeliness', :s, false, 'on_load', 'Kept by the lake: its freshness expectation.', 'contract') RETURNING id",
+                ['d' => (int) $d['id'], 's' => $severity]);
+            log_activity($pdo, 'check.create', 'check', $id, ['source' => 'cron', 'actor_member_id' => null, 'dataset_id' => (int) $d['id'],
+                'after' => ['kind' => 'freshness', 'severity' => $severity, 'source' => 'contract', 'by' => 'the freshness pass']]);
+            $made++;
+            $check = ['id' => $id, 'severity' => $severity];
+        } elseif ($check['severity'] !== $severity) {
+            $pdo->prepare('UPDATE checks SET severity = :s WHERE id = :id')->execute(['s' => $severity, 'id' => (int) $check['id']]);
+        }
+        $ok = !$d['due'];
+        $pdo->prepare("SELECT dl_check_result_record(:c, NULL, NULL, :v, :t, :p, 0, '[]'::jsonb, 0, NULL)")->execute(['c' => (int) $check['id'],
+            'v' => $d['age_h'] === null ? null : round((float) $d['age_h'], 3), 't' => (string) round((float) $d['warn_h'], 3), 'p' => $ok ? 't' : 'f']);
+        $ok ? $passed++ : $failed++;
+    }
+    log_activity($pdo, 'worker.freshness', null, null, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['checks_made' => $made, 'late' => $failed, 'fresh' => $passed]]);
+    return ['checks_made' => $made, 'late' => $failed, 'fresh' => $passed];
+}
 /** SLICE 4 — grants and access requests past their expiry closed, logged grant.expire / access.expire, the holder notified. */
 /**
  * SLICE 4 — expiry (lake-engine §7; access-policies.md): grants past `expires_at` → revoked at their expiry (the trail by trigger; a person's or an

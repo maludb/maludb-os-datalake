@@ -968,6 +968,18 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 5 CONTRACTS AND QUALITY (THE THIRD EXEMPLAR) BUILT and proven — THE HANDOFF POINT** (`tests/phase3/slice5/run.sh`
+**310 checks under php -S and under Apache**: the writer's jobs in-process 20, contracts 33, promotion 29, checks 43, incidents 28, certification 23,
+drift 15, freshness 10, ODCS 14, the walls 28, JSON 31, the browser 36; the schema proof 212): contracts in ODCS v3.2.0's words with versions and a
+YAML export / import, promotion raw → curated by the writer (`jobs/quality.py`: typed, refused rows to a quarantine read through the query service
+with the curated column's mask, incremental from the last raw snapshot, an added column in place, a removed or retyped one a rebuild), every check
+kind, incidents, certification computed by the database and lost / regained with followers told, drift accepted into the contract draft, the
+Quality tab; a promotion 0.2–0.6 s in the engine (1.3–3 s the whole job), a check run 0.7–1.9 s; db/024. Found: the writer's check results never
+saved (psycopg's smallint / unknown argument types — cast), an empty promotion made a commit, a missing `severity_badge()`. **The command bar
+covering a page's last control was the browser's scroll-into-view not knowing the fixed bars — `scroll-padding` on `html`; Phase 2's browser proof
+checks it at 375 and 1280 with and without JavaScript.** 16 decisions and "what a worker must copy" in `contracts-quality.md`. **Next: slices 6–10
+and Phase 4 by Sonnet 5.5 workers, one at a time, each verified by the planning model.**
+
 **2026-10-11 — SLICE 4 ACCESS AND POLICIES BUILT and proven** (`tests/phase3/slice4/run.sh` **332 checks under php -S and under Apache**: THE
 MATRIX 111 — ten callers plus the Expert acting for Priya and for Ann over eight datasets, every cell read through three doors (the dataset page,
 `mcp_datasets` as the records role, the query service's preview) and agreeing with `dl_access_of()`; requests 30, row filters 17, grants 25, groups

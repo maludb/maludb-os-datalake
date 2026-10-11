@@ -473,6 +473,35 @@ UPDATE datasets SET data_updated_at = now() - interval '2 days' WHERE key = 'cur
 RESET ROLE;
 SELECT pg_temp.check((SELECT state FROM dl_freshness_due() WHERE key = 'curated.products') = 'warn', 'a dataset past its warning is late (R13)');
 
+-- slice 5 (db/024): the breaking rule over a schema not saved yet (the contract form's live list) is the publish's rule; the quarantine's policy
+RESET ROLE;
+SELECT pg_temp.check(dl_contract_breaking_preview(pg_temp.ds('curated.sales_orders'),
+                         '[{"name":"order_id","physical_type":"VARCHAR"},{"name":"amount","physical_type":"DECIMAL(12,2)"},{"name":"customer_email","physical_type":"VARCHAR"},{"name":"department_id","physical_type":"BIGINT"}]',
+                         '{order_id}') = '[{"kind": "removed", "column": "region"}]'::jsonb
+                     AND dl_contract_breaking_changes((SELECT id FROM contracts WHERE version = '1.1.0')) = '[{"kind": "removed", "column": "region"}]'::jsonb,
+                     'the live breaking list and the draft''s are one rule (a column removed against the active 2.0.0)');
+SELECT pg_temp.check(dl_contract_breaking_preview(pg_temp.ds('curated.sales_orders'),
+                         '[{"name":"order_id","physical_type":"BIGINT"},{"name":"amount","physical_type":"DECIMAL(12,2)"},{"name":"region","physical_type":"VARCHAR"},{"name":"customer_email","physical_type":"VARCHAR"},{"name":"department_id","physical_type":"BIGINT"}]',
+                         '{amount}') @> '[{"kind": "retyped", "column": "order_id"}, {"kind": "key_changed"}]'::jsonb, '…a column retyped and the key changed are breaking too');
+SET ROLE datalake_query;
+SELECT pg_temp.check((dl_quarantine_policy(28, NULL, 'curated.sales_orders') -> 'datasets' -> 'quarantine.sales_orders' -> 'columns') @> '["order_id", "_dl_reason", "_dl_row"]'::jsonb
+                     AND (dl_quarantine_policy(28, NULL, 'curated.sales_orders') -> 'datasets' -> 'quarantine.sales_orders' -> 'masks') = '{}'::jsonb,
+                     'the quarantine''s policy for its owner: the contract''s columns, the reason, the provenance; nothing masked at own');
+SELECT pg_temp.check(dl_quarantine_policy(26, NULL, 'curated.sales_orders') -> 'refused' -> 'curated.sales_orders' ->> 'rule' = 'not_readable'
+                     AND dl_quarantine_policy(26, NULL, 'curated.sales_orders') -> 'datasets' = '{}'::jsonb, '…for a reader (Priya): refused — it is read at write');
+SELECT pg_temp.check(dl_quarantine_policy(29, NULL, 'curated.sales_orders') -> 'refused' -> 'curated.sales_orders' ->> 'rule' = 'no_such_dataset'
+                     AND dl_quarantine_policy(28, NULL, 'raw.crm_deals') -> 'refused' -> 'raw.crm_deals' ->> 'rule' = 'no_such_dataset',
+                     '…for the external: no such dataset; a raw key has no quarantine');
+SELECT pg_temp.check((dl_quarantine_policy(28, NULL, 'curated.sales_orders') -> 'limits' ->> 'row_limit')::int = 100, '…with a preview''s limits (100 rows)');
+RESET ROLE;
+SELECT pg_temp.check(has_table_privilege('datalake_rw', 'checks', 'DELETE') AND has_function_privilege('datalake_query', 'dl_quarantine_policy(bigint, bigint, text, text)', 'EXECUTE')
+                     AND NOT has_function_privilege('datalake_records_ro', 'dl_quarantine_policy(bigint, bigint, text, text)', 'EXECUTE'),
+                     'the application deletes checks (check_delete); the query service compiles the quarantine; the read roles do not');
+SET ROLE datalake_records_ro; SELECT pg_temp.as_member(28);
+SELECT pg_temp.check((SELECT opened_by_result_id IS NOT NULL AND resolved_by_result_id IS NOT NULL FROM mcp_incidents WHERE dataset_id = pg_temp.ds('curated.sales_orders') LIMIT 1),
+                     'the incident view names the results that opened and resolved it');
+RESET ROLE;
+
 -- ================================================================ queries, metrics, transforms (§6.5, §6.6)
 SET ROLE datalake_rw; SELECT pg_temp.as_member(27);
 INSERT INTO saved_queries (owner_member_id, title, sql, dataset_ids) VALUES (27, 'Revenue by region', 'SELECT region, sum(amount) FROM curated.sales_orders GROUP BY 1', ARRAY[pg_temp.ds('curated.sales_orders')]);

@@ -69,6 +69,19 @@ class Identity:
         p["salt_hex"] = self.salt_hex
         return p
 
+    def quarantine_policy(self, req, key: str) -> dict:
+        """A curated dataset's quarantine, compiled by the database (dl_quarantine_policy — db/024): write level, the contract's source
+        columns masked as the columns they feed, refused when the caller's rows are filtered. The shape of policy() for `quarantine.<name>`."""
+        row = self._one("SELECT dl_quarantine_policy(%s, %s, %s, %s) AS p", (req.caller_member_id, req.on_behalf_of, key, req.ceiling))
+        p = dict(row["p"])
+        lim = dict(p.get("limits") or {})
+        if lim.get("temp_mb") is not None:
+            lim["temp"] = f"{int(lim['temp_mb'])}MB"
+        p["limits"] = lim
+        p["salt_hex"] = self.salt_hex
+        p.setdefault("datasets", {})
+        return p
+
     def admit(self, req) -> dict:
         """The rate and the concurrency (query-service §4, db/022): {admitted, slot} or {admitted: false, rule}. The slot is a SESSION
         advisory lock on this instance's connection, held for the run — release() it after the audit, whatever the outcome."""

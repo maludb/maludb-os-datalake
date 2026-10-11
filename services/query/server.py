@@ -153,6 +153,8 @@ def _refused(rule: str, message: str, dataset: str | None = None) -> dict:
 def _preview(srv, req) -> dict:
     """`preview` (query-service §7): `SELECT * FROM <dataset> LIMIT 100` as the caller may read it — the policy compiled for the one key,
     the views with masks and the row filter, an as-of snapshot when asked. A dataset with no data yet answers ok with nothing."""
+    if req.raw.get("quarantine") is True:
+        return _quarantine(srv, req)
     t0 = time.monotonic()
     key = req.dataset
     sql = f"SELECT * FROM {key} LIMIT {PREVIEW_ROWS}"
@@ -184,6 +186,46 @@ def _preview(srv, req) -> dict:
     ans["ms"] = max(int(ans.get("ms") or 0), int((time.monotonic() - t0) * 1000))
     ans["query_run_id"] = ident.audit(req, ans, sql=sql, datasets=[key], policy=policy)
     ans.setdefault("next_offset", None)
+    return ans
+
+
+def _quarantine(srv, req) -> dict:
+    """`preview` with `quarantine: true` (slice 5 — contracts-quality divergence 4): the rows a promotion of `curated.<name>` held back, as
+    they arrived (text), newest first, 100 a page from `offset`, filtered to a `reason` when asked — read at WRITE level on the curated
+    dataset, compiled by the database (dl_quarantine_policy), each source column masked as the curated column it feeds. With the page, the
+    count per reason (a row may carry several). Audited like any read, under the curated key's quarantine."""
+    t0 = time.monotonic()
+    key = req.dataset
+    name = key.split(".", 1)[1]
+    qkey = f"quarantine.{name}"
+    ident: Identity = srv.identity
+    policy = ident.quarantine_policy(req, key)
+    reason = req.raw.get("reason")
+    offset = int(req.raw.get("offset") or 0)
+    where = " WHERE list_contains(string_split(_dl_reason, ', '), $reason)" if reason else ""
+    sql = f"SELECT * FROM {qkey}{where} ORDER BY _dl_quarantined_at DESC, _dl_load_id DESC, _dl_row LIMIT {PREVIEW_ROWS} OFFSET {offset}"
+    counts: dict = {}
+    if key in (policy.get("refused") or {}):
+        r = policy["refused"][key]
+        ans = _refused(r.get("rule") or "not_readable", r.get("message") or "you may not read this quarantine", key)
+    else:
+        ans = service.run(srv.cfg, policy, sql, params={"reason": reason} if reason else None)
+        if ans.get("refusal_rule") in ("not_granted", "unknown_table"):     # nothing ever held back: no table yet
+            ans = {"status": "ok", "refusal_rule": None, "message": f"nothing of {key} has been held back", "columns": [], "rows": [],
+                   "truncated": False, "masked_columns": [], "datasets": [qkey], "ms": ans.get("ms", 0)}
+        elif ans.get("status") == "ok":
+            c = service.run(srv.cfg, policy, f"SELECT r, count(*) AS n FROM (SELECT unnest(string_split(_dl_reason, ', ')) AS r FROM {qkey}) "
+                                             f"GROUP BY r ORDER BY n DESC, r")
+            if c.get("status") == "ok":
+                counts = {str(row[0]): int(row[1]) for row in c.get("rows") or []}
+        if ans.get("status") != "ok":
+            ans.setdefault("dataset", key)
+    ans["reasons"] = counts
+    ans["total"] = sum(counts.values()) if not reason else counts.get(reason, 0)
+    ans["offset"] = offset
+    ans["ms"] = max(int(ans.get("ms") or 0), int((time.monotonic() - t0) * 1000))
+    ans["query_run_id"] = ident.audit(req, ans, sql=sql, datasets=[key, qkey], policy=policy)     # the curated key too: its readers' trail
+    ans.setdefault("next_offset", offset + PREVIEW_ROWS if len(ans.get("rows") or []) == PREVIEW_ROWS else None)
     return ans
 
 
