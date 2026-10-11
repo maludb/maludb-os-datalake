@@ -184,6 +184,7 @@ $first = array_key_first(nav_groups());
     <script src="/assets/js/common-init.min.js"></script>
     <script src="/assets/js/record-picker.js"></script>   <!-- the record picker (design-system record-picker.md): after common-init -->
     <script src="/assets/js/tag-editor.js"></script>      <!-- slice 1: the tag field's slug preview, the synonyms' chips (optional — the forms work without it) -->
+    <script src="/assets/js/upload.js"></script>          <!-- slice 2: the upload screen's resumable uploader (the form posts one file whole without it) -->
     <script src="/assets/js/theme-customizer-init.min.js"></script>
 </body>
 </html>

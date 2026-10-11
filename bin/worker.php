@@ -15,7 +15,7 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass but `key_usage_prune` is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in
- * (design §10): `search_catch_up` slice 1's (BUILT); `upload_sessions` slice 2's; `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
+ * (design §10): `search_catch_up` slice 1's (BUILT); `upload_sessions` slice 2's (BUILT); `usage_rollup`, `exports` slice 3's; `expiry` slice 4's;
  * `freshness` slice 5's; `schedules` slices 5–7's (checks, source pulls, transforms); `retention`, `maintenance` slice 8's;
  * `outbox`, `dispatches`, `engine_health` slice 10's. REAL from the kit: `key_usage_prune` (dl_prune_key_usage, db/005).
  */
@@ -80,7 +80,48 @@ exit($report['errors'] === [] ? 0 : 1);
 // ---- the passes (stubs until their slice) ------------------------------------------------------------------------------------------
 
 /** SLICE 2 — upload sessions past upload_session_hours: their parts deleted, the session expired (a finished upload's blob is the writer's). */
-function worker_pass_upload_sessions(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expired' => 0, 'stub' => true]; }
+/**
+ * upload_sessions (slice 2 — uploads-loads.md divergence 2): sessions still open past expires_at are expired and their parts removed; the
+ * sniff's sample rows — the uploader's own file shown back to them — are dropped from every session whose mapping is decided (a load made from
+ * it), discarded or expired: `sniff.sample` and each column's five-value `sample` go; the proposal's names, types and kinds stay.
+ */
+function worker_pass_upload_sessions(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/uploads/store.php';
+    $expired = 0;
+    $st = $pdo->prepare("SELECT id FROM upload_sessions WHERE status IN ('open', 'assembling') AND expires_at < CAST(:now AS timestamptz) ORDER BY id LIMIT " . $limit);
+    $st->execute(['now' => $now->format(DATE_ATOM)]);
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $id) {
+        $pdo->prepare("UPDATE upload_sessions SET status = 'expired' WHERE id = :id AND status IN ('open', 'assembling')")->execute(['id' => (int) $id]);
+        try {
+            store_drop_parts((int) $id);
+        } catch (Throwable $e) {
+            error_log('worker upload_sessions: ' . $e->getMessage());
+        }
+        $expired++;
+    }
+    $nulled = 0;
+    $st = $pdo->query("SELECT u.id, u.sniff FROM upload_sessions u
+                        WHERE u.sniff IS NOT NULL AND (jsonb_exists(u.sniff, 'sample') OR jsonb_path_exists(u.sniff, '$.columns[*].sample'))
+                          AND (u.status IN ('expired', 'failed') OR EXISTS (SELECT 1 FROM loads l WHERE l.upload_session_id = u.id))
+                        ORDER BY u.id LIMIT " . $limit);
+    foreach ($st->fetchAll() as $r) {
+        $s = json_decode((string) $r['sniff'], true);
+        if (!is_array($s)) {
+            continue;
+        }
+        unset($s['sample']);
+        $strip = static fn (array $cols): array => array_map(static function (array $c): array { unset($c['sample']); return $c; }, $cols);
+        $s['columns'] = $strip((array) ($s['columns'] ?? []));
+        foreach ((array) ($s['sheets'] ?? []) as $i => $sh) {
+            $s['sheets'][$i]['columns'] = $strip((array) ($sh['columns'] ?? []));
+        }
+        $s['sample_cleared_at'] = $now->format(DATE_ATOM);
+        $pdo->prepare('UPDATE upload_sessions SET sniff = CAST(:s AS jsonb) WHERE id = :id')->execute(['s' => json_encode($s, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'id' => (int) $r['id']]);
+        $nulled++;
+    }
+    return ['expired' => $expired, 'samples_cleared' => $nulled];
+}
 /**
  * SLICE 1 — the search index caught up (catalog.md): the triggers index a person's change at once; this pass catches what they cannot see —
  * a writer's commit (data_updated_at moves as datalake_lake), usage moving the ranking, a row missed in a failed transaction. Every dataset

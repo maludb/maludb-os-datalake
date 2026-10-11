@@ -319,6 +319,22 @@ SELECT pg_temp.check((SELECT status = 'queued' AND run_after > now() FROM lake_j
 UPDATE lake_jobs SET attempts = max_attempts, status = 'running' WHERE id = pg_temp.i('j1');
 SET ROLE datalake_lake; SELECT dl_job_finish(pg_temp.i('j1'), false, NULL, 'still failing'); RESET ROLE;
 SELECT pg_temp.check((SELECT status FROM lake_jobs WHERE id = pg_temp.i('j1')) = 'failed', '…until its attempts are spent');
+-- slice 2 (db/021): the writer's own activity rows, its lineage runs, the incident a refused load opens; what it may read
+SET ROLE datalake_lake;
+SELECT pg_temp.keep('inc', dl_incident_open_load(pg_temp.ds('raw.crm_deals'), (SELECT id FROM loads WHERE landing_sha256 = repeat('b', 64)), 'A load into raw.crm_deals was refused: new columns: x'));
+SELECT pg_temp.check(dl_incident_open_load(pg_temp.ds('raw.crm_deals'), NULL, 'again') = pg_temp.i('inc'), 'a refused load opens ONE load incident (a second refusal answers the open one)');
+INSERT INTO activity_log (actor_member_id, source, action, entity_type, entity_id, dataset_id) VALUES (28, 'system', 'load.run', 'load', 1, pg_temp.ds('raw.crm_deals'));
+INSERT INTO lineage_runs (run_uuid, job_kind, job_name, event) VALUES (gen_random_uuid(), 'rollback', 'rollback.crm_deals', 'START');
+RESET ROLE;
+SELECT pg_temp.check((SELECT kind || '/' || status || '/' || severity FROM incidents WHERE id = pg_temp.i('inc')) = 'load/new/error'
+                     AND (SELECT count(*) FROM agent_dispatches WHERE kind = 'incident' AND dataset_id = pg_temp.ds('raw.crm_deals')) = 1, '…a load incident, new, an error — the Steward dispatched to it');
+SELECT pg_temp.check((SELECT count(*) FROM activity_log WHERE action = 'load.run' AND source = 'system' AND actor_member_id = 28) = 1, 'the writer writes its own activity rows (source system, the requester)');
+SELECT pg_temp.check(EXISTS (SELECT 1 FROM lineage_runs WHERE job_kind = 'rollback'), 'a rollback is a lineage run of its own');
+SELECT pg_temp.check(has_column_privilege('datalake_lake', 'members', 'member_kind', 'SELECT') AND NOT has_column_privilege('datalake_lake', 'members', 'email', 'SELECT'),
+                     'the writer reads a member''s kind (a commit''s author), never their email');
+SELECT pg_temp.check(NOT has_function_privilege('datalake_rw', 'dl_incident_open_load(bigint, bigint, text)', 'EXECUTE'), 'only the writer opens a load incident');
+SELECT pg_temp.check((SELECT data_type FROM information_schema.columns WHERE table_name = 'loads' AND column_name = 'mapping') = 'jsonb', 'a load keeps its mapping (a replay reads the file the same way)');
+SELECT pg_temp.check(pg_get_functiondef('dl_job_enqueue(text, bigint, bigint, jsonb, smallint)'::regprocedure) LIKE '%pg_notify(''lake_jobs''%', 'enqueueing a job wakes the writer (pg_notify lake_jobs)');
 
 -- ================================================================ lineage (§6.6)
 SET ROLE datalake_lake;
@@ -381,7 +397,7 @@ SELECT pg_temp.check((SELECT downstream FROM incidents WHERE dataset_id = pg_tem
 SELECT pg_temp.check((SELECT certification = 'none' AND certification_lost_reason LIKE '%every check passing%' FROM datasets WHERE key = 'curated.sales_orders'),
                      'the certification is lost by itself, with the reason');
 SELECT pg_temp.check((SELECT count(*) FROM notifications WHERE member_id = 28 AND kind IN ('check_failed', 'certification_lost')) = 2, 'the owner hears of the failure and of the lost badge');
-SELECT pg_temp.check((SELECT count(*) FROM agent_dispatches WHERE agent_member_id = 41 AND kind = 'incident') = 1, 'the Steward is dispatched to triage an error incident');
+SELECT pg_temp.check((SELECT count(*) FROM agent_dispatches WHERE agent_member_id = 41 AND kind = 'incident' AND dataset_id = pg_temp.ds('curated.sales_orders')) = 1, 'the Steward is dispatched to triage an error incident');
 SET ROLE datalake_lake;
 SELECT dl_check_result_record(k.id, NULL, 9, 3, '= 0', false, 3, '[]', 4) FROM checks k WHERE k.dataset_id = pg_temp.ds('curated.sales_orders') AND k.blocking;
 SELECT dl_check_result_record(k.id, NULL, 10, 0, '= 0', true, 0, '[]', 4) FROM checks k WHERE k.dataset_id = pg_temp.ds('curated.sales_orders') AND k.blocking;

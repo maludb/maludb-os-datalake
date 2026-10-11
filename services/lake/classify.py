@@ -72,8 +72,11 @@ def is_ip(v: str) -> bool:
         return False
 
 
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$")
+
+
 def is_phone(v: str) -> bool:
-    if not PHONE.match(v):
+    if not PHONE.match(v) or ISO_DATE.match(v):          # 2026-01-15 is a date, not a phone (slice 2 found the classifier said 0.9)
         return False
     digits = re.sub(r"\D", "", v)
     has_sep = bool(re.search(r"[\s().+-]", v))

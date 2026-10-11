@@ -49,6 +49,11 @@ $byId = html_as(26, "/datasets/$id");
 $byKey = html_as(26, "/datasets/curated.$name");
 ok($byId['code'] === 200 && $byKey['code'] === 200 && str_contains($byKey['body'], 'id="dataset-header"') && str_contains($byKey['body'], 'data-dataset-key="curated.' . $name . '"'), 'the page answers by id and by key, the key stamped on the header');
 $tabs = ['about' => true, 'columns' => true, 'preview' => 'slice 2', 'quality' => 'slice 5', 'lineage' => 'slice 7', 'usage' => true, 'access' => 'slice 4', 'history' => true];
+foreach ($tabs as $tab => $pending) {             // a later slice that built its tab replaced tab-pending.php: the suite follows what is still owed
+    if ($pending !== true && !str_contains((string) file_get_contents("app/views/datasets/partials/tab-$tab.php"), "'datasets/partials/tab-pending.php'")) {
+        $tabs[$tab] = true;
+    }
+}
 $bad = [];
 foreach ($tabs as $tab => $pending) {
     if (!str_contains($byId['body'], 'id="dataset-tab-' . $tab . '"') || ($pending !== true && !str_contains($byId['body'], 'id="dataset-tab-' . $tab . '-pending"'))
@@ -56,7 +61,7 @@ foreach ($tabs as $tab => $pending) {
         $bad[] = $tab;
     }
 }
-ok($bad === [], 'the eight tabs render — About, Columns, Usage, History built; Preview, Quality, Lineage, Access say "Built by slice N"' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
+ok($bad === [], 'the eight tabs render — the built ones whole, those still owed saying "Built by slice N" (' . implode(', ', array_keys(array_filter($tabs, static fn ($p) => $p !== true))) . ')' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
 ok(preg_match('/class="tab-pane fade show active" id="dataset-tab-about"/', $byId['body']) === 1 && preg_match('/class="tab-pane fade show active" id="dataset-tab-history"/', html_as(26, "/datasets/$id?tab=history")['body']) === 1
     && preg_match('/class="tab-pane fade show active" id="dataset-tab-quality"/', html_as(26, "/datasets/curated.$name/quality")['body']) === 1, '?tab= chooses the pane (About by default; /datasets/{key}/{tab} too)');
 pg("UPDATE datasets SET certification_lost_reason = 'A blocking check failed', certification_lost_at = now() - interval '1 day' WHERE id = $id");

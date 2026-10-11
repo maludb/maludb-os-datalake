@@ -35,7 +35,11 @@ if ($built && $orders > 0) {
         'a dataset by its id, by its key and with a tab: rewritten to datasets/view.php, which slice 1 builds — 404 until then');
 }
 ok(page($j, '/incidents/1')['code'] === 404 && page($j, '/incidents/1/resolve')['code'] === 404, 'a record and a page of a record: 404 until their slice');
-ok(req('POST', '/upload/start', ['jar' => $j])['code'] === 404 && req('POST', '/upload/part', ['jar' => $j])['code'] === 404, 'the upload parts are rewritten to their files, which slice 2 builds: 404 until then');
+if (is_file('html/upload/start.php')) {
+    ok(req('POST', '/upload/start', ['jar' => $j])['code'] === 403 && req('POST', '/upload/part', ['jar' => $j])['code'] === 403, 'the upload parts are rewritten to their files (slice 2): without the CSRF token, 403 — never a 404');
+} else {
+    ok(req('POST', '/upload/start', ['jar' => $j])['code'] === 404 && req('POST', '/upload/part', ['jar' => $j])['code'] === 404, 'the upload parts are rewritten to their files, which slice 2 builds: 404 until then');
+}
 ok(req('GET', '/nosuchscreen', ['jar' => $j])['code'] === 404, 'an unknown path: 404');
 $h = req('GET', '/api/v1/health');
 $hb = body_json($h);

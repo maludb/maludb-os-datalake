@@ -4,7 +4,13 @@ working copy is made beside the spill (DuckDB reads UTF-8, UTF-16 and Latin-1 on
 not Latin-1).
 
     sniff(path) → {"format", "encoding", "delimiter", "header", "sheets"|None, "columns": [{name, source_name, proposed_type,
-                   sample}], "rows_estimate", "warnings", "read_options"}
+                   type, sample, proposed_personal_kind?, confidence?}], "rows_estimate", "warnings", "read_options", "header_row",
+                   "sample": {"<sheet or ''>": {"rows": [[text|None, …] × ≤ 50]}}}
+
+``header_row`` (1–50) is the line (a sheet's row) the header is on — what comes above it is a title or a note the person skips. ``sample``
+holds the first 50 data rows as text: the mapping screen shows them to the UPLOADER only, and the worker nulls them once the mapping is decided
+(slice 2, uploads-loads.md divergence 2). Each column also gets ``type`` — its proposed type in the mapping screen's words (VARCHAR, BIGINT,
+DECIMAL(18,2), DOUBLE, BOOLEAN, DATE, TIMESTAMP) — and the classifier's proposal on those 50 rows (``proposed_personal_kind``, ``confidence``).
 """
 from __future__ import annotations
 
@@ -13,15 +19,21 @@ import os
 import re
 import tempfile
 
+import datetime as _dt
+import json
+
 import duckdb
 import pyarrow.parquet as pq
 from python_calamine import CalamineWorkbook
+
+from .classify import classify_column
 
 CSV_EXT = {".csv", ".tsv", ".txt"}
 WORKBOOK_EXT = {".xlsx", ".xlsm", ".xls", ".ods"}
 JSON_EXT = {".json", ".ndjson", ".jsonl"}
 PARQUET_EXT = {".parquet"}
 SAMPLE_ROWS = 50
+SCREEN_TYPES = ("VARCHAR", "BIGINT", "DECIMAL(18,2)", "DOUBLE", "BOOLEAN", "DATE", "TIMESTAMP")
 
 
 def detect_format(path: str) -> str:
@@ -99,44 +111,98 @@ def guess_delimiter(path: str) -> str:
     return best if counts[best] > 0 else ","
 
 
-def sniff(path: str, work_dir: str | None = None, con: duckdb.DuckDBPyConnection | None = None) -> dict:
+def screen_type(proposed: str | None) -> str:
+    """A DuckDB, pyarrow or sniffer type → the mapping screen's list (VARCHAR, BIGINT, DECIMAL(18,2), DOUBLE, BOOLEAN, DATE, TIMESTAMP)."""
+    t = (proposed or "").upper()
+    if t in ("BIGINT", "INTEGER", "HUGEINT", "SMALLINT", "TINYINT", "UBIGINT", "UINTEGER", "INT64", "INT32", "INT16", "INT8") or t.startswith("INT"):
+        return "BIGINT"
+    if t.startswith("DECIMAL"):
+        return "DECIMAL(18,2)"
+    if t in ("DOUBLE", "FLOAT", "REAL", "DOUBLE PRECISION") or t.startswith("FLOAT") or t.startswith("HALF"):
+        return "DOUBLE"
+    if t in ("BOOLEAN", "BOOL"):
+        return "BOOLEAN"
+    if t.startswith("DATE"):
+        return "DATE"
+    if t.startswith("TIMESTAMP"):
+        return "TIMESTAMP"
+    return "VARCHAR"
+
+
+def _text(v) -> str | None:
+    """A sample cell as the person sees it: text, a whole float without .0, a date as ISO, a nested value as JSON."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    if isinstance(v, (_dt.date, _dt.datetime, _dt.time)):
+        return v.isoformat()
+    if isinstance(v, (dict, list)):
+        return json.dumps(v, default=str, sort_keys=True)
+    return str(v)
+
+
+def _propose(columns: list[dict], rows: list[list]) -> None:
+    """The screen's type and the classifier's proposal on the sample rows, for each column (in place)."""
+    for i, c in enumerate(columns):
+        c["type"] = screen_type(c.get("proposed_type"))
+        vals = [r[i] for r in rows if i < len(r) and r[i] not in (None, "")]
+        p = classify_column(c["name"], vals)
+        if p:
+            c["proposed_personal_kind"], c["confidence"] = p["kind"], p["confidence"]
+
+
+def sniff(path: str, work_dir: str | None = None, con: duckdb.DuckDBPyConnection | None = None, header_row: int = 1,
+          delimiter: str | None = None, encoding: str | None = None) -> dict:
+    """``delimiter`` / ``encoding``: a person's correction of what was found (the mapping screen) — used instead of the detection."""
     con = con or duckdb.connect(config={"memory_limit": "1GB", "threads": 2, "autoinstall_known_extensions": False,
                                         "autoload_known_extensions": False})
     work_dir = work_dir or tempfile.gettempdir()
     fmt = detect_format(path)
+    header_row = max(1, min(50, int(header_row or 1)))
+    skip = header_row - 1
     out: dict = {"format": fmt, "encoding": None, "delimiter": None, "header": True, "sheets": None, "columns": [],
-                 "rows_estimate": None, "warnings": [], "read_options": {}}
+                 "rows_estimate": None, "warnings": [], "read_options": {}, "header_row": header_row, "sample": {}}
     seen: set[str] = set()
     if fmt == "csv":
-        enc = encoding_of(path)
+        enc = encoding if encoding in ("utf-8", "utf-16", "cp1252", "latin-1") else encoding_of(path)
         out["encoding"] = enc
         if enc == "cp1252":
             out["warnings"].append("not UTF-8: read as Windows-1252 and transcoded for loading")
         work = utf8_working_copy(path, enc, work_dir)
         delim = guess_delimiter(work)
         # The header line's delimiter is the hint: DuckDB's sniffer alone was fooled by one malformed row (FINDINGS §3).
+        if skip:
+            delim = _delimiter_of_line(work, skip)
+        if delimiter in (",", ";", "\t", "|"):
+            delim = delimiter
         r = con.execute("SELECT Delimiter, Quote, Escape, HasHeader, Columns FROM sniff_csv(?, delim = ?, ignore_errors = true, "
-                        "sample_size = -1)", [work, delim]).fetchone()
+                        "sample_size = -1, skip = ?)", [work, delim, skip]).fetchone()
         out["delimiter"], out["header"] = r[0], bool(r[3])
         blank = lambda v: None if v in (None, "", "(empty)") else v
         out["read_options"] = {"delim": r[0], "quote": blank(r[1]), "escape": blank(r[2]), "header": bool(r[3]), "encoding": enc}
-        rows = con.execute(f"SELECT * FROM read_csv(?, delim = ?, header = ?, all_varchar = true, ignore_errors = true) "
-                           f"LIMIT {SAMPLE_ROWS}", [work, r[0], bool(r[3])])
+        if skip:
+            out["read_options"]["skip"] = skip
+        rows = con.execute(f"SELECT * FROM read_csv(?, delim = ?, header = ?, all_varchar = true, ignore_errors = true, skip = ?) "
+                           f"LIMIT {SAMPLE_ROWS}", [work, r[0], bool(r[3]), skip])
         names = [d[0] for d in rows.description]
         sample = rows.fetchall()
         types = {c["name"]: c["type"] for c in r[4]}
         for i, n in enumerate(names):
             out["columns"].append({"source_name": n, "name": normalise_name(n, seen), "proposed_type": types.get(n, "VARCHAR"),
                                    "sample": [s[i] for s in sample[:5]]})
+        out["sample"][""] = {"rows": [[_text(v) for v in s] for s in sample]}
         out["rows_estimate"] = con.execute("SELECT count(*) FROM read_csv(?, delim = ?, header = ?, all_varchar = true, "
-                                           "ignore_errors = true)", [work, r[0], bool(r[3])]).fetchone()[0]
+                                           "ignore_errors = true, skip = ?)", [work, r[0], bool(r[3]), skip]).fetchone()[0]
         if work != path:
             os.unlink(work)
     elif fmt == "workbook":
         wb = CalamineWorkbook.from_path(path)
         out["sheets"] = []
         for name in wb.sheet_names:
-            rows = wb.get_sheet_by_name(name).to_python(skip_empty_area=True)
+            rows = wb.get_sheet_by_name(name).to_python(skip_empty_area=True)[skip:]
             header_rows = header_depth(rows)
             header = combine_header(rows, header_rows)
             sheet_seen: set[str] = set()
@@ -144,7 +210,10 @@ def sniff(path: str, work_dir: str | None = None, con: duckdb.DuckDBPyConnection
                 [r[i] for r in rows[header_rows:header_rows + 200] if i < len(r)]),
                 "sample": [str(r[i]) if i < len(r) else None for r in rows[header_rows:header_rows + 5]]}
                 for i, h in enumerate(header)]
-            sheet = {"name": name, "header_rows": header_rows, "rows_estimate": max(0, len(rows) - header_rows), "columns": cols}
+            sheet = {"name": name, "header_rows": header_rows, "rows_estimate": max(0, len(rows) - header_rows), "columns": cols,
+                     "skip_rows": skip}
+            body = [r for r in rows[header_rows:] if not all(v in (None, "") for v in r)][:SAMPLE_ROWS]
+            out["sample"][name] = {"rows": [[_text(r[i]) if i < len(r) else None for i in range(len(header))] for r in body]}
             if header_rows > 1:
                 sheet["warning"] = "a merged or multi-row header: names proposed by joining the header rows — confirm them"
             out["sheets"].append(sheet)
@@ -160,16 +229,37 @@ def sniff(path: str, work_dir: str | None = None, con: duckdb.DuckDBPyConnection
         for i, n in enumerate(names):
             out["columns"].append({"source_name": n, "name": normalise_name(n, seen), "proposed_type": tmap.get(n, "VARCHAR"),
                                    "sample": [None if s[i] is None else str(s[i]) for s in sample[:5]]})
+        out["sample"][""] = {"rows": [[_text(v) for v in s] for s in sample]}
         out["rows_estimate"] = con.execute("SELECT count(*) FROM read_json_auto(?)", [path]).fetchone()[0]
     else:
         pf = pq.ParquetFile(path)
+        first = next(pf.iter_batches(batch_size=SAMPLE_ROWS), None)
+        prow = first.to_pylist() if first is not None else []
         for f in pf.schema_arrow:
             out["columns"].append({"source_name": f.name, "name": normalise_name(f.name, seen), "proposed_type": str(f.type),
-                                   "sample": []})
+                                   "sample": [_text(r.get(f.name)) for r in prow[:5]]})
+        out["sample"][""] = {"rows": [[_text(r.get(f.name)) for f in pf.schema_arrow] for r in prow]}
         out["rows_estimate"] = pf.metadata.num_rows
     for c in out["columns"] + [c for sh in (out["sheets"] or []) for c in sh["columns"]]:
         keep_text_if_identifier(c)
+    if out["sheets"]:
+        for sh in out["sheets"]:
+            _propose(sh["columns"], out["sample"].get(sh["name"], {}).get("rows", []))
+        out["columns"] = out["sheets"][0]["columns"] if out["sheets"] else []
+    else:
+        _propose(out["columns"], out["sample"].get("", {}).get("rows", []))
     return out
+
+
+def _delimiter_of_line(path: str, skip: int) -> str:
+    """The delimiter of the header line when the header is not the first line (a title or a note above it)."""
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for _ in range(skip):
+            f.readline()
+        line = f.readline()
+    counts = {d: line.count(d) for d in (",", ";", "\t", "|")}
+    best = max(counts, key=counts.get)
+    return best if counts[best] > 0 else ","
 
 
 def keep_text_if_identifier(col: dict) -> None:

@@ -29,7 +29,7 @@ foreach ([1, 2] as $n) {
 }
 $a = json_decode($php('echo json_encode(lake_query(["kind" => "sql", "sql" => "SELECT 1"], 5));'), true) ?: [];
 ok(($a['status'] ?? '') === 'refused' && ($a['refusal_rule'] ?? '') === 'not_built' && ($a['message'] ?? '') === 'not built until slice 3', 'a kind its slice has not built is refused: not built until slice 3');
-ok(trim($php('echo lake_refusal_message(lake_query(["kind" => "preview", "dataset" => "curated.sales_orders"], 5));')) === 'This is not built until slice 2.', '…said to a person in words (preview: slice 2)');
+ok(trim($php('echo lake_refusal_message(lake_query(["kind" => "metric"], 5));')) === 'This is not built until slice 7.', '…said to a person in words (metric: slice 7 — preview is slice 2\'s, built)');
 $c = stream_socket_client("unix://$prefix-1.sock", $en, $es, 2);
 fwrite($c, json_encode(['v' => 9, 'kind' => 'sql', 'sql' => 'SELECT 1']) . "\n");
 $ans = json_decode((string) fgets($c), true) ?: [];
@@ -43,7 +43,7 @@ ok(($ans['refusal_rule'] ?? '') === 'too_long', 'a request over 1 MB is refused 
 
 echo "2. The writer works the queue — a kind no slice has built fails once, naming its slice\n";
 $jobs = [];
-foreach (['sniff' => 'slice 2', 'export' => 'slice 3', 'promote' => 'slice 5', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {
+foreach (['checks' => 'slice 5', 'export' => 'slice 3', 'promote' => 'slice 5', 'transform' => 'slice 7', 'maintenance' => 'slice 8'] as $kind => $slice) {   // sniff/load/profile/rollback: slice 2's, built
     $jobs[$kind] = [(int) trim($php('echo lake_enqueue(db(), ' . var_export($kind, true) . ', null, null, ["proof" => true]);')), $slice];
 }
 ok(count(array_filter($jobs, static fn ($j) => $j[0] > 0)) === 5, 'lake_enqueue() queued five jobs (dl_job_enqueue) as the application');
@@ -55,7 +55,7 @@ foreach ($jobs as $kind => [$id, $slice]) {
     if (($r['status'] ?? '') !== 'failed' || (int) ($r['attempts'] ?? 0) !== 1 || ($r['error'] ?? '') !== "not built until $slice") { $bad[] = "$kind: " . json_encode($r); }
 }
 ok($bad === [], 'each was finished failed at once, "not built until slice N", one attempt, no retry' . ($bad ? ' — ' . implode('; ', $bad) : ''));
-ok(str_contains((string) @file_get_contents("$state/writer.log"), 'the engine runs empty (Phase 2)'), 'the writer says at start that it runs empty');
+ok(preg_match('/writer: connected as datalake-writer; \d+ job\(s\) at once; \d+ kind\(s\) built/', (string) @file_get_contents("$state/writer.log")) === 1, 'the writer says at start which kinds are built');
 
 echo "3. The engine gone — the client answers in words, health says down without failing\n";
 foreach ([1, 2] as $n) { if (is_file("$state/query-$n.pid")) { posix_kill((int) file_get_contents("$state/query-$n.pid"), SIGTERM); } }

@@ -133,3 +133,17 @@ html.app-skin-dark .dataset-more-menu { background: #1b2431; border-color: rgba(
 .tag-chip { font-weight: 600; font-size: 12px; }
 .is-deprecated .dataset-card { opacity: .6; }
 .column-card .column-name { font-family: var(--bs-font-monospace); font-size: 13px; word-break: break-all; }
+
+/* slice 2 — the upload screen and the mapping (uploads-loads.md) */
+.drop-zone { border-style: dashed !important; cursor: pointer; }
+.drop-zone.border-primary { background: rgba(52, 84, 209, 0.04); }
+.map-col { border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .5rem; margin: 0 0 .5rem 0; }
+@media (min-width: 768px) { .map-col { border: 0; border-bottom: 1px solid var(--bs-border-color-translucent); border-radius: 0; padding: .25rem 0; margin-bottom: 0; } }
+.preview-table th.is-masked { background: var(--bs-warning-bg-subtle); }
+.preview-table td.is-masked { color: var(--bs-secondary-color); font-style: italic; }
+.preview-record dt { font-weight: 600; font-size: .75rem; color: var(--bs-secondary-color); }
+.preview-record dd { word-break: break-word; }
+.quota-bar { height: .5rem; }
+.preview-records .preview-record { display: none; }
+.preview-records .preview-record:target { display: block; }
+.preview-records:not(:has(.preview-record:target)) .preview-record:first-child { display: block; }

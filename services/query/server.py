@@ -13,6 +13,12 @@ worker, version}, touches no catalog and answers even while the instance is busy
 `dry_run` (slice 3) · `check_row_filter` (slice 4) · `metric` (slice 7) · `product_rows` (slice 9). Until its slice lands a kind is refused
 `not_built`. THE SERVICE COMPILES THE POLICY ITSELF from the caller's identity (query-service §3, decision 9) — a caller never sends one.
 
+THE PRODUCTION PATH (slice 2 — uploads-loads.md, THE FIRST EXEMPLAR): a line → `protocol.parse()` (the shape; `bad_request` / `too_long`)
+→ `handle()` → the kind's handler in BUILT, which names the dataset keys it touches, asks `identity.policy()` for the caller's compiled policy,
+answers a key under `refused` in the policy's words, runs `service.run()` (the allow-list, the caller's views with masks and row filters, the
+lock, the watchdog), and writes the audit row with `identity.audit()` WHATEVER the outcome — the answer's `query_run_id`. A kind a later slice
+adds copies `_preview`.
+
 `serve()` / `ask()` below are the Phase 0 PROTOTYPE the engine proof (tests/engine/proof_query.py) drives in-process with a policy it
 builds itself; they are never reachable from the command line or the unit, and slice 3 replaces them with the real request path.
 """
@@ -36,14 +42,19 @@ sys.path.insert(0, os.path.dirname(_HERE))
 
 import duckdb  # noqa: E402
 
-from lake.engine import LakeConfig  # noqa: E402
+import time  # noqa: E402
 
-MAX_REQUEST_BYTES = 1 << 20
+from lake.engine import LakeConfig  # noqa: E402
+from query import protocol, service  # noqa: E402
+from query.identity import Identity  # noqa: E402
+
+MAX_REQUEST_BYTES = protocol.MAX_REQUEST_BYTES
+PREVIEW_ROWS = 100
 
 # Who builds each request kind (query-service §7). Not in BUILT → refused `not_built` with its slice.
 KIND_SLICE = {"preview": "slice 2", "sql": "slice 3", "saved_query": "slice 3", "cancel": "slice 3", "check_row_filter": "slice 4",
               "metric": "slice 7", "product_rows": "slice 9"}
-BUILT: dict = {}          # {kind: handler(server, request) -> dict}; slices 2 onward add theirs
+BUILT: dict = {}          # {kind: handler(server, request) -> dict}; slices 2 onward add theirs (filled below the handlers)
 
 
 def _peer_uid(sock: socket.socket) -> int | None:
@@ -71,34 +82,19 @@ class WorkerHandler(socketserver.StreamRequestHandler):
             self._send({"status": "refused", "refusal_rule": "peer", "message": "Only the web application may ask the query service."})
             return
         line = self.rfile.readline(MAX_REQUEST_BYTES + 1)
-        if len(line) > MAX_REQUEST_BYTES:
-            self._send({"status": "refused", "refusal_rule": "too_long", "message": "The request is over 1 MB."})
-            return
         try:
-            req = json.loads(line)
-            if not isinstance(req, dict):
-                raise ValueError
-        except Exception:
-            self._send({"status": "refused", "refusal_rule": "bad_request", "message": "The request is not one line of JSON."})
+            req = protocol.parse(line)
+        except protocol.ProtocolError as e:
+            self._send({"status": "refused", "refusal_rule": e.rule, "message": e.message})
             return
-        kind = req.get("kind")
-        if kind == "ping":                                   # the health check: answered even while busy, no catalog touched
+        if req.kind == "ping":                               # the health check: answered even while busy, no catalog touched
             self._send({"status": "ok", "worker": srv.worker, "version": duckdb.__version__, "kinds": sorted(["ping", *BUILT])})
-            return
-        if req.get("v") != 1:
-            self._send({"status": "refused", "refusal_rule": "bad_request", "message": "Unknown protocol version."})
             return
         if not srv.busy.acquire(blocking=False):
             self._send({"status": "refused", "refusal_rule": "busy", "message": "This instance is answering another request."})
             return
         try:
-            handler = BUILT.get(kind)
-            if handler is None:
-                where = KIND_SLICE.get(kind)
-                self._send({"status": "refused", "refusal_rule": "not_built" if where else "bad_request",
-                            "message": f"not built until {where}" if where else "Unknown request kind."})
-                return
-            self._send(handler(srv, req))
+            self._send(handle(srv, req))
         finally:
             srv.busy.release()
 
@@ -126,6 +122,65 @@ class WorkerServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
         self.cfg = cfg
         self.busy = threading.Lock()
         self.allowed_uids = _allowed_uids()
+        self.identity = Identity(cfg, worker)
+
+
+def handle(srv, req) -> dict:
+    """One parsed request: its kind's handler, or `not_built` naming the slice that builds it. A fault in a handler is an `engine` error in
+    words (never a traceback, a path or a value), audited when the handler got that far."""
+    handler = BUILT.get(req.kind)
+    if handler is None:
+        where = KIND_SLICE.get(req.kind)
+        return {"status": "refused", "refusal_rule": "not_built" if where else "bad_request",
+                "message": f"not built until {where}" if where else "Unknown request kind."}
+    try:
+        return handler(srv, req)
+    except Exception as e:  # pragma: no cover - a fault, logged on the instance's journal
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "refusal_rule": "engine", "message": "the engine could not finish this read", "error_kind": type(e).__name__}
+
+
+def _refused(rule: str, message: str, dataset: str | None = None) -> dict:
+    return {"status": "refused", "refusal_rule": rule, "message": message, "dataset": dataset, "columns": [], "rows": [],
+            "truncated": False, "masked_columns": [], "datasets": [], "ms": 0}
+
+
+def _preview(srv, req) -> dict:
+    """`preview` (query-service §7): `SELECT * FROM <dataset> LIMIT 100` as the caller may read it — the policy compiled for the one key,
+    the views with masks and the row filter, an as-of snapshot when asked. A dataset with no data yet answers ok with nothing."""
+    t0 = time.monotonic()
+    key = req.dataset
+    sql = f"SELECT * FROM {key} LIMIT {PREVIEW_ROWS}"
+    ident: Identity = srv.identity
+    policy = ident.policy(req, [key])
+    if key in (policy.get("refused") or {}):
+        r = policy["refused"][key]
+        ans = _refused(r.get("rule") or "not_readable", r.get("message") or "you may not read this dataset", key)
+    elif key not in (policy.get("datasets") or {}):
+        ans = _refused("not_readable", "you may not read this dataset — request access", key)
+    else:
+        as_of = ident.resolve_as_of(req.as_of)
+        if as_of == -1:
+            ans = _refused("absent_as_of", f"{key} did not exist then.", key)
+        else:
+            ans = service.run(srv.cfg, policy, sql, as_of=as_of)
+            if ans.get("refusal_rule") in ("not_granted", "unknown_table"):
+                if as_of is None:                              # granted, but nothing has landed in the lake yet
+                    ans = {"status": "ok", "refusal_rule": None, "message": f"{key} has no data yet.", "columns": [], "rows": [],
+                           "truncated": False, "masked_columns": [], "datasets": [key], "ms": ans.get("ms", 0)}
+                else:
+                    ans = _refused("absent_as_of", f"{key} did not exist then.", key)
+            ans["as_of_snapshot"] = as_of if as_of is not None else ident.current_snapshot()
+            if ans.get("status") != "ok":
+                ans.setdefault("dataset", key)
+    ans["ms"] = max(int(ans.get("ms") or 0), int((time.monotonic() - t0) * 1000))
+    ans["query_run_id"] = ident.audit(req, ans, sql=sql, datasets=[key], policy=policy)
+    ans.setdefault("next_offset", None)
+    return ans
+
+
+BUILT.update({"preview": _preview})
 
 
 def socket_path(prefix: str, worker: int) -> str:

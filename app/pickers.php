@@ -39,6 +39,9 @@ function picker_like(string $q): string
 require_once __DIR__ . '/features/catalog/queries.php';      // slice 1: datasets_for_pick, stewards_for_pick (and like_pattern)
 require_once __DIR__ . '/features/glossary/queries.php';     // slice 1: terms_for_pick
 require_once __DIR__ . '/features/tags/queries.php';         // slice 1: tags_for_pick
+require_once __DIR__ . '/features/uploads/queries.php';      // slice 2: raw_datasets_for_pick
+require_once __DIR__ . '/features/templates/queries.php';    // slice 2: templates_for_pick
+require_once __DIR__ . '/features/loads/queries.php';        // slice 2: loads_for_pick
 
 return [
     'member' => [
@@ -96,5 +99,20 @@ return [
         'title' => 'Stewards', 'noun' => 'steward', 'roles' => ['catalog.browse'], 'params' => [],
         'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => stewards_for_pick($pdo, $q, $params, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT display_name FROM mcp_members WHERE member_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'raw_dataset' => [                                              // slice 2: an engineer's load target — raw datasets I may write
+        'title' => 'Raw datasets you may load into', 'noun' => 'raw dataset', 'roles' => ['loads.manage'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => raw_datasets_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, "SELECT title || ' (' || key || ')' FROM mcp_datasets WHERE dataset_id = :id AND zone = 'raw' AND NOT is_stub", ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'template' => [                                                 // slice 2: a saved mapping
+        'title' => 'Saved mappings', 'noun' => 'template', 'roles' => ['sandbox.upload'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => templates_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, 'SELECT name FROM mcp_import_templates WHERE template_id = :id', ['id' => $id])) === null ? null : (string) $v,
+    ],
+    'load' => [                                                     // slice 2: a load (the `load` resolver's list)
+        'title' => 'Loads', 'noun' => 'load', 'roles' => ['loads.manage'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $params, int $page): array => loads_for_pick($pdo, $q, $params, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => ($v = one_value($pdo, "SELECT 'Load ' || l.load_id || ' — ' || d.key FROM mcp_loads l JOIN datasets d ON d.id = l.dataset_id WHERE l.load_id = :id", ['id' => $id])) === null ? null : (string) $v,
     ],
 ];

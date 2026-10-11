@@ -968,6 +968,16 @@ questions, then D1–D16 "as recommended"):
 
 ## 16. State
 
+**2026-10-11 — SLICE 2 UPLOADS AND LOADS (THE FIRST EXEMPLAR) BUILT and proven** (`tests/phase3/slice2/run.sh` **262 checks under php -S and under
+Apache** against the real writer, query service and DuckLake: the writer's kinds in-process 26, upload 34, map 45, loads 41, drift 20, rejects 14,
+preview 23, JSON 17, the browser 42; the engine 157, the schema proof 189): resumable uploads in 8 MB parts, the sniff with header row / delimiter /
+encoding, the mapping confirmed (raw all text; the sandbox typed with CAST rejects), the writer's job frame (`services/lake/jobs/` with DISPATCH and
+`JobRefused`) woken by `pg_notify`, loads with drift, rejects, replay and rollback, templates, the sandbox, the Preview tab through the query service
+with masks; a 20 MB CSV of 464,305 rows loads in ~1.8 s, a preview answers in 0.2–0.6 s. db/021 (the writer's wake-up, its grants, `loads.mapping`,
+the rollback lineage kind, `dl_incident_open_load()`, `mcp_loads` widened); found: **the classifier took ISO dates for phone numbers at 0.84–0.9 —
+★3 would have masked every date column** (fixed), a mapped column missing from an existing dataset raised instead of drifting. 18 decisions in
+`uploads-loads.md` "Built and proven". **Next: slice 3, the query service and the editor (THE SECOND EXEMPLAR).**
+
 **2026-10-10, later — SLICE 1 THE CATALOG (the CRUD exemplar) BUILT and proven** (`tests/phase3/slice1/run.sh` **229 checks under php -S and
 under Apache**: the catalog 65, columns 28, tags 24, the glossary 31, the walls 24, JSON 21, the browser at 375/1280 and without JavaScript 36):
 browse with chips, the dataset page's frame with all eight tabs (About, Columns, Usage, History built; Preview, Access, Quality, Lineage the named

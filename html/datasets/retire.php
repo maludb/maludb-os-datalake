@@ -21,4 +21,4 @@ dl_guard($pdo, static function () use ($pdo, $id, $d): void {
     log_activity($pdo, 'dataset.retire', 'dataset', $id, ['before' => ['status' => $d['status']], 'after' => ['status' => 'retired', 'key' => $d['key']]]);
     $pdo->commit();
 });
-dl_done('Retired ' . $d['key'] . ' — its key is never used again', $id, dl_land($d['zone'] === 'sandbox' ? '/browse?owner=me' : '/browse', 'retired'), 'datasetChanged');
+dl_done('Retired ' . $d['key'] . ' — its key is never used again', $id, dl_land(return_path($d['zone'] === 'sandbox' ? '/browse?owner=me' : '/browse'), 'retired'), 'datasetChanged');

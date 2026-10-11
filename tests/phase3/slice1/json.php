@@ -29,7 +29,9 @@ foreach ($screens as $screen => [$url, $keys]) {
 ok($bad === [], 'the eleven screens answer JSON with their data' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
 $tabs = get_json(27, "/datasets/$orders")['json']['data']['tabs'] ?? [];
 ok(array_column($tabs, 'name') === ['about', 'columns', 'preview', 'quality', 'lineage', 'usage', 'access', 'history']
-    && array_column($tabs, 'built') === [true, true, false, false, false, true, false, true], 'the page\'s JSON names its eight tabs and which are built');
+    && array_column($tabs, 'built') === array_map(static fn (string $t): bool => !str_contains((string) file_get_contents("app/views/datasets/partials/tab-$t.php"), "'datasets/partials/tab-pending.php'"),
+        ['about', 'columns', 'preview', 'quality', 'lineage', 'usage', 'access', 'history'])
+    && array_column($tabs, 'built', 'name')['about'] === true && array_column($tabs, 'built', 'name')['quality'] === false, 'the page\'s JSON names its eight tabs and which are built (as their partials say)');
 $d = get_json(27, "/datasets/$orders")['json']['data']['dataset'] ?? [];
 ok(isset($d['owner']['name'], $d['health'], $d['certification_missing'], $d['tags'], $d['terms'], $d['my_level']) && !array_key_exists('ducklake_table_id', $d) && !array_key_exists('last_snapshot_id', $d),
     'get_dataset\'s shape: the owner by name, health, what certification lacks, tags, terms, my level — never the engine\'s ids');
@@ -77,5 +79,6 @@ $logs = array_map(static fn (string $a): string => (string) $reg['actions'][$a][
 ok($logs === ['dataset.create', 'dataset.update', 'dataset.tag', 'dataset.untag', 'dataset.deprecate', 'dataset.retire', 'dataset.follow', 'dataset.unfollow', 'column.update', 'note.add', 'note.delete',
     'term.create', 'term.update', 'term.approve', 'term.deprecate', 'tag.create', 'tag.update', 'tag.archive'], 'every action\'s log event is the spec\'s');
 $built = array_keys(array_filter($reg['screens'], static fn ($s) => !empty($s['stub'])));
-ok(!in_array('browse', $built, true) && !in_array('glossary', $built, true) && count($built) === 14, 'Browse and Glossary are no longer placeholders: 14 stubs left (' . count($built) . ')');
+$owed = (int) trim((string) shell_exec('grep -rl "render_nav_stub(" html 2>/dev/null | wc -l'));
+ok(!in_array('browse', $built, true) && !in_array('glossary', $built, true) && count($built) === $owed && $owed <= 14, 'Browse and Glossary are no longer placeholders: the stubs left are the placeholders still owed (' . count($built) . ')');
 finish();

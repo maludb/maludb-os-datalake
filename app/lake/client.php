@@ -17,7 +17,8 @@ declare(strict_types=1);
  *   lake_ping()                       ['writer' => ok|down, 'query' => ok|down, 'instances' => n answering]: the query service by `ping`
  *                                     on each instance; the writer by its connection (application_name datalake-writer in pg_stat_activity
  *                                     — it has no socket). The health endpoint and the admin's engine tile read it.
- * Slices 2, 3, 7 and 9 add their wrappers here (lake_preview, lake_sql, lake_saved_query, lake_metric — query-service §8).
+ *   lake_preview($key, $asOf)         slice 2: the `preview` kind — 100 rows of a dataset as the caller may read them (source `preview`)
+ * Slices 3, 7 and 9 add their wrappers here (lake_sql, lake_saved_query, lake_metric — query-service §8).
  */
 
 const LAKE_PROTOCOL = 1;
@@ -188,4 +189,18 @@ function lake_ping(?PDO $pdo = null): array
         error_log('lake_ping: ' . $e->getMessage());
     }
     return ['writer' => $writer, 'query' => $up > 0 ? 'ok' : 'down', 'instances' => $up, 'version' => $versions[0] ?? null];
+}
+
+/**
+ * 100 rows of a dataset as the caller may read them (query-service §7 `preview`; uploads-loads.md): the service compiles the caller's policy,
+ * masks and filters, runs it and audits it — the answer carries `query_run_id`, `masked_columns` ("key.column"), `as_of_snapshot`.
+ * $asOf: a snapshot id, an ISO time, or null for the latest.
+ */
+function lake_preview(string $key, int|string|null $asOf = null): array
+{
+    $caller = lake_caller();
+    if ($caller['source'] === 'screen') {
+        $caller['source'] = 'preview';
+    }
+    return lake_query(['kind' => 'preview', 'dataset' => $key, 'as_of' => $asOf] + $caller, 30);
 }

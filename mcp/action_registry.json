@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/datalake-action-manifest.md",
-    "generated_at": "2026-10-10T21:59:27+00:00",
+    "generated_at": "2026-10-10T23:59:24+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -188,8 +188,8 @@
             "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
             "when": "to drop files (CSV, TSV, XLSX, XLS, ODS, JSON, NDJSON, Parquet — up to 5 GB, sent in parts) and see each land",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "upload-map": {
             "screen": "upload-map",
@@ -197,7 +197,7 @@
             "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
             "when": "the mapping: the first 50 rows, each column's name, type and personal-data proposal, the sheet and header row, the target (my sandbox, or an engineer's raw dataset, append or replace), the key; save as a template",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "sandbox": {
@@ -206,8 +206,8 @@
             "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
             "when": "my sandbox datasets and my quota",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "load-list": {
             "screen": "load-list",
@@ -220,8 +220,8 @@
                 "status",
                 "since"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "load-view": {
             "screen": "load-view",
@@ -229,7 +229,7 @@
             "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
             "when": "one load: counts, the schema seen, drift, rescued fields, the checks' outcome, the rejected lines (their raw text at write level), rollback",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "templates": {
@@ -238,7 +238,7 @@
             "section": "Uploads, loads and the sandbox (slice 2 — THE FIRST EXEMPLAR)",
             "when": "saved mappings for files that come back every month",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "sql": {
@@ -1829,7 +1829,7 @@
             "who": "sandbox.upload (raw: loads.manage)",
             "agent": false,
             "record_id": "the load",
-            "built": false
+            "built": true
         },
         "upload_discard": {
             "action": "upload_discard",
@@ -1850,7 +1850,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the upload",
-            "built": false
+            "built": true
         },
         "load_queue": {
             "action": "load_queue",
@@ -1871,7 +1871,7 @@
             "who": "loads.manage and write",
             "agent": true,
             "record_id": "the load",
-            "built": false
+            "built": true
         },
         "load_rollback": {
             "action": "load_rollback",
@@ -1892,7 +1892,7 @@
             "who": "loads.manage and write",
             "agent": true,
             "record_id": "the load",
-            "built": false
+            "built": true
         },
         "template_save": {
             "action": "template_save",
@@ -1931,7 +1931,7 @@
             "who": "sandbox.upload",
             "agent": true,
             "record_id": "the template",
-            "built": false
+            "built": true
         },
         "template_delete": {
             "action": "template_delete",
@@ -1952,7 +1952,7 @@
             "who": "own or loads.manage",
             "agent": true,
             "record_id": "the template",
-            "built": false
+            "built": true
         },
         "saved_query_save": {
             "action": "saved_query_save",

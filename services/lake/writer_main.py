@@ -9,10 +9,13 @@ a thread of its own (up to dl_settings.writer_concurrency) with its OWN PostgreS
 connection (engine.writer_connection) closed when the job ends — never a DuckDB transaction held across jobs (FINDINGS §2); then
 dl_job_finish(). Nothing claimable → wait up to 2 s for a NOTIFY (slice 2 appends the NOTIFY to dl_job_enqueue).
 
-PHASE 2 — THE ENGINE RUNS EMPTY (sso-shell.md, divergence 1): DISPATCH is empty. A job whose kind no slice has built yet is finished
-`failed` at once with "not built until slice N" and no retry. Each slice adds its kinds to DISPATCH through services/lake/jobs/
-(lake-engine §2: `jobs/__init__.py` holds DISPATCH = {kind: handler}, each handler `job_<kind>(pg, job) -> dict`) — services/lake/README.md
-names who adds what. An error or result never carries a row value, SQL text with literals, a path or a credential.
+THE KINDS (slice 2 built the frame — uploads-loads.md, THE FIRST EXEMPLAR): DISPATCH comes from services/lake/jobs/ (`jobs/__init__.py`;
+each handler `job_<kind>(con, pg, job) -> dict` in `jobs/<area>.py`, jobs/frame.py the shared frame). A job whose kind no slice has built yet
+is finished `failed` at once with "not built until slice N" and no retry (Phase 2). For each job: its own PostgreSQL connection with
+`app.member_id` = the requester (so what it enqueues and notifies carries them), its own DuckDB writer connection with the lake attached
+(memory = DL_WRITER_MEMORY / writer_concurrency) unless the handler says `needs_lake = False`, closed when the job ends; a `JobRefused` is a
+decided refusal — failed at once, no retry; any other exception is retried with back-off by dl_job_finish until max_attempts. An error or
+result never carries a row value, SQL text with literals, a path or a credential (jobs/frame.safe_error).
 
 The connection's application_name is `datalake-writer`: the shell's health check (app/lake/client.php lake_ping) sees the writer
 connected through pg_stat_activity — the writer has no socket of its own.
@@ -37,7 +40,10 @@ import psycopg  # noqa: E402
 from psycopg.rows import dict_row  # noqa: E402
 from psycopg.types.json import Json  # noqa: E402
 
-from lake.engine import LakeConfig  # noqa: E402
+import dataclasses  # noqa: E402
+import re  # noqa: E402
+
+from lake.engine import LakeConfig, writer_connection  # noqa: E402
 
 APPLICATION_NAME = "datalake-writer"
 
@@ -50,13 +56,12 @@ KIND_SLICE = {
     "maintenance": "slice 8", "retention": "slice 8", "erasure": "slice 8", "backup_lock": "slice 8",
 }
 
-# {kind: handler(pg, job) -> dict} — EMPTY in Phase 2; services/lake/jobs/ (slice 2 onward) fills it.
+# {kind: handler(con, pg, job) -> dict} — services/lake/jobs/ (slice 2 onward) fills it.
 DISPATCH: dict = {}
-try:  # pragma: no cover - the package arrives with slice 2
-    from lake.jobs import DISPATCH as _SLICES  # type: ignore  # noqa: E402
-    DISPATCH.update(_SLICES)
-except ImportError:
-    pass
+from lake.jobs import DISPATCH as _SLICES  # noqa: E402
+from lake.jobs.frame import JobRefused, safe_error  # noqa: E402
+DISPATCH.update(_SLICES)
+_SLOTS = 1
 
 _stop = threading.Event()
 
@@ -69,13 +74,17 @@ def _connect(cfg: LakeConfig) -> psycopg.Connection:
     return psycopg.connect(_dsn(cfg), autocommit=True, row_factory=dict_row)
 
 
-def _first_line(text: str) -> str:
-    line = (text or "").strip().splitlines()[0] if (text or "").strip() else "failed"
-    return line[:2000]
+def _per_job_memory(cfg: LakeConfig, slots: int) -> LakeConfig:
+    """memory_limit = DL_WRITER_MEMORY / writer_concurrency (lake-engine §1): the unit's MemoryMax bounds the process, each job its share."""
+    m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(GB|MB|GiB|MiB)\s*", cfg.writer_memory or "", re.I)
+    if not m or slots <= 1:
+        return cfg
+    mb = float(m.group(1)) * (1024 if m.group(2).upper().startswith("G") else 1)
+    return dataclasses.replace(cfg, writer_memory=f"{max(256, int(mb / slots))}MB")
 
 
 def work(cfg: LakeConfig, job: dict) -> None:
-    """One claimed job on its own connection: dispatch, then finish. A kind not built yet fails once, without a retry."""
+    """One claimed job on its own connections: dispatch, then finish. A kind not built yet fails once, without a retry."""
     with _connect(cfg) as pg:
         kind = job["kind"]
         handler = DISPATCH.get(kind)
@@ -84,12 +93,25 @@ def work(cfg: LakeConfig, job: dict) -> None:
             pg.execute("UPDATE lake_jobs SET max_attempts = GREATEST(attempts, 1) WHERE id = %s", (job["id"],))   # no retry
             pg.execute("SELECT dl_job_finish(%s, false, NULL, %s)", (job["id"], f"not built until {slice_}"))
             return
+        pg.execute("SELECT set_config('app.member_id', %s, false)", (str(job["requested_by"] or ""),))
+        con = None
         try:
-            result = handler(pg, job) or {}
+            if getattr(handler, "needs_lake", True):
+                con = writer_connection(_per_job_memory(cfg, _SLOTS))
+            result = handler(con, pg, job) or {}
             pg.execute("SELECT dl_job_finish(%s, true, %s::jsonb, NULL)", (job["id"], Json(result)))
+        except JobRefused as e:  # decided: failed at once, never retried
+            pg.execute("UPDATE lake_jobs SET max_attempts = GREATEST(attempts, 1) WHERE id = %s", (job["id"],))
+            pg.execute("SELECT dl_job_finish(%s, false, NULL, %s)", (job["id"], safe_error(e)))
         except Exception as e:  # the job's own failure: retried with back-off by dl_job_finish until max_attempts
             traceback.print_exc()
-            pg.execute("SELECT dl_job_finish(%s, false, NULL, %s)", (job["id"], _first_line(f"{type(e).__name__}: {e}")))
+            pg.execute("SELECT dl_job_finish(%s, false, NULL, %s)", (job["id"], safe_error(f"{type(e).__name__}: {e}")))
+        finally:
+            if con is not None:
+                try:
+                    con.close()
+                except Exception:
+                    pass
 
 
 def claim(pg: psycopg.Connection, worker: str) -> dict | None:
@@ -107,6 +129,8 @@ def run(cfg: LakeConfig, once: bool = False) -> int:
     with _connect(cfg) as pg:
         pg.execute("LISTEN lake_jobs")
         slots = concurrency(pg)
+        global _SLOTS
+        _SLOTS = slots
         print(f"writer: connected as {APPLICATION_NAME}; {slots} job(s) at once; {len(DISPATCH)} kind(s) built"
               + (f" ({', '.join(sorted(DISPATCH))})" if DISPATCH else " — the engine runs empty (Phase 2)"), flush=True)
         running: set = set()

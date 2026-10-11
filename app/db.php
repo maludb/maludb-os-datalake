@@ -76,3 +76,12 @@ function one_value(PDO $pdo, string $sql, array $args = []): mixed
     $v = $st->fetchColumn();
     return $v === false ? null : $v;
 }
+
+/** The first row, or null (the kit's — Sales CRM's slice 3 added the same; slice 2 here). */
+function one_row(PDO $pdo, string $sql, array $args = []): ?array
+{
+    $st = $pdo->prepare($sql);
+    $st->execute($args);
+    $r = $st->fetch();
+    return $r === false ? null : $r;
+}
